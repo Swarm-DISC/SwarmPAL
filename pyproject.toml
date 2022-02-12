@@ -46,6 +46,7 @@ test = [
 ]
 dev = [
     "pytest >=6",
+    "nox >=2022",
 ]
 docs = [
     "Sphinx~=3.0",
@@ -55,7 +56,7 @@ docs = [
 ]
 
 [project.urls]
-homepage = "https://github.com/Swarm-DISC/swarmx"
+homepage = "https://github.com/Swarm-DISC/SwarmX"
 
 
 [tool.pytest.ini_options]
