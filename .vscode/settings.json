@@ -1,0 +1,13 @@
+{
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "python.pythonPath": "${env:CONDA_PREFIX}/envs/swarmx/bin/python",
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "workbench.editorAssociations": {
+        "*.ipynb": "jupyter.notebook.ipynb"
+    },
+    "python.linting.flake8Enabled": true,
+}
