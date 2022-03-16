@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from textwrap import dedent
 
+from numpy import array
 from viresclient import SwarmRequest
 from xarray import Dataset
 
@@ -116,6 +117,8 @@ class MagData(Data):
         # Access data stored in memory as xarray.Dataset
         d.xarray
 
+    The returned dataset will contain "B_NEC" and "B_NEC_Model"
+
     Args:
         collection (str): One of MagData.COLLECTIONS
         model (str): VirES-compatible model specification
@@ -139,7 +142,7 @@ class MagData(Data):
         if collection not in self._supported_collections():
             message = dedent(
                 f"""Unsupported collection: {collection}
-            Choose from {self._supported_collections}
+            Choose from {self._supported_collections()}
             """
             )
             raise ValueError(message)
@@ -158,7 +161,6 @@ class MagData(Data):
 
     @staticmethod
     def _prepare_parameters(collection: str = None, model: str = None) -> dict:
-        collection = "SW_OPER_MAGA_LR_1B" if collection is None else collection
         model = "CHAOS" if model is None else model
         measurements = ["F", "B_NEC", "Flags_B"]
         auxiliaries = ["QDLat", "QDLon"]
@@ -166,7 +168,7 @@ class MagData(Data):
         return {
             "collection": collection,
             "measurements": measurements,
-            "models": [model],
+            "models": [f"Model = {model}"],
             "auxiliaries": auxiliaries,
             "sampling_step": sampling_step,
         }
@@ -182,5 +184,21 @@ class MagData(Data):
     def fetch(
         self, start_time: str | datetime, end_time: str | datetime, **kwargs
     ) -> Dataset:
+        """Fetch data from source and store Dataset in .xarray attribute
+
+        Args:
+            start_time (str / datetime)
+            end_time (str / datetime)
+        """
         self.xarray = self.fetcher.fetch_data(start_time, end_time, **kwargs)
         return self.xarray
+
+    def get_array(self, variable: str) -> array:
+        """Extract numpy array from dataset"""
+        ds = self.xarray
+        available_vars = list(ds.dims) + list(ds.data_vars)
+        if variable not in available_vars:
+            raise ValueError(
+                f"'{variable}' not found in dataset containing: {available_vars}"
+            )
+        return ds.get(variable).data

@@ -2,10 +2,6 @@
 swarmx
 ======
 
-
-Introduction
-------------
-
 This project is in the early planning stage.
 
 .. toctree::
@@ -19,11 +15,3 @@ This project is in the early planning stage.
   :caption: API
 
   api
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

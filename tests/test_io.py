@@ -15,7 +15,7 @@ def test_ViresDataFetcher():
     }
     v = ViresDataFetcher(parameters=parameters)
     start = "2022-01-01T00:00:00"
-    end = "2022-01-01T00:10:00"
+    end = "2022-01-01T00:01:00"
     ds = v.fetch_data(start, end, asynchronous=False, show_progress=False)
     if not isinstance(ds, Dataset):
         _type = type(ds)
@@ -36,9 +36,12 @@ def test_ViresDataFetcher():
 def test_MagData():
     d = MagData(collection="SW_OPER_MAGA_LR_1B", model="IGRF")
     start = "2022-01-01T00:00:00"
-    end = "2022-01-01T00:10:00"
+    end = "2022-01-01T00:01:00"
     d.fetch(start, end, asynchronous=False, show_progress=False)
     ds = d.xarray
     if not isinstance(ds, Dataset):
         _type = type(ds)
         raise TypeError(f"Returned data should be xarray.Dataset, not {_type}")
+    vars_to_check = {"B_NEC", "B_NEC_Model"}
+    returned_vars = set(ds.data_vars)
+    assert vars_to_check.issubset(returned_vars)

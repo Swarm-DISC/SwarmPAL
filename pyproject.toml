@@ -37,6 +37,8 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
+    "numpy >= 1.21",
+    "scipy >= 1.8",
     "typing_extensions >=3.7; python_version<'3.8'",
     "viresclient >= 0.10.1",
 ]
