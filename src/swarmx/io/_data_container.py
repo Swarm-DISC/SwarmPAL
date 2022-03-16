@@ -136,7 +136,7 @@ class MagData(Data):
         source: str = "vires",
         parameters: dict | None = None,
     ) -> None:
-        if collection not in self._supported_collections:
+        if collection not in self._supported_collections():
             message = dedent(
                 f"""Unsupported collection: {collection}
             Choose from {self._supported_collections}
@@ -153,7 +153,6 @@ class MagData(Data):
             raise NotImplementedError("Only the VirES source is configured")
 
     @classmethod
-    @property
     def _supported_collections(cls) -> list:
         return cls.COLLECTIONS
 
