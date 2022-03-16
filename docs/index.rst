@@ -1,12 +1,12 @@
 
-Welcome to documentation!
-=========================
+swarmx
+======
 
 
 Introduction
 ------------
 
-This should be updated!
+This project is in the early planning stage.
 
 .. toctree::
    :maxdepth: 2
@@ -14,6 +14,11 @@ This should be updated!
    :caption: Contents
    :glob:
 
+.. toctree::
+  :maxdepth: 2
+  :caption: API
+
+  api
 
 
 Indices and tables
