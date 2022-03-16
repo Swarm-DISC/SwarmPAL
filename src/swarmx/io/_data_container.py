@@ -1,10 +1,12 @@
+from __future__ import annotations
+
+from datetime import datetime
 from textwrap import dedent
+
 from viresclient import SwarmRequest
+from xarray import Dataset
 
-
-DEFAULTS = {
-    "VirES_server": "https://vires.services/ows"
-}
+DEFAULTS = {"VirES_server": "https://vires.services/ows"}
 
 
 class DataFetcher:
@@ -12,28 +14,70 @@ class DataFetcher:
 
 
 class ViresDataFetcher(DataFetcher):
+    """Connects to and retrieves data from VirES through viresclient
 
-    def __init__(self, url=None, parameters=None):
-        self.url = DEFAULTS.get("VirES_server") if url is None else url
-        self.parameters = parameters
+    Example usage::
+
+        from swarmx.io import VirESDataFetcher
+        # Initialise request
+        v = VirESDataFetcher(
+            parameters={
+                'collection': 'SW_OPER_MAGA_LR_1B',
+                'measurements': ['F', 'B_NEC', 'Flags_B'],
+                'models': ['CHAOS'],
+                'auxiliaries': ['QDLat', 'QDLon'],
+                'sampling_step': None
+            }
+        )
+        # Fetch data and extract as xarray.Dataset
+        ds = v.fetch_data("2022-01-01", "2022-01-02")
+
+    Args:
+        url (str): Server URL, defaults to "https://vires.services/ows"
+        parameters (dict): Parameters to pass to viresclient
+    """
+
+    VIRES_URL = "https://vires.services/ows"
+
+    def __init__(self, url: str | None = None, parameters: dict | None = None) -> None:
+        self.url = self._url() if url is None else url
+        if parameters is None:
+            raise TypeError("Must supply parameters")
+        elif isinstance(parameters, dict):
+            self.parameters = parameters
+        else:
+            raise TypeError(f"Invalid parameters: {parameters}")
         self._initialise_request()
+        return None
+
+    @classmethod
+    def _url(cls):
+        return cls.VIRES_URL
 
     @property
-    def parameters(self):
+    def parameters(self) -> dict:
         return self._parameters
 
     @parameters.setter
-    def parameters(self, parameters):
-        required_parameters = set(
-            ['collection', 'measurements', 'auxiliaries', 'sampling_step', 'models']
-        )
-        if not isinstance(parameters, dict) or required_parameters != set(parameters.keys()):
-            message = dedent(f"""Invalid parameters: {parameters}
-            Should contain {required_parameters}""")
+    def parameters(self, parameters: dict):
+        required_parameters = {
+            "collection",
+            "measurements",
+            "auxiliaries",
+            "sampling_step",
+            "models",
+        }
+        if not isinstance(parameters, dict) or required_parameters != set(
+            parameters.keys()
+        ):
+            message = dedent(
+                f"""Invalid parameters: {parameters}
+            Should contain {required_parameters}"""
+            )
             raise TypeError(message)
         self._parameters = parameters
 
-    def _initialise_request(self):
+    def _initialise_request(self) -> None:
         collection = self.parameters.get("collection")
         measurements = self.parameters.get("measurements")
         auxiliaries = self.parameters.get("auxiliaries")
@@ -45,11 +89,12 @@ class ViresDataFetcher(DataFetcher):
             measurements=measurements,
             models=models,
             auxiliaries=auxiliaries,
-            sampling_step=sampling_step
+            sampling_step=sampling_step,
         )
-        return None
 
-    def fetch_data(self, start_time, end_time, **kwargs):
+    def fetch_data(
+        self, start_time: str | datetime, end_time: str | datetime, **kwargs
+    ) -> Dataset:
         data = self.vires.get_between(start_time, end_time, **kwargs)
         ds = data.as_xarray()
         return ds
@@ -60,20 +105,48 @@ class Data:
 
 
 class MagData(Data):
+    """Fetches and loads magnetic data products
+
+    Example usage::
+
+        from swarmx.io import MagData
+        # Prepare data
+        d = MagData(collection="SW_OPER_MAGA_LR_1B", model="CHAOS")
+        d.fetch("2022-01-01", "2022-01-02")
+        # Access data stored in memory as xarray.Dataset
+        d.xarray
+
+    Args:
+        collection (str): One of MagData.COLLECTIONS
+        model (str): VirES-compatible model specification
+        source (str): Defaults to "vires"
+        parameters (dict):
+            If supplied, overrides what is supplied to ViresDataFetcher
+    """
 
     COLLECTIONS = [
         *[f"SW_OPER_MAG{x}_LR_1B" for x in "ABC"],
-        *[f"SW_OPER_MAG{x}_HR_1B" for x in "ABC"]
+        *[f"SW_OPER_MAG{x}_HR_1B" for x in "ABC"],
     ]
 
-    def __init__(self, collection=None, model=None, source="vires", parameters=None):
+    def __init__(
+        self,
+        collection: str | None = None,
+        model: str | None = None,
+        source: str = "vires",
+        parameters: dict | None = None,
+    ) -> None:
         if collection not in self._supported_collections:
-            message = dedent(f"""Unsupported collection: {collection}
+            message = dedent(
+                f"""Unsupported collection: {collection}
             Choose from {self._supported_collections}
-            """)
+            """
+            )
             raise ValueError(message)
         if source == "vires":
-            default_parameters = self._prepare_parameters(collection=collection, model=model)
+            default_parameters = self._prepare_parameters(
+                collection=collection, model=model
+            )
             parameters = default_parameters if parameters is None else parameters
             self.fetcher = ViresDataFetcher(parameters=parameters)
         else:
@@ -81,11 +154,11 @@ class MagData(Data):
 
     @classmethod
     @property
-    def _supported_collections(cls):
+    def _supported_collections(cls) -> list:
         return cls.COLLECTIONS
 
     @staticmethod
-    def _prepare_parameters(collection=None, model=None):
+    def _prepare_parameters(collection: str = None, model: str = None) -> dict:
         collection = "SW_OPER_MAGA_LR_1B" if collection is None else collection
         model = "CHAOS" if model is None else model
         measurements = ["F", "B_NEC", "Flags_B"]
@@ -96,17 +169,19 @@ class MagData(Data):
             "measurements": measurements,
             "models": [model],
             "auxiliaries": auxiliaries,
-            "sampling_step": sampling_step
+            "sampling_step": sampling_step,
         }
 
     @property
-    def xarray(self):
+    def xarray(self) -> Dataset:
         return self._xarray
 
     @xarray.setter
-    def xarray(self, xarray_dataset):
+    def xarray(self, xarray_dataset: Dataset):
         self._xarray = xarray_dataset
 
-    def fetch(self, start_time, end_time, **kwargs):
+    def fetch(
+        self, start_time: str | datetime, end_time: str | datetime, **kwargs
+    ) -> Dataset:
         self.xarray = self.fetcher.fetch_data(start_time, end_time, **kwargs)
         return self.xarray

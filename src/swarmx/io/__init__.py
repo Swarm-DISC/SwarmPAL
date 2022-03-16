@@ -1,1 +1,3 @@
-from ._data_container import DataFetcher, ViresDataFetcher, Data, MagData
+from __future__ import annotations
+
+from ._data_container import Data, DataFetcher, MagData, ViresDataFetcher
