@@ -87,9 +87,11 @@ def _inclination(v):
 
 
 def fac_single_sat_algo(
-    time_seconds=None, positions=None, B_res=None, B_model=None, inclination_limit=30.0
+    time=None, positions=None, B_res=None, B_model=None, inclination_limit=30.0
 ):
     """Compute field-aligned current (FAC)"""
+    # Convert time (datetime64[ns]) to seconds
+    time_seconds = time.astype(float) / 1e9
     # Array of positions accounting for local time
     pos_ltl = positions.copy()
     pos_ltl[:, 1] = (pos_ltl[:, 1] + 180 + time_seconds / 86400 * 360) % 360 - 180
@@ -115,7 +117,9 @@ def fac_single_sat_algo(
     reject = abs(inclination) < deg2rad(inclination_limit)
     reject &= dt > 1
     fac[reject] = nan
-    return fac
+    # Convert new time back to datetime64
+    target_time = (target_time * 1e9).astype("datetime64[ns]")
+    return {"time": target_time, "fac": fac}
 
 
 def fac_single_sat(magdata, **kwargs):
@@ -127,14 +131,14 @@ def fac_single_sat(magdata, **kwargs):
         from swarmx.toolboxes.fac import fac_single_sat
         magdata = MagData("SW_OPER_MAGA_LR_1B", model="IGRF")
         magdata.fetch("2022-01-01", "2022-01-02")
-        fac = fac_single_sat(magdata)
+        time, fac = fac_single_sat(magdata)
 
     Args:
         magdata (MagData)
 
     """
     # Extract necessary data from the input
-    time_seconds = magdata.get_array("Timestamp").astype("datetime64[s]").astype(int)
+    time = magdata.get_array("Timestamp").astype("datetime64[ns]")
     # Nx3 Array of positions(theta, phi, r)
     positions = stack(
         [
@@ -148,9 +152,10 @@ def fac_single_sat(magdata, **kwargs):
     B_res = magdata.get_array("B_NEC") - magdata.get_array("B_NEC_Model")
     B_model = magdata.get_array("B_NEC_Model")
 
-    return fac_single_sat_algo(
-        time=time_seconds, positions=positions, B_res=B_res, B_model=B_model, **kwargs
+    fac_results = fac_single_sat_algo(
+        time=time, positions=positions, B_res=B_res, B_model=B_model, **kwargs
     )
+    return fac_results
 
 
 if __name__ == "__main__":

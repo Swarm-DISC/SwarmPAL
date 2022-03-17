@@ -6,9 +6,9 @@ This project is in the early planning stage.
 
 .. toctree::
    :maxdepth: 2
-   :titlesonly:
-   :caption: Contents
-   :glob:
+   :caption: Toolbox guides
+
+   toolboxes/fac/using_fac
 
 .. toctree::
   :maxdepth: 2
