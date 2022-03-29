@@ -51,7 +51,7 @@ dev = [
     "nox >=2022",
 ]
 docs = [
-    "Sphinx~=3.0",
+    "Sphinx==4.4",
     "myst-parser>=0.15.2",
     "myst-nb>=0.13.1",
     "sphinx-book-theme>=0.1.0",

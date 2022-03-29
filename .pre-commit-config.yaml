@@ -38,7 +38,7 @@ repos:
   rev: 5.10.1
   hooks:
   - id: isort
-    args: ["-a", "from __future__ import annotations"]  # Python 3.7+
+    # args: ["-a", "from __future__ import annotations"]  # Python 3.7+
 
 - repo: https://github.com/asottile/pyupgrade
   rev: v2.31.0

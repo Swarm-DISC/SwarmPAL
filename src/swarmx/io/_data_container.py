@@ -1,3 +1,6 @@
+"""
+Classes for holding data and interacting with the VirES Server
+"""
 from __future__ import annotations
 
 from datetime import datetime
@@ -6,6 +9,8 @@ from textwrap import dedent
 from numpy import array
 from viresclient import SwarmRequest
 from xarray import Dataset
+
+__all__ = ("ViresDataFetcher", "MagData")
 
 DEFAULTS = {"VirES_server": "https://vires.services/ows"}
 
@@ -17,25 +22,28 @@ class DataFetcher:
 class ViresDataFetcher(DataFetcher):
     """Connects to and retrieves data from VirES through viresclient
 
-    Example usage::
+    Parameters
+    ----------
+    url : str
+        Server URL, defaults to "https://vires.services/ows"
+    parameters : dict
+        Parameters to pass to viresclient
 
-        from swarmx.io import VirESDataFetcher
-        # Initialise request
-        v = VirESDataFetcher(
-            parameters={
-                'collection': 'SW_OPER_MAGA_LR_1B',
-                'measurements': ['F', 'B_NEC', 'Flags_B'],
-                'models': ['CHAOS'],
-                'auxiliaries': ['QDLat', 'QDLon'],
-                'sampling_step': None
-            }
-        )
-        # Fetch data and extract as xarray.Dataset
-        ds = v.fetch_data("2022-01-01", "2022-01-02")
-
-    Args:
-        url (str): Server URL, defaults to "https://vires.services/ows"
-        parameters (dict): Parameters to pass to viresclient
+    Examples
+    --------
+    >>> from swarmx.io import ViresDataFetcher
+    >>> # Initialise request
+    >>> v = ViresDataFetcher(
+    >>>     parameters={
+    >>>         'collection': 'SW_OPER_MAGA_LR_1B',
+    >>>         'measurements': ['F', 'B_NEC', 'Flags_B'],
+    >>>         'models': ['CHAOS'],
+    >>>         'auxiliaries': ['QDLat', 'QDLon'],
+    >>>         'sampling_step': None
+    >>>     }
+    >>> )
+    >>> # Fetch data and extract as xarray.Dataset
+    >>> ds = v.fetch_data("2022-01-01", "2022-01-02")
     """
 
     VIRES_URL = "https://vires.services/ows"
@@ -108,23 +116,26 @@ class Data:
 class MagData(Data):
     """Fetches and loads magnetic data products
 
-    Example usage::
+    Parameters
+    ----------
+    collection : str
+        One of MagData.COLLECTIONS
+    model : str
+        VirES-compatible model specification
+    source : str
+        Defaults to "vires"
+    parameters : dict
+        If supplied, overrides what is supplied to ViresDataFetcher
 
-        from swarmx.io import MagData
-        # Prepare data
-        d = MagData(collection="SW_OPER_MAGA_LR_1B", model="CHAOS")
-        d.fetch("2022-01-01", "2022-01-02")
-        # Access data stored in memory as xarray.Dataset
-        d.xarray
-
-    The returned dataset will contain "B_NEC" and "B_NEC_Model"
-
-    Args:
-        collection (str): One of MagData.COLLECTIONS
-        model (str): VirES-compatible model specification
-        source (str): Defaults to "vires"
-        parameters (dict):
-            If supplied, overrides what is supplied to ViresDataFetcher
+    Examples
+    --------
+    >>> from swarmx.io import MagData
+    >>> # Prepare data
+    >>> d = MagData(collection="SW_OPER_MAGA_LR_1B", model="CHAOS")
+    >>> d.fetch("2022-01-01", "2022-01-02")
+    >>> # Access data stored in memory as xarray.Dataset
+    >>> d.xarray
+    # The returned dataset will contain "B_NEC" and "B_NEC_Model"
     """
 
     COLLECTIONS = [
@@ -186,9 +197,10 @@ class MagData(Data):
     ) -> Dataset:
         """Fetch data from source and store Dataset in .xarray attribute
 
-        Args:
-            start_time (str / datetime)
-            end_time (str / datetime)
+        Parameters
+        ----------
+        start_time : str / datetime
+        end_time : str / datetime
         """
         self.xarray = self.fetcher.fetch_data(start_time, end_time, **kwargs)
         return self.xarray

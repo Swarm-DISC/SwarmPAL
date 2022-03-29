@@ -1,3 +1,3 @@
-from __future__ import annotations
+from swarmx.io._data_container import MagData, ViresDataFetcher
 
-from ._data_container import Data, DataFetcher, MagData, ViresDataFetcher
+__all__ = ("MagData", "ViresDataFetcher")

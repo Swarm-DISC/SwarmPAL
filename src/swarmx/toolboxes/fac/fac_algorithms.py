@@ -89,7 +89,26 @@ def _inclination(v):
 def fac_single_sat_algo(
     time=None, positions=None, B_res=None, B_model=None, inclination_limit=30.0
 ):
-    """Compute field-aligned current (FAC)"""
+    """Compute field-aligned current (FAC) from numpy arrays
+
+    Parameters
+    ----------
+    time : array_like
+        Array of datetime64[ns]
+    positions : array_like
+        Nx3 array of positions (Latitude, Longitude, Radius) in units of (degrees, degrees, metres)
+    B_res : array_like
+        Nx3 array of magnetic field residuals in nanoTesla
+    B_model : array_like
+        Nx3 array of magnetic field model predictions in nanoTesla
+    inclination_limit : float, optional
+
+    Returns
+    -------
+    dict
+        {"time": array_like, "fac": array_like}
+        Times and FAC estimates at those times
+    """
     # Convert time (datetime64[ns]) to seconds
     time_seconds = time.astype(float) / 1e9
     # Array of positions accounting for local time
@@ -123,19 +142,25 @@ def fac_single_sat_algo(
 
 
 def fac_single_sat(magdata, **kwargs):
-    """Compute field-aligned current (FAC)
+    """Compute field-aligned current (FAC) from MagData object
 
-    Example usage::
+    Parameters
+    ----------
+    magdata : MagData
 
-        from swarmx.io import MagData
-        from swarmx.toolboxes.fac import fac_single_sat
-        magdata = MagData("SW_OPER_MAGA_LR_1B", model="IGRF")
-        magdata.fetch("2022-01-01", "2022-01-02")
-        time, fac = fac_single_sat(magdata)
+    Returns
+    -------
+    dict
+        {"time": array_like, "fac": array_like}
+        Times and FAC estimates at those times
 
-    Args:
-        magdata (MagData)
-
+    Examples
+    --------
+    >>> from swarmx.io import MagData
+    >>> from swarmx.toolboxes.fac import fac_single_sat
+    >>> magdata = MagData("SW_OPER_MAGA_LR_1B", model="IGRF")
+    >>> magdata.fetch("2022-01-01", "2022-01-02")
+    >>> time, fac = fac_single_sat(magdata)
     """
     # Extract necessary data from the input
     time = magdata.get_array("Timestamp").astype("datetime64[ns]")
