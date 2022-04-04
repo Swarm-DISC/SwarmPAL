@@ -1,14 +1,17 @@
-swarmx
-======
+swarmx API
+=========
 
-swarmx.toolboxes
-^^^^^^^^^^^^^^^^
+swarmx.toolboxes.tfa
+^^^^^^^^^^^^^^^^^^^^
 
-.. autofunction:: swarmx.toolboxes.fac.fac_single_sat
+.. automodule:: swarmx.toolboxes.tfa
+    :members:
 
-.. autofunction:: swarmx.toolboxes.fac.fac_single_sat_algo
+swarmx.toolboxes.fac
+^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: swarmx.toolboxes.fac.FacInputs
+.. automodule:: swarmx.toolboxes.fac
+    :members:
 
 swarmx.io
 ^^^^^^^^^
