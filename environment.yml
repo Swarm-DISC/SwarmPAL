@@ -3,12 +3,12 @@ name: swarmx
 channels:
   - conda-forge
 dependencies:
-  # IDE
-  - python=3.10
+  - python=3.8
   - pip
   - pipx
+  # IDE
   - jupyterlab=3.2
-  - code-server=3
+  - code-server=4.1
   - jupyter-vscode-proxy=0.1
   # Dev tools (could be handled by nox)
   - pre-commit
@@ -22,17 +22,18 @@ dependencies:
   - myst-parser
   - sphinx-book-theme
   - sphinx-copybutton
-  # Likely swarmx dependencies
-  - dask=2022.1.1
-  - xarray=0.21.1
-  - pandas=1.4.0
-  - numpy=1.22.2
-  - scipy=1.8.0
+  # Necessary for tqdm progress bars to work in vscode
+  - ipywidgets
+  # Likely swarmx minimum dependencies
   - cartopy=0.20.2
+  - dask=2022.2.1
   - matplotlib=3.5.1
+  - numpy=1.22.3
+  - pandas=1.4.1
+  - scipy=1.8.0
+  - xarray=0.21.1
   - pip:
-    - cdflib==0.3.20
-    - viresclient==0.10.0
-    - hapiclient==0.2.2
+    - viresclient==0.10.1
+    - hapiclient==0.2.3
     # This package
     - -e .[dev]

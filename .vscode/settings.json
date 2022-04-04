@@ -10,4 +10,5 @@
         "*.ipynb": "jupyter.notebook.ipynb"
     },
     "python.linting.flake8Enabled": true,
+    "editor.rulers": [80,120]
 }

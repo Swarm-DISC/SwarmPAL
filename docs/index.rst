@@ -1,24 +1,17 @@
 
-Welcome to documentation!
-=========================
+swarmx
+======
 
-
-Introduction
-------------
-
-This should be updated!
+This project is in the early planning stage.
 
 .. toctree::
    :maxdepth: 2
-   :titlesonly:
-   :caption: Contents
-   :glob:
+   :caption: Toolbox guides
 
+   toolboxes/fac/using_fac
 
+.. toctree::
+  :maxdepth: 2
+  :caption: API
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+  api
