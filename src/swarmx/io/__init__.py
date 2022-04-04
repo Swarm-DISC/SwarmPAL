@@ -1,3 +1,3 @@
-from swarmx.io._data_container import MagData, ViresDataFetcher
+from swarmx.io._data_container import ExternalData, MagExternalData, ViresDataFetcher
 
-__all__ = ("MagData", "ViresDataFetcher")
+__all__ = ("ExternalData", "MagExternalData", "ViresDataFetcher")

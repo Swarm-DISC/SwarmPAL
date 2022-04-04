@@ -6,20 +6,16 @@ from __future__ import annotations
 from datetime import datetime
 from textwrap import dedent
 
-from numpy import array
+from numpy import ndarray
 from viresclient import SwarmRequest
 from xarray import Dataset
 
-__all__ = ("ViresDataFetcher", "MagData")
+__all__ = ("ViresDataFetcher", "ExternalData", "MagExternalData")
 
 DEFAULTS = {"VirES_server": "https://vires.services/ows"}
 
 
-class DataFetcher:
-    pass
-
-
-class ViresDataFetcher(DataFetcher):
+class ViresDataFetcher:
     """Connects to and retrieves data from VirES through viresclient
 
     Parameters
@@ -109,47 +105,68 @@ class ViresDataFetcher(DataFetcher):
         return ds
 
 
-class Data:
-    pass
-
-
-class MagData(Data):
-    """Fetches and loads magnetic data products
+class ExternalData:
+    """Fetches and loads data from external sources, e.g. VirES
 
     Parameters
     ----------
     collection : str
-        One of MagData.COLLECTIONS
+        One of ExternalData.COLLECTIONS
     model : str
-        VirES-compatible model specification
+        VirES-compatible model specification. Defaults to "CHAOS" (i.e. full CHAOS model)
+    start_time : str | datetime
+    end_time : str | datetime
     source : str
-        Defaults to "vires"
+        Defaults to "vires" (only one possible currently)
     parameters : dict
-        If supplied, overrides what is supplied to ViresDataFetcher
+        Override the parameters passed to ViresDataFetcher
+    viresclient_kwargs: dict
+        Pass extra kwargs to viresclient
+
+    Notes
+    -----
+    The model variable in the returned data will be renamed to "Model" rather than, e.g., "CHAOS"
 
     Examples
     --------
-    >>> from swarmx.io import MagData
-    >>> # Prepare data
-    >>> d = MagData(collection="SW_OPER_MAGA_LR_1B", model="CHAOS")
-    >>> d.fetch("2022-01-01", "2022-01-02")
+    >>> from swarmx.io import ExternalData
+    >>> # Customise the class (if not using a subclass)
+    >>> ExternalData.COLLECTIONS = [f"SW_OPER_MAG{x}_LR_1B" for x in "ABC"]
+    >>> ExternalData.DEFAULTS["measurements"] = ["F", "B_NEC", "Flags_B"]
+    >>> ExternalData.DEFAULTS["model"] = "CHAOS"
+    >>> ExternalData.DEFAULTS["auxiliaries"] = ["QDLat", "QDLon", "MLT"]
+    >>> ExternalData.DEFAULTS["sampling_step"] = None
+    >>> # Request data
+    >>> d = ExternalData(
+    >>>     collection="SW_OPER_MAGA_LR_1B", model="None",
+    >>>     start_time="2022-01-01", end_time="2022-01-02",
+    >>>     viresclient_kwargs=dict(asynchronous=True, show_progress=True)
+    >>> )
     >>> # Access data stored in memory as xarray.Dataset
     >>> d.xarray
     # The returned dataset will contain "B_NEC" and "B_NEC_Model"
     """
 
-    COLLECTIONS = [
-        *[f"SW_OPER_MAG{x}_LR_1B" for x in "ABC"],
-        *[f"SW_OPER_MAG{x}_HR_1B" for x in "ABC"],
-    ]
+    # To be overwritten in subclasses
+    COLLECTIONS: list[str] = []
+    DEFAULTS: dict = {
+        "measurements": list(),
+        "model": "",
+        "auxiliaries": list(),
+        "sampling_step": None,
+    }
 
     def __init__(
         self,
-        collection: str | None = None,
-        model: str | None = None,
+        collection: str,
+        model: str,
+        start_time: str | datetime,
+        end_time: str | datetime,
         source: str = "vires",
         parameters: dict | None = None,
+        viresclient_kwargs: dict | None = None,
     ) -> None:
+        viresclient_kwargs = {} if viresclient_kwargs is None else viresclient_kwargs
         if collection not in self._supported_collections():
             message = dedent(
                 f"""Unsupported collection: {collection}
@@ -157,12 +174,17 @@ class MagData(Data):
             """
             )
             raise ValueError(message)
+        # Prepare access to external data source given
         if source == "vires":
             default_parameters = self._prepare_parameters(
                 collection=collection, model=model
             )
             parameters = default_parameters if parameters is None else parameters
             self.fetcher = ViresDataFetcher(parameters=parameters)
+            # Fetch the data
+            self.xarray = self.fetcher.fetch_data(
+                start_time, end_time, **viresclient_kwargs
+            )
         else:
             raise NotImplementedError("Only the VirES source is configured")
 
@@ -170,18 +192,17 @@ class MagData(Data):
     def _supported_collections(cls) -> list:
         return cls.COLLECTIONS
 
-    @staticmethod
-    def _prepare_parameters(collection: str = None, model: str = None) -> dict:
-        model = "CHAOS" if model is None else model
-        measurements = ["F", "B_NEC", "Flags_B"]
-        auxiliaries = ["QDLat", "QDLon"]
-        sampling_step = None
+    @classmethod
+    def _prepare_parameters(cls, collection: str = None, model: str = None) -> dict:
+        """Return parameters compatible with ViresDataFetcher"""
+        model = cls.DEFAULTS["model"] if model is None else model
+        model_list = None if model == "None" else [f"Model = {model}"]
         return {
             "collection": collection,
-            "measurements": measurements,
-            "models": [f"Model = {model}"],
-            "auxiliaries": auxiliaries,
-            "sampling_step": sampling_step,
+            "measurements": cls.DEFAULTS["measurements"],
+            "models": model_list,
+            "auxiliaries": cls.DEFAULTS["auxiliaries"],
+            "sampling_step": cls.DEFAULTS["sampling_step"],
         }
 
     @property
@@ -192,20 +213,7 @@ class MagData(Data):
     def xarray(self, xarray_dataset: Dataset):
         self._xarray = xarray_dataset
 
-    def fetch(
-        self, start_time: str | datetime, end_time: str | datetime, **kwargs
-    ) -> Dataset:
-        """Fetch data from source and store Dataset in .xarray attribute
-
-        Parameters
-        ----------
-        start_time : str / datetime
-        end_time : str / datetime
-        """
-        self.xarray = self.fetcher.fetch_data(start_time, end_time, **kwargs)
-        return self.xarray
-
-    def get_array(self, variable: str) -> array:
+    def get_array(self, variable: str) -> ndarray:
         """Extract numpy array from dataset"""
         ds = self.xarray
         available_vars = list(ds.dims) + list(ds.data_vars)
@@ -213,4 +221,31 @@ class MagData(Data):
             raise ValueError(
                 f"'{variable}' not found in dataset containing: {available_vars}"
             )
-        return ds.get(variable).data
+        return ds.get(variable).data  # type: ignore
+
+
+class MagExternalData(ExternalData):
+    """Demo class for accessing magnetic data
+
+    Examples
+    --------
+    >>> d = MagExternalData(
+    >>>     collection="SW_OPER_MAGA_LR_1B", model="IGRF",
+    >>>     start_time="2022-01-01", end_time="2022-01-02",
+    >>>     viresclient_kwargs=dict(asynchronous=True, show_progress=True)
+    >>> )
+    >>> d.xarray  # Returns xarray of data
+    >>> d.get_array("B_NEC")  # Returns numpy array
+    """
+
+    COLLECTIONS = [
+        *[f"SW_OPER_MAG{x}_LR_1B" for x in "ABC"],
+        *[f"SW_OPER_MAG{x}_HR_1B" for x in "ABC"],
+    ]
+
+    DEFAULTS = {
+        "measurements": ["F", "B_NEC", "Flags_B"],
+        "model": "IGRF",
+        "auxiliaries": ["QDLat", "QDLon", "MLT"],
+        "sampling_step": None,
+    }

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from xarray import Dataset
 
-from swarmx.io import MagData, ViresDataFetcher
+from swarmx.io import ExternalData, MagExternalData, ViresDataFetcher
 
 
 def test_ViresDataFetcher():
@@ -33,11 +33,42 @@ def test_ViresDataFetcher():
         raise ValueError(f"Erroneous data_vars: {ds.data_vars}")
 
 
-def test_MagData():
-    d = MagData(collection="SW_OPER_MAGA_LR_1B", model="IGRF")
+def test_ExternalData():
     start = "2022-01-01T00:00:00"
     end = "2022-01-01T00:01:00"
-    d.fetch(start, end, asynchronous=False, show_progress=False)
+    ExternalData.COLLECTIONS = [f"SW_OPER_MAG{x}_LR_1B" for x in "ABC"]
+    ExternalData.DEFAULTS["measurements"] = ["F", "B_NEC", "Flags_B"]
+    ExternalData.DEFAULTS["model"] = "CHAOS"
+    ExternalData.DEFAULTS["auxiliaries"] = ["QDLat", "QDLon", "MLT"]
+    ExternalData.DEFAULTS["sampling_step"] = None
+    d = ExternalData(
+        collection="SW_OPER_MAGA_LR_1B",
+        model="None",
+        start_time=start,
+        end_time=end,
+        viresclient_kwargs=dict(asynchronous=False, show_progress=False),
+    )
+    ds = d.xarray
+    if not isinstance(ds, Dataset):
+        _type = type(ds)
+        raise TypeError(f"Returned data should be xarray.Dataset, not {_type}")
+    vars_to_check = {"B_NEC"}
+    vars_to_check_nonpresence = {"B_NEC_Model"}
+    returned_vars = set(ds.data_vars)
+    assert vars_to_check.issubset(returned_vars)
+    assert not vars_to_check_nonpresence.issubset(returned_vars)
+
+
+def test_MagExternalData():
+    start = "2022-01-01T00:00:00"
+    end = "2022-01-01T00:01:00"
+    d = MagExternalData(
+        collection="SW_OPER_MAGA_LR_1B",
+        model="IGRF",
+        start_time=start,
+        end_time=end,
+        viresclient_kwargs=dict(asynchronous=False, show_progress=False),
+    )
     ds = d.xarray
     if not isinstance(ds, Dataset):
         _type = type(ds)

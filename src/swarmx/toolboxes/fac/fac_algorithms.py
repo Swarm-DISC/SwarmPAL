@@ -26,6 +26,8 @@ from numpy import (
 from numpy.linalg import norm
 from scipy.interpolate import splev, splrep
 
+from swarmx.io import ExternalData
+
 MU_0 = 4.0 * pi * 10 ** (-7)
 
 
@@ -141,12 +143,12 @@ def fac_single_sat_algo(
     return {"time": target_time, "fac": fac}
 
 
-def fac_single_sat(magdata, **kwargs):
-    """Compute field-aligned current (FAC) from MagData object
+def fac_single_sat(fac_inputs, **kwargs):
+    """Compute field-aligned current (FAC) from FacInputs object
 
     Parameters
     ----------
-    magdata : MagData
+    fac_inputs : FacInputs
 
     Returns
     -------
@@ -156,26 +158,27 @@ def fac_single_sat(magdata, **kwargs):
 
     Examples
     --------
-    >>> from swarmx.io import MagData
-    >>> from swarmx.toolboxes.fac import fac_single_sat
-    >>> magdata = MagData("SW_OPER_MAGA_LR_1B", model="IGRF")
-    >>> magdata.fetch("2022-01-01", "2022-01-02")
-    >>> time, fac = fac_single_sat(magdata)
+    >>> from swarmx.toolboxes.fac import FacInputs, fac_single_sat
+    >>> fac_inputs = FacInputs(
+    >>>     collection="SW_OPER_MAGA_LR_1B", model="IGRF"
+    >>>     start_time="2022-01-01", end_time="2022-01-02"
+    >>> )
+    >>> output = fac_single_sat(fac_inputs)
     """
     # Extract necessary data from the input
-    time = magdata.get_array("Timestamp").astype("datetime64[ns]")
+    time = fac_inputs.get_array("Timestamp").astype("datetime64[ns]")
     # Nx3 Array of positions(theta, phi, r)
     positions = stack(
         [
-            magdata.get_array("Latitude"),
-            magdata.get_array("Longitude"),
-            magdata.get_array("Radius"),
+            fac_inputs.get_array("Latitude"),
+            fac_inputs.get_array("Longitude"),
+            fac_inputs.get_array("Radius"),
         ],
         axis=1,
     )
     # Magnetic field vector residual and model values
-    B_res = magdata.get_array("B_NEC") - magdata.get_array("B_NEC_Model")
-    B_model = magdata.get_array("B_NEC_Model")
+    B_res = fac_inputs.get_array("B_NEC") - fac_inputs.get_array("B_NEC_Model")
+    B_model = fac_inputs.get_array("B_NEC_Model")
 
     fac_results = fac_single_sat_algo(
         time=time, positions=positions, B_res=B_res, B_model=B_model, **kwargs
@@ -183,9 +186,39 @@ def fac_single_sat(magdata, **kwargs):
     return fac_results
 
 
-if __name__ == "__main__":
-    from swarmx.io import MagData
+class FacInputs(ExternalData):
+    """Accessing external data: inputs to FAC algorithm
 
-    magdata = MagData("SW_OPER_MAGA_LR_1B", model="IGRF")
-    magdata.fetch("2022-01-01", "2022-01-02")
-    fac = fac_single_sat(magdata)
+    Examples
+    --------
+    >>> d = FacInputs(
+    >>>     collection="SW_OPER_MAGA_LR_1B", model="IGRF",
+    >>>     start_time="2022-01-01", end_time="2022-01-02",
+    >>>     viresclient_kwargs=dict(asynchronous=True, show_progress=True)
+    >>> )
+    >>> d.xarray  # Returns xarray of data
+    >>> d.get_array("B_NEC")  # Returns numpy array
+    """
+
+    COLLECTIONS = [
+        *[f"SW_OPER_MAG{x}_LR_1B" for x in "ABC"],
+        *[f"SW_OPER_MAG{x}_HR_1B" for x in "ABC"],
+    ]
+
+    DEFAULTS = {
+        "measurements": ["F", "B_NEC", "Flags_B"],
+        "model": "IGRF",
+        "auxiliaries": ["QDLat", "QDLon", "MLT"],
+        "sampling_step": None,
+    }
+
+
+if __name__ == "__main__":
+    fac_inputs = FacInputs(
+        collection="SW_OPER_MAGA_LR_1B",
+        model="IGRF",
+        start_time="2022-01-01",
+        end_time="2022-01-02",
+        viresclient_kwargs=dict(asynchronous=True, show_progress=True),
+    )
+    output = fac_single_sat(fac_inputs)
