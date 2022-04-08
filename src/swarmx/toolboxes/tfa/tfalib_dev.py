@@ -7,6 +7,7 @@
 
 import numpy as np
 import scipy.interpolate as interpolate
+import tfalib
 import matplotlib.pyplot as plt
 
 plt.rcParams['font.size'] = '16'
@@ -49,43 +50,18 @@ t = 12.81 + t + n
 # produce x values from a simple linear relation
 x = 10 + 0.01 * t
 
-plt.figure(2)
-plt.plot(t, x, '-xk')
-plt.grid(True)
-
 # remove some values at random
 inds_to_rem = np.random.permutation(np.arange(1,N-1))[:int(N/4)]
 t_obs = np.delete(t, inds_to_rem)
 x_obs = np.delete(x, inds_to_rem)
 
-plt.figure(3)
-plt.plot(t_obs, x_obs, '--xk')
-plt.grid(True)
-
-# reconstruct the original (approximately as the small deviations 
-# will not be reproduced)
-
-time_range = np.max(t_obs) - np.min(t_obs)
-time_rec_N = np.ceil((time_range / (1/FS)))
-# init_t = np.round(t_obs[0]/(1/FS)) * (1/FS)
-init_t = t_obs[0]
-inds = np.abs(np.round((t_obs - init_t)/(1/FS))).astype(int)
-
-t_rec = np.arange(init_t, init_t + time_rec_N*(1/FS) + 1E-6, (1/FS))
-x_rec = np.full(t_rec.shape, np.NaN)
-x_rec[inds] = x_obs
-nonnan_mask = ~np.isnan(x_rec)
-
-f = interpolate.interp1d(t_obs, x_obs, kind='linear', 
-                               fill_value = 'extrapolate')
-x_int = f(t_rec)
-# x_int = np.interp(t_rec, t_obs, x_obs)
-x_int[~nonnan_mask] = np.NaN
-
+(t_rec, x_rec, nn) = tfalib.constant_cadence(t_obs, x_obs, FS, False)
+(t_int, x_int, nn) = tfalib.constant_cadence(t_obs, x_obs, FS, True)
 
 plt.figure(3)
-plt.plot(t_rec, x_rec, 'or', t_rec, x_int, '+b')
+plt.plot(t_obs, x_obs, '--xk', t_rec, x_rec, 'or', t_int, x_int, '+b')
 plt.grid(True)
+plt.legend(('Original Points', 'Moved', 'Interpolated'))
 #%%
 
 
