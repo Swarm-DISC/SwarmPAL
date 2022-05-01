@@ -9,6 +9,7 @@ This project is in the early planning stage.
    :caption: Toolbox guides
 
    toolboxes/fac/using_fac
+   toolboxes/secs/using_secs
 
 .. toctree::
   :maxdepth: 2
