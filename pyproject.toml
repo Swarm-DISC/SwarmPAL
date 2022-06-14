@@ -63,6 +63,11 @@ docs = [
     "matplotlib==3.5.1",
     "ipywidgets==7.7.0",
 ]
+dsecs_cp38_manylinux = [
+    # pre-built binary for apexpy, for Python3.8 on Linux
+    "https://github.com/smithara/apexpy/releases/download/v1.1.0-binaries/apexpy-1.1.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "pyproj>=3",
+]
 
 [project.urls]
 homepage = "https://github.com/Swarm-DISC/SwarmX"

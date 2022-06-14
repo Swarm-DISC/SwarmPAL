@@ -12,11 +12,8 @@ sphinx:
 # Include PDF and ePub
 formats: all
 
-# Include gfortran, required for apexpy
 build:
   os: ubuntu-20.04
-  apt_packages:
-    - gfortran
   tools:
     python: "3.8"
 
@@ -26,4 +23,4 @@ python:
     path: .
     extra_requirements:
     - docs
-    - dsecs
+    - dsecs_cp38_manylinux
