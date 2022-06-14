@@ -1,6 +1,6 @@
 import datetime as dt
 
-from swarmx.toolboxes.secs import SecsInputSingleSat, SecsInputs
+from swarmx.toolboxes.secs import SecsInputs, SecsInputSingleSat
 
 
 def test_SecsInputSingleSat():

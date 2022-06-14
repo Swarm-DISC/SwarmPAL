@@ -1,3 +1,6 @@
-from swarmx.toolboxes.secs.secs_inputs import SecsInputSingleSat, SecsInputs
+from swarmx.toolboxes.secs.secs_inputs import SecsInputs, SecsInputSingleSat
 
-__all__ = ("SecsInputSingleSat", "SecsInputs",)
+__all__ = (
+    "SecsInputSingleSat",
+    "SecsInputs",
+)

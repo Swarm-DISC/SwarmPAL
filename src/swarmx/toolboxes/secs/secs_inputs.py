@@ -1,5 +1,5 @@
 from apexpy import Apex
-from numpy import deg2rad, sin, cos
+from numpy import cos, deg2rad, sin
 from pyproj import CRS, Transformer
 
 from swarmx.io import ExternalData
@@ -94,11 +94,11 @@ class SecsInputs:
         # Convert to Cartesian x,y,z
         s_p = sin(deg2rad(lon))
         c_p = cos(deg2rad(lon))
-        s_t = sin(deg2rad(90-lat))
-        c_t = cos(deg2rad(90-lat))
-        x = rad*c_p*s_t
-        y = rad*s_p*s_t
-        z = rad*c_t
+        s_t = sin(deg2rad(90 - lat))
+        c_t = cos(deg2rad(90 - lat))
+        x = rad * c_p * s_t
+        y = rad * s_p * s_t
+        z = rad * c_t
         # Use PROJ to make the transformation
         ecef = CRS.from_proj4("+proj=geocent +ellps=WGS84 +datum=WGS84")
         lla = CRS.from_proj4("+proj=longlat +ellps=WGS84 +datum=WGS84")
@@ -132,7 +132,7 @@ class SecsInputs:
         geod_lat, lon, height = SecsInputs._spherical_geocentric_to_geodetic(
             lat, lon, rad
         )
-        mlat, mlon = A.convert(geod_lat, lon, 'geo', 'apex', height=height/1e3)
+        mlat, mlon = A.convert(geod_lat, lon, "geo", "apex", height=height / 1e3)
         return mlat, mlon
 
     @staticmethod
@@ -152,7 +152,7 @@ class SecsInputs:
             Magnetic apex longitude (degrees)
         """
         # Get current date as datetime
-        date = s.get_array("Timestamp")[0].astype('M8[ms]').astype('O')
+        date = s.get_array("Timestamp")[0].astype("M8[ms]").astype("O")
         # Evaluate apex coordinates
         mlat, mlon = SecsInputs._calc_apex_coords(
             date,

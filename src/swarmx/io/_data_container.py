@@ -235,9 +235,11 @@ class ExternalData:
         dims: tuple, default=("Timestamp",)
             Dimension names
         """
-        self.xarray = self.xarray.assign({
-            varname: ("Timestamp", data),
-        })
+        self.xarray = self.xarray.assign(
+            {
+                varname: ("Timestamp", data),
+            }
+        )
         return self
 
 
