@@ -45,6 +45,7 @@ dependencies = [
 [project.optional-dependencies]
 dsecs = [
     "apexpy>=1.1.0",
+    "pyproj>=3",
 ]
 test = [
     "pytest >=6",
