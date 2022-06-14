@@ -8,8 +8,10 @@ dependencies:
   - pipx
   # IDE
   - jupyterlab=3.2
-  - code-server=4.1
-  - jupyter-vscode-proxy=0.1
+  # - code-server=4.1
+  # - jupyter-vscode-proxy=0.1
+  # Compiler required for apexpy
+  - fortran-compiler
   # Dev tools (could be handled by nox)
   - pre-commit
   - pytest
@@ -33,6 +35,7 @@ dependencies:
   - scipy=1.8.0
   - xarray=0.21.1
   - pip:
+    - apexpy==1.1.0
     - viresclient==0.10.1
     - hapiclient==0.2.3
     # This package
