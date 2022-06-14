@@ -30,8 +30,16 @@ jobs:
         # - python-version: pypy-3.8
         #   runs-on: ubuntu-latest
 
-
     steps:
+    - name: Install gfortran (on macOS & Windows)
+      run:   |
+             if [ "$RUNNER_OS" == "macOS" ]; then
+                  brew reinstall gfortran
+             elif [ "$RUNNER_OS" == "Windows" ]; then
+                  choco install mingw
+             fi
+      shell: bash
+
     - uses: actions/checkout@v2
 
     - uses: actions/setup-python@v2
