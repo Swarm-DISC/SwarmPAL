@@ -53,13 +53,13 @@ jobs:
         viresclient set_token "https://vires.services/ows" ${{ secrets.VIRES_TOKEN }}
         viresclient set_default_server https://vires.services/ows
 
+    - name: Test package (On Windows; Skip DSECS)
+      if: runner.os == 'Windows'
+      run: python -m pytest -ra -m "not dsecs"
+    
     - name: Test package
-      run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
-          python -m pytest -ra -m "not dsecs"
-        else
-          python -m pytest -ra
-        fi
+      if: runner.os != 'Windows'
+      run: python -m pytest -ra
 
 
   # dist:
