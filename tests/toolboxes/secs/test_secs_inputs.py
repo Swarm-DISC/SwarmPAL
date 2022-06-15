@@ -1,8 +1,15 @@
 import datetime as dt
 
-from swarmx.toolboxes.secs import SecsInputs, SecsInputSingleSat
+import pytest
+
+try:
+    from swarmx.toolboxes.secs import SecsInputs, SecsInputSingleSat
+except ImportError:
+    pass
 
 
+@pytest.mark.dsecs
+@pytest.mark.remote
 def test_SecsInputSingleSat():
     start = dt.datetime.fromisoformat("2022-01-01T00:00:00")
     end = dt.datetime.fromisoformat("2022-01-01T00:01:00")
@@ -18,6 +25,8 @@ def test_SecsInputSingleSat():
     assert "B_NEC_Model" in inputs.xarray.data_vars
 
 
+@pytest.mark.dsecs
+@pytest.mark.remote
 def test_SecsInputs():
     start = dt.datetime.fromisoformat("2022-01-01T00:00:00")
     end = dt.datetime.fromisoformat("2022-01-01T00:01:00")

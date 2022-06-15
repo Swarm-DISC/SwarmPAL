@@ -1,8 +1,11 @@
 import datetime as dt
 
+import pytest
+
 from swarmx.toolboxes.fac import FacInputs, fac_single_sat
 
 
+@pytest.mark.remote
 def test_fac_single_sat():
     start = dt.datetime.fromisoformat("2022-01-01T00:00:00")
     end = dt.datetime.fromisoformat("2022-01-01T00:01:00")

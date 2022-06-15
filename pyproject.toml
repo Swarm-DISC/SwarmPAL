@@ -81,6 +81,10 @@ filterwarnings = ["error"]
 testpaths = [
     "tests",
 ]
+markers = [
+    "remote",
+    "dsecs",
+]
 
 
 [tool.pycln]
