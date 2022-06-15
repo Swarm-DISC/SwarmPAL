@@ -54,7 +54,12 @@ jobs:
         viresclient set_default_server https://vires.services/ows
 
     - name: Test package
-      run: python -m pytest -ra
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          python -m pytest -ra -m "not dsecs"
+        else
+          python -m pytest -ra
+        fi
 
 
   # dist:
