@@ -30,13 +30,16 @@ jobs:
         #   runs-on: ubuntu-latest
 
     steps:
-    - name: Install gfortran (on macOS & Windows)
-      run:   |
-             if [ "$RUNNER_OS" == "macOS" ]; then
-                  brew reinstall gfortran
-             elif [ "$RUNNER_OS" == "Windows" ]; then
-                  choco install mingw
-             fi
+    - name: Setup gfortran (Windows)
+      uses: msys2/setup-msys2@v2
+      if: runner.os == 'Windows'
+      with:
+        install: >-
+          base-devel
+
+    - name: Install gfortran (on macOS)
+      if: runner.os == 'macOS'
+      run: brew reinstall gfortran
       shell: bash
 
     - uses: actions/checkout@v2
