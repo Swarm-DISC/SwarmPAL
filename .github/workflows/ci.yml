@@ -52,11 +52,7 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         python -m pip install .[test]
-        python -m pip install --no-use-pep517 \
-          --global-option build_ext \
-          --global-option --compiler=mingw32 \
-          --global-option --fcompiler=gfortran \
-          apexpy
+        python -m pip install --no-use-pep517 --global-option build_ext --global-option --compiler=mingw32 --global-option --fcompiler=gfortran apexpy
         python -m pip install .[test,dsecs]
 
     - name: Test package (On Linux / macOS)
