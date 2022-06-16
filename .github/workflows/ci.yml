@@ -48,9 +48,9 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install package (On Windows; Skip DSECS)
+    - name: Install package (On Windows; Include DSECS)
       if: runner.os == 'Windows'
-      run: python -m pip install .[test]
+      run: python -m pip install .[test,dsecs]
 
     - name: Test package (On Linux / macOS)
       if: runner.os != 'Windows'
@@ -61,9 +61,9 @@ jobs:
         viresclient set_token "https://vires.services/ows" ${{ secrets.VIRES_TOKEN }}
         viresclient set_default_server https://vires.services/ows
 
-    - name: Test package (On Windows; Skip DSECS)
+    - name: Test package (On Windows; Include DSECS)
       if: runner.os == 'Windows'
-      run: python -m pytest -ra -m "not dsecs"
+      run: python -m pytest -ra
 
     - name: Test package (On Linux / macOS)
       if: runner.os != 'Windows'
