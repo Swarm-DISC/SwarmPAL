@@ -66,8 +66,20 @@ class SecsInputs:
         # Append Apex coordinates to each dataset
         for s in (self.s1, self.s2):
             mlat, mlon = self._calc_apex_coords_from_inputs(s)
-            s.append_array("ApexLatitude", mlat, dims=("Timestamp",))
-            s.append_array("ApexLongitude", mlon, dims=("Timestamp",))
+            s.append_array(
+                "ApexLatitude",
+                mlat,
+                dims=("Timestamp",),
+                units="deg",
+                description="Magnetic apex latitude",
+            )
+            s.append_array(
+                "ApexLongitude",
+                mlon,
+                dims=("Timestamp",),
+                units="deg",
+                description="Magnetic apex longitude",
+            )
 
     @staticmethod
     def _spherical_geocentric_to_geodetic(lat, lon, rad):
