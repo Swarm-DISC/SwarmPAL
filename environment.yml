@@ -24,6 +24,7 @@ dependencies:
   - myst-parser
   - sphinx-book-theme
   - sphinx-copybutton
+  - sphinx-autobuild
   # Necessary for tqdm progress bars to work in vscode
   - ipywidgets
   # Likely swarmx minimum dependencies
@@ -39,4 +40,4 @@ dependencies:
     - viresclient==0.10.1
     - hapiclient==0.2.3
     # This package
-    - -e .[dev]
+    - -e .[dev,docs,dsecs]
