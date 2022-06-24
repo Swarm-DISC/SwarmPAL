@@ -26,7 +26,7 @@ graph LR
     end
 ```
 
-The package is structured so that researchers can run high level analysis routines with just a few lines of code which seemlessly pulls in Swarm data underneath, while the steps of the routines are also exposed so that they can be run more flexibly (e.g. with other data).
+The package is structured so that researchers can run high level analysis routines with just a few lines of code which seamlessly pulls in Swarm data underneath, while the steps of the routines are also exposed so that they can be run more flexibly (e.g. with other data).
 
 ```{mermaid}
 graph LR
