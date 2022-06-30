@@ -223,6 +223,35 @@ class ExternalData:
             )
         return ds.get(variable).data  # type: ignore
 
+    def append_array(
+        self, varname, data, dims=("Timestamp",), units=None, description=None
+    ):
+        """Append a new variable to the dataset
+
+        Parameters
+        ----------
+        varname: str
+            Name to give to the data variable
+        data: ndarray
+            Array of data, of same dimensions as dims
+        dims: tuple, default=("Timestamp",)
+            Dimension names
+        units: str
+            Units to attach to the data
+        description: str
+            Description to attach to the data
+        """
+        self.xarray = self.xarray.assign(
+            {
+                varname: ("Timestamp", data),
+            }
+        )
+        if units:
+            self.xarray[varname].attrs["units"] = units
+        if description:
+            self.xarray[varname].attrs["description"] = description
+        return self
+
 
 class MagExternalData(ExternalData):
     """Demo class for accessing magnetic data

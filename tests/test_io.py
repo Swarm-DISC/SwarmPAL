@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import pytest
 from xarray import Dataset
 
 from swarmx.io import ExternalData, MagExternalData, ViresDataFetcher
 
 
+@pytest.mark.remote
 def test_ViresDataFetcher():
     parameters = {
         "collection": "SW_OPER_MAGA_LR_1B",
@@ -33,6 +35,7 @@ def test_ViresDataFetcher():
         raise ValueError(f"Erroneous data_vars: {ds.data_vars}")
 
 
+@pytest.mark.remote
 def test_ExternalData():
     start = "2022-01-01T00:00:00"
     end = "2022-01-01T00:01:00"
@@ -59,6 +62,7 @@ def test_ExternalData():
     assert not vars_to_check_nonpresence.issubset(returned_vars)
 
 
+@pytest.mark.remote
 def test_MagExternalData():
     start = "2022-01-01T00:00:00"
     end = "2022-01-01T00:01:00"
