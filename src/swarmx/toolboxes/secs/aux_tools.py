@@ -1,8 +1,9 @@
 import numpy as np
 from scipy.interpolate import interp1d
 
+
 def sph2sph(latP, lonP, latOld, lonOld, VtOld, VpOld):
-    """Change coordinates and (horizontal part of) vectors from one spherical 
+    """Change coordinates and (horizontal part of) vectors from one spherical
         coordinate system to another.
 
     Parameters
@@ -10,21 +11,21 @@ def sph2sph(latP, lonP, latOld, lonOld, VtOld, VpOld):
     latP, lonP : float
         Latitude and longitude of the new pole in the old coordinates, [deg]
     latOld, lonOld : array
-        Latitudes and longitudes of the data points to be transformed in the 
+        Latitudes and longitudes of the data points to be transformed in the
         old coordinate system, [deg]
     VtOld, VpOld : array
-        Theta- and phi-components of a vector field at locations 
-        (latOld,lonOld). If you want to transform only coordinates make these 
+        Theta- and phi-components of a vector field at locations
+        (latOld,lonOld). If you want to transform only coordinates make these
         empty  arrays (np.array([])).
 
     Returns
     -------
     latNew, lonNew : array
-        Coordinates of the points (latOld,lonOld) in the new system, [deg], 
-        same size as input parameters. Note that the old pole has longitude 0 
+        Coordinates of the points (latOld,lonOld) in the new system, [deg],
+        same size as input parameters. Note that the old pole has longitude 0
         and longitude is between 0 and 360.
     VtNew, VpNew : array
-        Theta- and phi-components of the vector field in the new system. If no 
+        Theta- and phi-components of the vector field in the new system. If no
         input vector field was given, these are empty vectors [].
     """
 
@@ -39,7 +40,7 @@ def sph2sph(latP, lonP, latOld, lonOld, VtOld, VpOld):
 
     # If pole of the new coordinate system is close enough to the old one, do
     # nothing
-    if 90. - latP < 0.01:
+    if 90.0 - latP < 0.01:
         return latOld, lonOld, VtOld, VpOld
 
     # latitude --> co-latitude and deg --> rad
@@ -49,8 +50,9 @@ def sph2sph(latP, lonP, latOld, lonOld, VtOld, VpOld):
     phiO = np.radians(lonOld)
 
     # Latitude of the data points in the new system
-    cosThetaPrime = np.cos(thetaO) * np.cos(thetaP) + \
-        np.sin(thetaO) * np.sin(thetaP) * np.cos(phiO - phiP)
+    cosThetaPrime = np.cos(thetaO) * np.cos(thetaP) + np.sin(thetaO) * np.sin(
+        thetaP
+    ) * np.cos(phiO - phiP)
     latNew = 90 - np.degrees(np.arccos(cosThetaPrime))
 
     # Find those data points that are NOT too close to the new coordinate pole.
@@ -63,22 +65,24 @@ def sph2sph(latP, lonP, latOld, lonOld, VtOld, VpOld):
     latNew[ii] = np.nan
     sinThetaPrime = np.full_like(latOld, np.nan)  # np.nan + latOld
     # this affects all other output variables
-    sinThetaPrime[ind] = np.sqrt(1 - cosThetaPrime[ind]**2.)
+    sinThetaPrime[ind] = np.sqrt(1 - cosThetaPrime[ind] ** 2.0)
 
     # Longitude of the data points in the new system
-    #[old pole has longitude 0]
-    sinA = np.sin(thetaO) * np.sin(phiP - phiO)/sinThetaPrime
-    cosA = (np.cos(thetaO) - np.cos(thetaP) * cosThetaPrime) / \
-        (np.sin(thetaP) * sinThetaPrime)
+    # [old pole has longitude 0]
+    sinA = np.sin(thetaO) * np.sin(phiP - phiO) / sinThetaPrime
+    cosA = (np.cos(thetaO) - np.cos(thetaP) * cosThetaPrime) / (
+        np.sin(thetaP) * sinThetaPrime
+    )
 
     lonNew = np.degrees(np.arctan2(sinA, cosA))
     lonNew[lonNew < 0] += 360
 
     # Horizontal vector components in the new system
     if len(VtOld) == len(latOld):
-        sinC = np.sin(thetaP) * np.sin(phiP-phiO)/sinThetaPrime
-        cosC = (np.cos(thetaP) - np.cos(thetaO) * cosThetaPrime) / \
-            (np.sin(thetaO) * sinThetaPrime)
+        sinC = np.sin(thetaP) * np.sin(phiP - phiO) / sinThetaPrime
+        cosC = (np.cos(thetaP) - np.cos(thetaO) * cosThetaPrime) / (
+            np.sin(thetaO) * sinThetaPrime
+        )
         VtNew = cosC * VtOld - sinC * VpOld
         VpNew = cosC * VpOld + sinC * VtOld
     else:
@@ -89,9 +93,8 @@ def sph2sph(latP, lonP, latOld, lonOld, VtOld, VpOld):
     return latNew, lonNew, VtNew, VpNew
 
 
-
 def sub_FindLongestNonZero(x):
-    """Find the longest sequence of consecutive non-zero elements in an array. 
+    """Find the longest sequence of consecutive non-zero elements in an array.
         Return the sequence and indices as y=x[ind].
 
     Parameters
@@ -108,7 +111,7 @@ def sub_FindLongestNonZero(x):
     """
 
     # pad with zeros and find zero elements
-    x_aux = np.pad(x, (1, 1), 'constant', constant_values=0)
+    x_aux = np.pad(x, (1, 1), "constant", constant_values=0)
     zpos = np.nonzero(x_aux == 0)[0]
 
     # Find the longest jump in zero positions
@@ -121,9 +124,8 @@ def sub_FindLongestNonZero(x):
     return y, ind
 
 
-
 def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
-    """Solve matrix equation sysMat*resultVec = dataVec, using truncated 
+    """Solve matrix equation sysMat*resultVec = dataVec, using truncated
         singular value decomposition.
 
     Parameters
@@ -133,7 +135,7 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
     regMat : ndarray
         Regularization matrix for the SECS amplitudes
     epsSVD : float
-        Pre-defined truncation parameter so that all singular values smaller 
+        Pre-defined truncation parameter so that all singular values smaller
         than epsSVD*(largest singular value) will be ignored
     alpha : float
         Parameter scaling the amount of regularization
@@ -151,33 +153,37 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
         sysMat = secsMat
         dataVec = magVec
     else:
-        sysMat = np.concatenate((secsMat, alpha*regMat))
+        sysMat = np.concatenate((secsMat, alpha * regMat))
 
         ### test also with real input, is magVec column or row vector?#########
-        #dataVec = np.concatenate((magVec, np.zeros((regMat.shape[0],1))))
+        # dataVec = np.concatenate((magVec, np.zeros((regMat.shape[0],1))))
         dataVec = np.concatenate((magVec, np.zeros(regMat.shape[0])))
 
     # Calculate SVD
-    print(f'\n  Calculating SVD of a [{sysMat.shape[0]},{sysMat.shape[1]}] ' \
-        'matrix ... ')
+    print(
+        f"\n  Calculating SVD of a [{sysMat.shape[0]},{sysMat.shape[1]}] " "matrix ... "
+    )
     #####works for 3x3 matrix, check what input matrix is and check again####
     svdU, svdS, svdVh = np.linalg.svd(sysMat, full_matrices=False)
     print(svdU)
     svdV = svdVh.T
-    #svdS = np.diag(svdS)
-    print('done\n')
+    # svdS = np.diag(svdS)
+    print("done\n")
 
     # Calculate the inverse matrix
     lkmS = len(svdS)
     slim = epsSVD * svdS[0]
-    ss = 1./svdS
+    ss = 1.0 / svdS
     ind = np.nonzero(svdS <= slim)
     ss[ind] = 0
 
-    print(f'epsilon = {epsSVD}, singular values range from {svdS[0]} to ' \
-        f'{svdS[lkmS - 1]} \n')
-    print(f'--> {len(ind)} values smaller than {slim} deleted (of {lkmS} ' \
-        'values)\n\n')
+    print(
+        f"epsilon = {epsSVD}, singular values range from {svdS[0]} to "
+        f"{svdS[lkmS - 1]} \n"
+    )
+    print(
+        f"--> {len(ind)} values smaller than {slim} deleted (of {lkmS} " "values)\n\n"
+    )
 
     # Calculate the result vector
     resultVec = svdU.conj().T @ dataVec
@@ -188,8 +194,6 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
     resultVec = svdV @ resultVec
 
     return resultVec
-
-
 
 
 def sub_LonInterp(lat, lon, intLat, method, ekstra=np.nan):
@@ -208,7 +212,7 @@ def sub_LonInterp(lat, lon, intLat, method, ekstra=np.nan):
     Returns
     -------
     intLon : array
-        Interpolated longitudes at latitudes intLat [degree], 
+        Interpolated longitudes at latitudes intLat [degree],
         NOTE: -180 <= intlon <= 180
     """
 
@@ -216,10 +220,8 @@ def sub_LonInterp(lat, lon, intLat, method, ekstra=np.nan):
 
     #### check if this is always used with extrapolation
     # interpolate sin and cos
-    fC = interp1d(lat, np.cos(phi), kind=method,
-                  fill_value=ekstra, bounds_error=False)
-    fS = interp1d(lat, np.sin(phi), kind=method,
-                  fill_value=ekstra, bounds_error=False)
+    fC = interp1d(lat, np.cos(phi), kind=method, fill_value=ekstra, bounds_error=False)
+    fS = interp1d(lat, np.sin(phi), kind=method, fill_value=ekstra, bounds_error=False)
 
     intC = fC(intLat)
     intS = fS(intLat)
@@ -229,7 +231,6 @@ def sub_LonInterp(lat, lon, intLat, method, ekstra=np.nan):
     intLon = np.degrees(np.arctan2(intS, intC))
 
     return intLon
-
 
 
 def sub_Swarm_grids_1D(lat1, lat2, Dlat1D, ExtLat1D):
@@ -242,7 +243,7 @@ def sub_Swarm_grids_1D(lat1, lat2, Dlat1D, ExtLat1D):
     Dlat1D : int or float
         1D grid spacing in latitudinal direction, [degree]
     ExtLat1D : int or float
-        Number of points to extend the 1D grid outside data area in latitudinal 
+        Number of points to extend the 1D grid outside data area in latitudinal
         direction
 
     Returns
@@ -254,8 +255,8 @@ def sub_Swarm_grids_1D(lat1, lat2, Dlat1D, ExtLat1D):
     """
 
     ###### not really needed?#################################################
-    #lat1D = np.nan
-    #mat1Dsecond = np.nan
+    # lat1D = np.nan
+    # mat1Dsecond = np.nan
 
     # Latitudinal extent of the satellite data, only that part where there is
     # data from both satellites.
@@ -264,8 +265,9 @@ def sub_Swarm_grids_1D(lat1, lat2, Dlat1D, ExtLat1D):
 
     # Create 1D grid.
     # Limit grid to latitudes -89 < lat2Dsecs < 89.
-    lat1D = np.arange(minlat - ExtLat1D * Dlat1D,
-                      maxlat + (ExtLat1D + 1) * Dlat1D, Dlat1D)
+    lat1D = np.arange(
+        minlat - ExtLat1D * Dlat1D, maxlat + (ExtLat1D + 1) * Dlat1D, Dlat1D
+    )
     ind = np.nonzero((lat1D > -89) & (lat1D < 89))
     lat1D = lat1D[ind]
 
@@ -277,8 +279,6 @@ def sub_Swarm_grids_1D(lat1, lat2, Dlat1D, ExtLat1D):
     mat1Dsecond = mat1Dsecond[1:-1, :] / Dlat1D**2
 
     return lat1D, mat1Dsecond
-
-
 
 
 def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D):
@@ -293,10 +293,10 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
     Dlat2D : float
         2D grid spacing in latitudinal direction, [degree]
     LonRatio : float
-        Ratio between the the satellite separation and longitudinal spacing of 
+        Ratio between the the satellite separation and longitudinal spacing of
         the 2D grid, lonRatio=mean(lon1,lon2)/dlon at each latitude separately
     ExtLat2D, ExtLon2D : int
-        Number of points to extend the 2D grid outside data area in latitudinal 
+        Number of points to extend the 2D grid outside data area in latitudinal
         and longitudinal directions
 
     Returns
@@ -304,7 +304,7 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
     lat2D, lon2D : ndarray
         Geographic latitudes and longitudes of the 2D grid
     angle2D : ndarray
-         Half-angle of such a spherical cap that has same area as the 2D grid 
+         Half-angle of such a spherical cap that has same area as the 2D grid
          cell [radian]
     dLon2D : ndarray
         _description_
@@ -312,14 +312,14 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
         2D second gradient matrix in latitude
     _type_
         _description_
-    """    
+    """
 
     ### not needed?
-    #lat2D = np.nan
-    #lon2D = np.nan
-    #angle2D = np.nan
-    #dLon2D = np.nan
-    #mat2DsecondLat = np.nan
+    # lat2D = np.nan
+    # lon2D = np.nan
+    # angle2D = np.nan
+    # dLon2D = np.nan
+    # mat2DsecondLat = np.nan
 
     # Latitudinal extent of the satellite data, only that part where there is
     # data from both satellites.
@@ -328,18 +328,18 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
 
     # Average satellite path, and the satellite spacing in longitudinal direction.
     ind1 = np.nonzero((lat1 >= minlat) & (lat1 <= maxlat))
-    #ind2 = np.nonzero((lat2 >= minlat) & (lat2 <= maxlat)) ## not used
+    # ind2 = np.nonzero((lat2 >= minlat) & (lat2 <= maxlat)) ## not used
     latA = lat1[ind1]
-    lonEro = sub_LonInterp(
-        lat2, lon2, lat1[ind1], 'linear', 'extrapolate') - lon1[ind1]
+    lonEro = sub_LonInterp(lat2, lon2, lat1[ind1], "linear", "extrapolate") - lon1[ind1]
     lonEro[lonEro > 180] -= 360
     lonEro[lonEro < -180] += 360
-    lonA = lon1[ind1] + lonEro/2
+    lonA = lon1[ind1] + lonEro / 2
 
     # Latitudes of the 2D grid.
     # Limit grids to latitudes -89 < lat2Dsecs < 89.
-    apulat = np.arange((minlat - ExtLat2D * Dlat2D),
-                       (maxlat + (ExtLat2D + 1) * Dlat2D), Dlat2D)
+    apulat = np.arange(
+        (minlat - ExtLat2D * Dlat2D), (maxlat + (ExtLat2D + 1) * Dlat2D), Dlat2D
+    )
     ind = np.nonzero((apulat > -89) & (apulat < 89))
     apulat = apulat[ind]
 
@@ -359,25 +359,33 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
 
         # Average satellite longitude at this latitude, and the
         # grid spacing in longitudinal direction
-        apulona = sub_LonInterp(latA, lonA, apulat[n], 'linear', 'extrapolate')
+        apulona = sub_LonInterp(latA, lonA, apulat[n], "linear", "extrapolate")
 
         # check interpolation
-        apuf = interp1d(latA, lonEro, kind='linear', fill_value="extrapolate")
+        apuf = interp1d(latA, lonEro, kind="linear", fill_value="extrapolate")
         apulonero = apuf(apulat[n])
-        #apulonero = interp1(latA,lonEro,apulat[n],'linear','extrap')
+        # apulonero = interp1(latA,lonEro,apulat[n],'linear','extrap')
 
-        Dlon = np.abs(apulonero)/LonRatio
+        Dlon = np.abs(apulonero) / LonRatio
 
         # 2D longitudes at this latitude
-        lon2D[n, :] = apulona + np.arange(-(Nlon-1)/2., (Nlon-1)/2. + 1.) * Dlon
+        lon2D[n, :] = (
+            apulona + np.arange(-(Nlon - 1) / 2.0, (Nlon - 1) / 2.0 + 1.0) * Dlon
+        )
         dLon2D[n, :] = Dlon
 
         # Half-angle of such a spherical cap that has same area as the 2D grid
         # cells at this latitude
         theta = np.radians(90 - apulat[n])
         angle2D[n, :] = np.arccos(
-            1 - Dlon/360 * (np.cos(theta - Dlat2D/360 * np.pi) - 
-            np.cos(theta + Dlat2D/360 * np.pi)))
+            1
+            - Dlon
+            / 360
+            * (
+                np.cos(theta - Dlat2D / 360 * np.pi)
+                - np.cos(theta + Dlat2D / 360 * np.pi)
+            )
+        )
 
     # Make 2D second gradient matrix in latitude.
     # NOTE: it might be more accurate to make the gradient matric in along-track direction, not latitude.
@@ -395,12 +403,13 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
     for n in range(Nlon):
         i1 = np.arange(Nlat - 2) + (n - 1) * (Nlat - 2)
         i2 = np.arange(Nlat) + (n - 1) * Nlat
-        i1, i2 = np.ix_(i1,i2)
+        i1, i2 = np.ix_(i1, i2)
         mat2DsecondLat[i1, i2] = apumat
 
     return lat2D, lon2D, angle2D, dLon2D, mat2DsecondLat
 
-def get_eq(ds,QD_filter_max=60):
+
+def get_eq(ds, QD_filter_max=60):
     """Splits data into a list of pieces suitable for DSECS analysis latitude.
 
     Parameters
@@ -415,23 +424,34 @@ def get_eq(ds,QD_filter_max=60):
     _type_
         _description_
     """
-    #mask= (np.abs(ds.QDLat) > QD_filter_max) | (np.abs(ds.QDLat) < QD_filter_min)
+    # mask= (np.abs(ds.QDLat) > QD_filter_max) | (np.abs(ds.QDLat) < QD_filter_min)
     mask = np.abs(ds.QDLat) > QD_filter_max
 
-    #ovals=np.ma.flatnotmasked_contiguous(np.ma.masked_array(mask,mask=mask))
-    #return ovals,ds
-    ovals=np.ma.flatnotmasked_contiguous(np.ma.masked_array(mask,mask=mask))
-    #return ovals,ds
+    # ovals=np.ma.flatnotmasked_contiguous(np.ma.masked_array(mask,mask=mask))
+    # return ovals,ds
+    ovals = np.ma.flatnotmasked_contiguous(np.ma.masked_array(mask, mask=mask))
+    # return ovals,ds
     out = []
     for d in ovals:
         out.append(ds.isel(Timestamp=d))
-        out[-1]=out[-1].assign(unit_B_NEC_Model=_normalizev(out[-1]['B_NEC_Model']))
-        out[-1]=out[-1].assign({'B_parallel': ('Timestamp',np.einsum('ij,ij->i',out[-1]['B_NEC']-out[-1]['B_NEC_Model'],
-        out[-1]['unit_B_NEC_Model']))})
+        out[-1] = out[-1].assign(unit_B_NEC_Model=_normalizev(out[-1]["B_NEC_Model"]))
+        out[-1] = out[-1].assign(
+            {
+                "B_parallel": (
+                    "Timestamp",
+                    np.einsum(
+                        "ij,ij->i",
+                        out[-1]["B_NEC"] - out[-1]["B_NEC_Model"],
+                        out[-1]["unit_B_NEC_Model"],
+                    ),
+                )
+            }
+        )
     return out
 
+
 def _normalizev(v):
-    """ Creates an unit vector.
+    """Creates an unit vector.
 
     Parameters
     ----------
@@ -443,4 +463,4 @@ def _normalizev(v):
     _type_
         _description_
     """
-    return (v.T / np.linalg.norm(v,axis=1)).T 
+    return (v.T / np.linalg.norm(v, axis=1)).T
