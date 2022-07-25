@@ -156,7 +156,7 @@ class ExternalData:
         "model": "",
         "auxiliaries": list(),
         "sampling_step": None,
-        "pad_times": None
+        "pad_times": None,
     }
 
     def __init__(
