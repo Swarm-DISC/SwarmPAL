@@ -116,6 +116,8 @@ class ExternalData:
         VirES-compatible model specification. Defaults to "CHAOS" (i.e. full CHAOS model)
     start_time : str | datetime
     end_time : str | datetime
+    pad_times: list[datetime.timedelta]
+        Extend the requested time window by these two amounts
     source : str
         Defaults to "vires" (only one possible currently)
     parameters : dict
@@ -154,6 +156,7 @@ class ExternalData:
         "model": "",
         "auxiliaries": list(),
         "sampling_step": None,
+        "pad_times": None
     }
 
     def __init__(
@@ -162,6 +165,7 @@ class ExternalData:
         model: str,
         start_time: str | datetime,
         end_time: str | datetime,
+        pad_times: list[datetime.timedelta] | None = None,
         source: str = "vires",
         parameters: dict | None = None,
         viresclient_kwargs: dict | None = None,
@@ -174,7 +178,18 @@ class ExternalData:
             """
             )
             raise ValueError(message)
+        if isinstance(start_time, str):
+            start_time = datetime.fromisoformat(start_time)
+            end_time = datetime.fromisoformat(end_time)
+        self.analysis_window = [start_time, end_time]
+        # Preferentially use the currently set pad_times, else use the default
+        pad_times = pad_times if pad_times else self._default_pad_times()
+        # Extend the requested time period according to pad_times
+        if pad_times:
+            start_time = start_time - pad_times[0]
+            end_time = end_time + pad_times[1]
         # Prepare access to external data source given
+        # TODO: move to a seperate retrieve_data method
         if source == "vires":
             default_parameters = self._prepare_parameters(
                 collection=collection, model=model
@@ -193,6 +208,10 @@ class ExternalData:
         return cls.COLLECTIONS
 
     @classmethod
+    def _default_pad_times(cls) -> list[datetime.timedelta] | None:
+        return cls.DEFAULTS["pad_times"]
+
+    @classmethod
     def _prepare_parameters(cls, collection: str = None, model: str = None) -> dict:
         """Return parameters compatible with ViresDataFetcher"""
         model = cls.DEFAULTS["model"] if model is None else model
@@ -204,6 +223,14 @@ class ExternalData:
             "auxiliaries": cls.DEFAULTS["auxiliaries"],
             "sampling_step": cls.DEFAULTS["sampling_step"],
         }
+
+    @property
+    def analysis_window(self) -> list[datetime]:
+        return self._analysis_window
+
+    @analysis_window.setter
+    def analysis_window(self, time_pair: list[datetime]):
+        self._analysis_window = time_pair
 
     @property
     def xarray(self) -> Dataset:
