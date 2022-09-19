@@ -1,32 +1,33 @@
 import numpy as np
-###import tools
+from swarmx.toolboxes.secs.dsecs_algorithms import SECS_1D_DivFree_magnetic, SECS_1D_DivFree_vector
+from swarmx.toolboxes.secs.aux_tools import sub_Swarm_grids_1D, sub_inversion
 
 def SwarmMag2J_test_fit_1D_DivFree(SwA,SwC,result):
 
     #extract radii of the Earth and ionospheric current layer
-    Re = result["Re"]
+    #Re = result["Re"] ###not used?
     Ri = result["Ri"]
 
+    ###check dimensions, row or column vector??
     #Combine data from the two satellites.
-    ###add .values.flatten() if we use xarray
-    latB = np.vstack(SwA["magLat"].flatten(), SwC["magLat"].flatten())
-    rB = np.vstack(SwA["r"].flatten(), SwC["r"].flatten())
+    latB = np.hstack((SwA["magLat"].data.flatten(), SwC["magLat"].data.flatten()))
+    rB = np.hstack((SwA["Radius"].data.flatten(), SwC["Radius"].data.flatten()))
 
     #Fit is done to the parallel magnetic disturbance.
-    uvR = np.vstack(SwA["UvR"].flatten(), SwC["UvR"].flatten())
-    uvT = np.vstack(SwA["magUvT"].flatten(), SwC["magUvT"].flatten())
-    Bpara = np.vstack(SwA["Bpara"].flatten(), SwC["Bpara"].flatten())
+    uvR = np.hstack((SwA["UvR"].data.flatten(), SwC["UvR"].data.flatten()))[:,np.newaxis]
+    uvT = np.hstack((SwA["magUvT"].data.flatten(), SwC["magUvT"].data.flatten()))[:,np.newaxis]
+    Bpara = np.hstack((SwA["Bpara"].data.flatten(), SwC["Bpara"].data.flatten()))
 
     #Calculate 1D SECS grid in a separate sub-function
     Dlat1D = 0.5    #latitude spacing [degree]
     ExtLat1D = 5    #Number of points to extend outside the data range
-    lat1D, mat1Dsecond = sub_Swarm_grids_1D(SwA["magLat"],SwC["magLat"],Dlat1D,ExtLat1D)
+    lat1D, mat1Dsecond = sub_Swarm_grids_1D(SwA["magLat"].data,SwC["magLat"].data,Dlat1D,ExtLat1D)
     lat1D = lat1D.flatten()
     N1d = len(lat1D)
 
     #Calculate B-matrices that give magnetic field from SECS amplitudes and form the field-aligned matrix.
     matBr, matBt = SECS_1D_DivFree_magnetic(latB,lat1D,rB,Ri,500)
-    matBpara = rnp.tile(uvR,(1,N1d)) * matBr + np.tile(uvT,(1,N1d)) * matBt
+    matBpara = np.tile(uvR,(1,N1d)) * matBr + np.tile(uvT,(1,N1d)) * matBt
 
     #Fit the 1D DF SECS to the field-aligned magnetic disturbance.
     #Use zero constraint on the 2nd latitudinal derivative.
@@ -42,7 +43,7 @@ def SwarmMag2J_test_fit_1D_DivFree(SwA,SwC,result):
     result["df1dMagJt"] = np.zeros(np.shape(result["magLat"]))
 
     #Calculate the magnetic field produced by the 1D DF SECS.
-    Na = len(SwA["magLat"].flatten())
+    Na = np.size(SwA["magLat"])
     sizeA = np.shape(SwA["magLat"])
     sizeC = np.shape(SwC["magLat"])
     apu = matBr @ Idf
