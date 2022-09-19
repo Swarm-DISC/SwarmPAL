@@ -2,6 +2,7 @@ import numpy as np
 import datetime as dt
 from swarmx.toolboxes.secs import SecsInputs
 from swarmx.toolboxes.secs.aux_tools import sub_Swarm_grids,sph2sph,sub_FindLongestNonZero
+from sub_fit_1D_DivFree import SwarmMag2J_test_fit_1D_DivFree
 import xarray as xr
 
 def sub_load_real_data(result):
@@ -44,7 +45,7 @@ def sub_load_real_data(result):
 
     ###result should also be xarray
     ###check with Heikki, sub_Swarm_grids from sub_Swarm_grids_2D.m returns more than 2 things
-    result_ggLat,result_ggLon,_,_,_ = sub_Swarm_grids(lat1,lon1,lat2,lon2,DlatOut,LonRatioOut,ExtLatOut,ExtLonOut)
+    result["ggLat"],result["ggLon"],_,_,_ = sub_Swarm_grids(lat1,lon1,lat2,lon2,DlatOut,LonRatioOut,ExtLatOut,ExtLonOut)
     #Transpose into [Nlon,Nlat] matrices
     ### need to add this to dataarray somehow
     result["ggLat"] = np.transpose(result["ggLat"])
@@ -109,8 +110,8 @@ def sub_FindPole(SwA,result):
 
 def sub_rotate(result,model,SwA,SwC,suunta):
 
-    latP = result["PoleLat"].data
-    lonP = result["PoleLon"].data
+    latP = result["PoleLat"]
+    lonP = result["PoleLon"]
 
     if suunta == 'geo2mag':
         #Rotate input coordinates and horizontal part of input vectors to the local dipole system.
@@ -188,7 +189,8 @@ def sub_rotate(result,model,SwA,SwC,suunta):
 
 def Swarm_B2J_real_analyze():
 
-    result = xr.DataArray()
+    #result = xr.DataArray()
+    result = {}
     #result["Event"] = eventti
 
     ###get input from SecsInputs
@@ -222,4 +224,6 @@ def Swarm_B2J_real_analyze():
     result,_,SwA,SwC = sub_rotate(result,[],SwA,SwC,'geo2mag')
 
     #Fit 1D DF SECS
-    #SwA,SwC,result = SwarmMag2J_test_fit_1D_DivFree(SwA,SwC,result)
+    SwA,SwC,result = SwarmMag2J_test_fit_1D_DivFree(SwA,SwC,result)
+
+Swarm_B2J_real_analyze()
