@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 import numpy as np
 import datetime as dt
 from swarmx.toolboxes.secs import SecsInputs
@@ -44,6 +45,60 @@ def analyze(dataA,dataC):
     return
 
 
+def getUnitVectors(SwA,SwC):
+    
+    #Geographical components of unit vector in the main field direction
+    ### from sub_ReadMagDataLR, check again model and signs
+    tmp = np.sqrt(SwA["B_NEC_Model"].sel(NEC='N')**2 + SwA["B_NEC_Model"].sel(NEC='E')**2 + SwA["B_NEC_Model"].sel(NEC='C')**2)
+    SwA["ggUvT"] = -SwA["B_NEC_Model"].sel(NEC='N') / tmp  #south
+    SwA["ggUvP"] = SwA["B_NEC_Model"].sel(NEC='E') / tmp   #east
+    SwA["UvR"] = -SwA["B_NEC_Model"].sel(NEC='C') / tmp    #radial
+
+    tmp = np.sqrt(SwC["B_NEC_Model"].sel(NEC='N')**2 + SwC["B_NEC_Model"].sel(NEC='E')**2 + SwC["B_NEC_Model"].sel(NEC='C')**2)
+    SwC["ggUvT"] = -SwC["B_NEC_Model"].sel(NEC='N') / tmp  #south
+    SwC["ggUvP"] = SwC["B_NEC_Model"].sel(NEC='E') / tmp   #east
+    SwC["UvR"] = -SwC["B_NEC_Model"].sel(NEC='C') / tmp    #radial
+
+    return SwA, SwC
+
+def define_grid(SwA,SwC,dlat=0.5,lonratio=2,ExtLatOut=0,ExtLonOut=3):
+
+        #Define the output grid.
+    DlatOut = dlat      #resolution in latitude
+    LonRatioOut = lonratio     #ratio (satellite separation)/(grid resolution) in longitude
+    ExtLatOut = ExtLatOut       #Number of points to extend outside satellite data area in latitude
+    ExtLonOut = ExtLonOut       #Number of points to extend outside satellite data area in longitude
+
+    #Make grid around [-X,X] latitudes
+    limitOutputLat = 40
+    ind = np.nonzero(abs(SwA["Latitude"].data) <= limitOutputLat)
+    lat1 = SwA["Latitude"].data[ind]
+    lon1 = SwA["Longitude"].data[ind]
+    ind = np.nonzero(abs(SwC["Latitude"].data) <= limitOutputLat)
+    lat2 = SwC["Latitude"].data[ind]
+    lon2 = SwC["Longitude"].data[ind]
+
+    ###result should also be xarray
+    ###check with Heikki, sub_Swarm_grids from sub_Swarm_grids_2D.m returns more than 2 things
+    gridlat,gridlon,_,_ = sub_Swarm_grids(lat1,lon1,lat2,lon2,DlatOut,LonRatioOut,ExtLatOut,ExtLonOut)
+    #Transpose into [Nlon,Nlat] matrices
+    ### need to add this to dataarray somehow
+    
+    return gridlat.T, gridlon.T
+
+@dataclass
+class dsecs:
+    """Class to keep track of dsecs snalysis results and grids"""
+    ggLat: np.ndarray = field(init=False)
+    ggLon: np.ndarray = field(init=False)
+    Re: float
+    Ri: float
+    PoleLat: float = field(init=False)
+    PoleLon: float = field(init=False)
+    DlatOut = float       #resolution in latitude
+    LonRatioOut = float     #ratio (satellite separation)/(grid resolution) in longitude
+    ExtLatOut = int       #Number of points to extend outside satellite data area in latitude
+    ExtLonOut = int 
 
 
 
@@ -96,7 +151,7 @@ def sub_load_real_data(result):
     return result, SwA, SwC
 
 
-def sub_FindPole(SwA,result):
+def sub_FindPole(SwA):
 
     #define search grid
     dlat = 0.5      #latitude step [degree]
@@ -142,15 +197,15 @@ def sub_FindPole(SwA,result):
 
     #Find pole location with minimum error
     ind = np.argmin(errMat)
-    result["PoleLat"] = latP[ind]
-    result["PoleLon"] = lonP[ind]
+    polelat = latP[ind]
+    polelon = lonP[ind]
     
     ###skipped plotting routine here (see sub_FindPole.m), also flattened latP,lonP and errMat
 
-    return result
+    return polelat,polelon
 
 
-def sub_rotate(result,model,SwA,SwC,suunta):
+def sub_rotate(result,SwA,SwC,suunta):
 
     latP = result["PoleLat"]
     lonP = result["PoleLon"]
@@ -226,7 +281,7 @@ def sub_rotate(result,model,SwA,SwC,suunta):
     else:
         raise ValueError('Direction must be either geo2mag or mag2geo.')
     
-    return result, model, SwA, SwC
+    return result, SwA, SwC
 
 
 def Swarm_B2J_real_analyze():
@@ -238,21 +293,13 @@ def Swarm_B2J_real_analyze():
     ###get input from SecsInputs
     result, SwA, SwC = sub_load_real_data(result)
 
-    #Geographical components of unit vector in the main field direction
-    ### from sub_ReadMagDataLR, check again model and signs
-    tmp = np.sqrt(SwA["B_NEC_Model"].sel(NEC='N')**2 + SwA["B_NEC_Model"].sel(NEC='E')**2 + SwA["B_NEC_Model"].sel(NEC='C')**2)
-    SwA["ggUvT"] = -SwA["B_NEC_Model"].sel(NEC='N') / tmp  #south
-    SwA["ggUvP"] = SwA["B_NEC_Model"].sel(NEC='E') / tmp   #east
-    SwA["UvR"] = -SwA["B_NEC_Model"].sel(NEC='C') / tmp    #radial
 
-    tmp = np.sqrt(SwC["B_NEC_Model"].sel(NEC='N')**2 + SwC["B_NEC_Model"].sel(NEC='E')**2 + SwC["B_NEC_Model"].sel(NEC='C')**2)
-    SwC["ggUvT"] = -SwC["B_NEC_Model"].sel(NEC='N') / tmp  #south
-    SwC["ggUvP"] = SwC["B_NEC_Model"].sel(NEC='E') / tmp   #east
-    SwC["UvR"] = -SwC["B_NEC_Model"].sel(NEC='C') / tmp    #radial
 
     #Calculate field-aligned magnetic field disturbances by taking the dot product between the measured
     #magnetic disturnabce and the unit vector along the main field. It is needed in fitting the DF SECS.
     ### check that NEC are right here
+
+    ##CHECK DIRECTION OF THETA, R, PHI
     SwA["Bpara"] = SwA["UvR"] * SwA["B_NEC"].sel(NEC='C') + SwA["ggUvT"] * SwA["B_NEC"].sel(NEC='N') + SwA["ggUvP"] * SwA["B_NEC"].sel(NEC='E')
     SwC["Bpara"] = SwC["UvR"] * SwC["B_NEC"].sel(NEC='C') + SwC["ggUvT"] * SwC["B_NEC"].sel(NEC='N') + SwC["ggUvP"] * SwC["B_NEC"].sel(NEC='E')
     #SwA["Bpara"] = SwA["UvR"] * SwA["Br"] + SwA["ggUvT"] * SwA["ggBt"] + SwA["ggUvP"] * SwA["ggBp"]
