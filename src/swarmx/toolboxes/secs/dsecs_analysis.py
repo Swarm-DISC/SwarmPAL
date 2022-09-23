@@ -61,9 +61,9 @@ def getUnitVectors(SwA,SwC):
 
     return SwA, SwC
 
-def define_grid(SwA,SwC,dlat=0.5,lonratio=2,ExtLatOut=0,ExtLonOut=3):
+def get_grid(lat1,lon1,lat2,lon2,):
 
-        #Define the output grid.
+    #Define the output grid.
     DlatOut = dlat      #resolution in latitude
     LonRatioOut = lonratio     #ratio (satellite separation)/(grid resolution) in longitude
     ExtLatOut = ExtLatOut       #Number of points to extend outside satellite data area in latitude
@@ -87,19 +87,68 @@ def define_grid(SwA,SwC,dlat=0.5,lonratio=2,ExtLatOut=0,ExtLonOut=3):
     return gridlat.T, gridlon.T
 
 @dataclass
-class dsecs:
-    """Class to keep track of dsecs snalysis results and grids"""
+class dsecsgrid:
+    """
+    
+    """
     ggLat: np.ndarray = field(init=False)
     ggLon: np.ndarray = field(init=False)
-    Re: float
-    Ri: float
-    PoleLat: float = field(init=False)
-    PoleLon: float = field(init=False)
-    DlatOut = float       #resolution in latitude
-    LonRatioOut = float     #ratio (satellite separation)/(grid resolution) in longitude
-    ExtLatOut = int       #Number of points to extend outside satellite data area in latitude
-    ExtLonOut = int 
+    magLat: np.ndarray = field(init=False)
+    magLon: np.ndarray = field(init=False)
+    Re: float = 6371
+    Ri: float = 6371 + 130
+    poleLat: float = field(init=False)
+    poleLon: float = field(init=False)
+    dlatOut = float = 0.5       #resolution in latitude
+    lonRatioOut = float = 2     #ratio (satellite separation)/(grid resolution) in longitude
+    extLatOut = int = 0      #Number of points to extend outside satellite data area in latitude
+    extLonOut = int = 3
 
+    def create(self,SwA,SwC):
+        """
+        Parameters
+        ----------
+        SwA : _type_
+            _description_
+        SwC : _type_
+            _description_
+
+        Returns
+        -------
+        _type_
+            _description_
+
+        Raises
+        ------
+        ValueError
+            _description_
+        """
+        self.poleLat,self.poleLon = _sub_FindPole(SwA)
+        #Make grid around [-X,X] latitudes
+        limitOutputLat = 40
+        ind = np.nonzero(abs(SwA["Latitude"].data) <= limitOutputLat)
+        lat1 = SwA["Latitude"].data[ind]
+        lon1 = SwA["Longitude"].data[ind]
+        ind = np.nonzero(abs(SwC["Latitude"].data) <= limitOutputLat)
+        lat2 = SwC["Latitude"].data[ind]
+        lon2 = SwC["Longitude"].data[ind]
+
+        ###result should also be xarray
+        ###check with Heikki, sub_Swarm_grids from sub_Swarm_grids_2D.m returns more than 2 things
+        self.ggLat,self.ggLon,_,_ ,_= sub_Swarm_grids(lat1,lon1,lat2,lon2,
+        self.dlatOut,self.lonRatioOut,self.extLatOut,self.extLonOut)
+
+        self.magLat,self.magLon,_,_= sph2sph(self.poleLat,self.poleLon,self.ggLat,self.ggLon,[],[]) 
+        self.magLon = self.magLon % 360
+
+
+@dataclass
+class dsecsdata:
+    """
+    """
+
+
+    a: 0
 
 
 def sub_load_real_data(result):
@@ -151,7 +200,7 @@ def sub_load_real_data(result):
     return result, SwA, SwC
 
 
-def sub_FindPole(SwA):
+def _sub_FindPole(SwA):
 
     #define search grid
     dlat = 0.5      #latitude step [degree]
@@ -175,8 +224,9 @@ def sub_FindPole(SwA):
     for n in range(len(latP)):
     #Rotate the main field unit vector at Swarm-A measurement points to the system
     #whose pole is at (latP(n), lonP(n)).
-        lat,_,Bt,Bp = sph2sph(latP[n],lonP[n],SwA["Latitude"].data[indA],SwA["Longitude"].data[indA],SwA["ggUvT"].data[indA],SwA["ggUvP"].data[indA])
-        Br = SwA["UvR"]
+        lat,_,Bt,Bp = sph2sph(latP[n],lonP[n],SwA["Latitude"].data[indA],SwA["Longitude"].data[indA],
+        -SwA["unit_B_NEC_Model"][:,0].data[indA],SwA["unit_B_NEC_Model"][:,1].data[indA])
+        Br = -SwA["unit_B_NEC_Model"][:,2]
 
         #Remove points that are very close to this pole location (otherwise 1/sin is problematic)
         ind = np.nonzero(abs(lat) < 89.5)
@@ -202,7 +252,7 @@ def sub_FindPole(SwA):
     
     ###skipped plotting routine here (see sub_FindPole.m), also flattened latP,lonP and errMat
 
-    return polelat,polelon
+    return polelat, polelon
 
 
 def sub_rotate(result,SwA,SwC,suunta):
