@@ -2,7 +2,7 @@ from apexpy import Apex
 from numpy import cos, deg2rad, sin
 from pyproj import CRS, Transformer
 
-from swarmx.io import ExternalData
+from swarmpal.io import ExternalData
 
 
 class SecsInputSingleSat(ExternalData):

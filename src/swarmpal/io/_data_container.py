@@ -8,7 +8,7 @@ from textwrap import dedent
 
 from numpy import ndarray
 from viresclient import SwarmRequest
-from xarray import Dataset
+from xarray import Dataset, open_dataset
 
 __all__ = ("ViresDataFetcher", "ExternalData", "MagExternalData")
 
@@ -27,7 +27,7 @@ class ViresDataFetcher:
 
     Examples
     --------
-    >>> from swarmx.io import ViresDataFetcher
+    >>> from swarmpal.io import ViresDataFetcher
     >>> # Initialise request
     >>> v = ViresDataFetcher(
     >>>     parameters={
@@ -71,6 +71,9 @@ class ViresDataFetcher:
             "auxiliaries",
             "sampling_step",
             "models",
+            "start_time",
+            "end_time",
+            "kwargs",
         }
         if not isinstance(parameters, dict) or required_parameters != set(
             parameters.keys()
@@ -97,10 +100,12 @@ class ViresDataFetcher:
             sampling_step=sampling_step,
         )
 
-    def fetch_data(
-        self, start_time: str | datetime, end_time: str | datetime, **kwargs
-    ) -> Dataset:
-        data = self.vires.get_between(start_time, end_time, **kwargs)
+    def fetch_data(self) -> Dataset:
+        data = self.vires.get_between(
+            self.parameters.get("start_time"),
+            self.parameters.get("end_time"),
+            **self.parameters.get("kwargs"),
+        )
         ds = data.as_xarray()
         return ds
 
@@ -131,7 +136,7 @@ class ExternalData:
 
     Examples
     --------
-    >>> from swarmx.io import ExternalData
+    >>> from swarmpal.io import ExternalData
     >>> # Customise the class (if not using a subclass)
     >>> ExternalData.COLLECTIONS = [f"SW_OPER_MAG{x}_LR_1B" for x in "ABC"]
     >>> ExternalData.DEFAULTS["measurements"] = ["F", "B_NEC", "Flags_B"]
@@ -161,26 +166,22 @@ class ExternalData:
 
     def __init__(
         self,
-        collection: str,
-        model: str,
-        start_time: str | datetime,
-        end_time: str | datetime,
-        pad_times: list[datetime.timedelta] | None = None,
         source: str = "vires",
+        collection: str | None = None,
+        model: str | None = None,
+        start_time: str | datetime | None = None,
+        end_time: str | datetime | None = None,
+        pad_times: list[datetime.timedelta] | None = None,
         parameters: dict | None = None,
         viresclient_kwargs: dict | None = None,
+        initialise: bool = True,
     ) -> None:
         viresclient_kwargs = {} if viresclient_kwargs is None else viresclient_kwargs
-        if collection not in self._supported_collections():
-            message = dedent(
-                f"""Unsupported collection: {collection}
-            Choose from {self._supported_collections()}
-            """
-            )
-            raise ValueError(message)
+        # Convert to datetimes so that we can use timedelta given by pad_times
         if isinstance(start_time, str):
             start_time = datetime.fromisoformat(start_time)
             end_time = datetime.fromisoformat(end_time)
+        # Store the unpadded time window
         self.analysis_window = [start_time, end_time]
         # Preferentially use the currently set pad_times, else use the default
         pad_times = pad_times if pad_times else self._default_pad_times()
@@ -188,20 +189,32 @@ class ExternalData:
         if pad_times:
             start_time = start_time - pad_times[0]
             end_time = end_time + pad_times[1]
+        # Initialise the properties
+        self.xarray = None
+        self.source = source
         # Prepare access to external data source given
-        # TODO: move to a seperate retrieve_data method
-        if source == "vires":
+        if source in ("manual", "swarmpal_file"):
+            pass
+        elif source == "vires":
+            # Validate some inputs
+            if collection not in self._supported_collections():
+                message = dedent(
+                    f"""Unsupported collection: {collection}
+                Choose from {self._supported_collections()}
+                """
+                )
+                raise ValueError(message)
+            # Prepare the VirES Data Fetcher
             default_parameters = self._prepare_parameters(
                 collection=collection, model=model
             )
             parameters = default_parameters if parameters is None else parameters
+            parameters["start_time"] = start_time
+            parameters["end_time"] = end_time
+            parameters["kwargs"] = viresclient_kwargs
             self.fetcher = ViresDataFetcher(parameters=parameters)
-            # Fetch the data
-            self.xarray = self.fetcher.fetch_data(
-                start_time, end_time, **viresclient_kwargs
-            )
-        else:
-            raise NotImplementedError("Only the VirES source is configured")
+            if initialise:
+                self.initialise()
 
     @classmethod
     def _supported_collections(cls) -> list:
@@ -224,6 +237,19 @@ class ExternalData:
             "sampling_step": cls.DEFAULTS["sampling_step"],
         }
 
+    def source(self) -> str:
+        return self._source
+
+    @source.setter
+    def source(self, source):
+        allowed_sources = ("manual", "swarmpal_file", "vires")
+        if source in allowed_sources:
+            self._source = source
+        else:
+            raise ValueError(
+                f"Invalid source '{source}', must be one of: {allowed_sources}"
+            )
+
     @property
     def analysis_window(self) -> list[datetime]:
         return self._analysis_window
@@ -234,11 +260,31 @@ class ExternalData:
 
     @property
     def xarray(self) -> Dataset:
-        return self._xarray
+        if self._xarray:
+            return self._xarray
+        else:
+            raise AttributeError("xarray not set. Run .initialise() to fetch the data")
 
     @xarray.setter
-    def xarray(self, xarray_dataset: Dataset):
+    def xarray(self, xarray_dataset: Dataset | None):
         self._xarray = xarray_dataset
+
+    def initialise(self, xarray_or_file: Dataset | str | None = None):
+        """Load the data
+
+        Parameters
+        ----------
+        xarray_or_file : Dataset | str | None, optional
+            Optionally supply an xarray.Dataset or a file name, by default None
+        """
+        if xarray_or_file:
+            if isinstance(xarray_or_file, Dataset):
+                self.xarray = xarray_or_file.copy()
+            else:
+                self.xarray = open_dataset(xarray_or_file)
+        else:
+            # Fetch the data
+            self.xarray = self.fetcher.fetch_data()
 
     def get_array(self, variable: str) -> ndarray:
         """Extract numpy array from dataset"""
@@ -278,6 +324,10 @@ class ExternalData:
         if description:
             self.xarray[varname].attrs["description"] = description
         return self
+
+    def to_file(self, filepath):
+        """Save the current data to a file"""
+        self.xarray.to_netcdf(filepath)
 
 
 class MagExternalData(ExternalData):

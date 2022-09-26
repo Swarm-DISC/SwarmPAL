@@ -1,5 +1,5 @@
 
-swarmx
+swarmpal
 ======
 
 This project is in the early planning stage.
@@ -10,6 +10,12 @@ This project is in the early planning stage.
 
    introduction
    installation
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Shared components
+
+   toolboxes/shared/data_io
 
 .. toctree::
    :maxdepth: 2
