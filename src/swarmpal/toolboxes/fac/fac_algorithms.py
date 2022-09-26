@@ -1,7 +1,7 @@
 """Tools to evaluate FACs using the single-satellite method
 
 Given input containing magnetic field measurements and model predictions
-(from swarmx.io.MagData), compute the FACs
+(from swarmpal.io.MagData), compute the FACs
 
 Adapted from code by Ask Neve Gamby (https://github.com/Swarm-DISC/SwarmPyFAC)
 
@@ -26,7 +26,7 @@ from numpy import (
 from numpy.linalg import norm
 from scipy.interpolate import splev, splrep
 
-from swarmx.io import ExternalData
+from swarmpal.io import ExternalData
 
 MU_0 = 4.0 * pi * 10 ** (-7)
 
@@ -158,7 +158,7 @@ def fac_single_sat(fac_inputs, **kwargs):
 
     Examples
     --------
-    >>> from swarmx.toolboxes.fac import FacInputs, fac_single_sat
+    >>> from swarmpal.toolboxes.fac import FacInputs, fac_single_sat
     >>> fac_inputs = FacInputs(
     >>>     collection="SW_OPER_MAGA_LR_1B", model="IGRF"
     >>>     start_time="2022-01-01", end_time="2022-01-02"

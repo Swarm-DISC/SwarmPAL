@@ -1,5 +1,5 @@
 # Temporary environment configuration as a starting point
-name: swarmx
+name: swarmpal
 channels:
   - conda-forge
 dependencies:
@@ -27,7 +27,7 @@ dependencies:
   - sphinx-autobuild
   # Necessary for tqdm progress bars to work in vscode
   - ipywidgets
-  # Likely swarmx minimum dependencies
+  # Likely swarmpal minimum dependencies
   - cartopy=0.20.2
   - dask=2022.2.1
   - matplotlib=3.5.1

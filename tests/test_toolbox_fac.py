@@ -2,7 +2,7 @@ import datetime as dt
 
 import pytest
 
-from swarmx.toolboxes.fac import FacInputs, fac_single_sat
+from swarmpal.toolboxes.fac import FacInputs, fac_single_sat
 
 
 @pytest.mark.remote
