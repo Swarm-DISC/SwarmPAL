@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import scipy.interpolate as interpolate
 import scipy.signal as signal
-from scipy.fft import fft, ifft, rfft, rfftfreq
+from scipy.fft import fft, ifft
 
 R_E = 6371.2  # reference Earth radius in km
 
@@ -143,7 +143,7 @@ def constant_cadence(t_obs, x_obs, sampling_rate, interp=False):
         f = interpolate.interp1d(t_obs, x_obs, kind="linear", fill_value="extrapolate")
         x_int = f(t_rec)
 
-        # Numpy interpolation, without extrapolation of final value
+        # numpy interpolation, without extrapolation of final value
         # x_int = np.interp(t_rec, t_obs, x_obs)
 
         x_int[~nonnan_mask] = np.NaN
@@ -542,7 +542,7 @@ def morlet_wave(N=600, scale=1, dx=0.01, omega=6.203607835633639, roll=True, nor
     >>> # Test wavelet function's properties
     >>> print('Wavelet Integral = %f + i %f (should be zero)'%(np.trapz(np.real(m), dx=dx_wave), np.trapz(np.imag(m), dx=dx_wave)))
     >>> print('Sum of squares = %f (should be 1)'%np.sum(np.abs(m)**2))
-    >>> print('Sum of sqares of FFT = %f (should be N)'%np.sum(np.abs(fft(m, norm='backward'))**2))
+    >>> print('Sum of squares of FFT = %f (should be N)'%np.sum(np.abs(fft(m, norm='backward'))**2))
     """
 
     # omega=6.203607835633639 for scales == fourier_periods
@@ -690,7 +690,7 @@ def magn(X):
 def mfa(B_NEC, B_MEAN_NEC, R_NEC=None):
     """ """
 
-    # if no positional vector is given just asume the direction (0,0,-1) in NEC
+    # if no positional vector is given just assume the direction (0,0,-1) in NEC
     # coordinates, i.e. radial outwards (the magnitude is not necessary, only
     # the direction matters in order to compute its cross product with the mean
     # field component
