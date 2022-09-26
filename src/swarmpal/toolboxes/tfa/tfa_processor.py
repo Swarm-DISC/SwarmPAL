@@ -6,8 +6,8 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from swarmx.io import ExternalData
-from swarmx.toolboxes.tfa import tfalib
+from swarmpal.io import ExternalData
+from swarmpal.toolboxes.tfa import tfalib
 
 
 class TfaMagInputs(ExternalData):
