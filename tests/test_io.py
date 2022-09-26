@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from xarray import Dataset
 
-from swarmx.io import ExternalData, MagExternalData, ViresDataFetcher
+from swarmpal.io import ExternalData, MagExternalData, ViresDataFetcher
 
 
 @pytest.mark.remote

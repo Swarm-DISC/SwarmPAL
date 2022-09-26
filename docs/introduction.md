@@ -1,6 +1,6 @@
 # Introduction
 
-SwarmX is a Python package containing analysis and visualisation tools to interact with Swarm products. We rely on the VirES service (via [viresclient](https://viresclient.readthedocs.io/)) to provide access to data and models as well as frameworks from the Python ecosystem (e.g. Xarray) and specific utilities from the scientific community (e.g. apexpy).
+SwarmPAL is a Python package containing analysis and visualisation tools to interact with Swarm products. We rely on the VirES service (via [viresclient](https://viresclient.readthedocs.io/)) to provide access to data and models as well as frameworks from the Python ecosystem (e.g. Xarray) and specific utilities from the scientific community (e.g. apexpy).
 
 ![](https://mermaid.ink/img/pako:eNqFU9-L2zAM_leMH0bK2j7sMawHhZZxsO3KMsogyYNrq6mvsR0sO3flev_75PTX7caYIWDpkz5J_pQXLp0CnvPGi27Hvv6obGUZHYybk6t4Et78ytncivaAGtlP51o8BaWjtAcZtLND8sXbfyp7AlC2Gmyob4Bom15jNm8b53XYGfy88XdrjVG0GkXiwdFbGjaZ3B1XHibS2a1uogeVMrTtYsDjme6W0Am5LzG1_DzcRQN_FWez2WwAbwBIV5arQ9g5m9jJxAMGMHWd6v9RBay6vpHUCvosWz534ENKJA-NqzHgaMQm06F190jvw56c3x_fETVZVrhtoG5hqGobbQH8Nfeb0DbQl8B703nXw_Hc-DuRFiIINpcS8L_KrIsyW2u_LFgBvgefJ_YHC4z4VaROZ8yRFbQBhuA1DAoVcYPCdK22DfuQ6iKEQEbCvoAzorEQtGSGtqll0Is2DmIm_CN5PYwZTJspIxkfo5Unoeu3bQ1KD52lpPnq_sj6fyxRf9qKq16Kxg-HDmghVMzKxTA4i0jqJ_i7C7Bxbj9M8hB24C-7gfXoqiofcwPeCK3od3hJ7opTrIGK53RVsBWxDRWv7CuFxo6KwlLp4DzPt6JFGHMRgysOVvI8-AiXoIUWpJI5R73-BqYNJ6M)
 

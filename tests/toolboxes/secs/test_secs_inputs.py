@@ -3,7 +3,7 @@ import datetime as dt
 import pytest
 
 try:
-    from swarmx.toolboxes.secs import SecsInputs, SecsInputSingleSat
+    from swarmpal.toolboxes.secs import SecsInputs, SecsInputSingleSat
 except ImportError:
     pass
 

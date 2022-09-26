@@ -1,5 +1,5 @@
 
-swarmx
+swarmpal
 ======
 
 This project is in the early planning stage.

@@ -27,7 +27,7 @@ class ViresDataFetcher:
 
     Examples
     --------
-    >>> from swarmx.io import ViresDataFetcher
+    >>> from swarmpal.io import ViresDataFetcher
     >>> # Initialise request
     >>> v = ViresDataFetcher(
     >>>     parameters={
@@ -134,7 +134,7 @@ class ExternalData:
 
     Examples
     --------
-    >>> from swarmx.io import ExternalData
+    >>> from swarmpal.io import ExternalData
     >>> # Customise the class (if not using a subclass)
     >>> ExternalData.COLLECTIONS = [f"SW_OPER_MAG{x}_LR_1B" for x in "ABC"]
     >>> ExternalData.DEFAULTS["measurements"] = ["F", "B_NEC", "Flags_B"]

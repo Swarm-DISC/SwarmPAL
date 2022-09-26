@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 
 [project]
-name = "swarmx"
+name = "swarmpal"
 authors = [
     { name = "Ashley Smith", email = "ashley.smith@magneticearth.org" },
 ]
@@ -70,7 +70,7 @@ docs = [
 
 
 [project.urls]
-homepage = "https://github.com/Swarm-DISC/SwarmX"
+homepage = "https://github.com/Swarm-DISC/SwarmPAL"
 
 
 [tool.pytest.ini_options]
