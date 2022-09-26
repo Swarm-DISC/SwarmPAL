@@ -222,7 +222,7 @@ class ExternalData:
 
     @classmethod
     def _default_pad_times(cls) -> list[datetime.timedelta] | None:
-        return cls.DEFAULTS["pad_times"]
+        return cls.DEFAULTS.get("pad_times", None)
 
     @classmethod
     def _prepare_parameters(cls, collection: str = None, model: str = None) -> dict:
@@ -237,6 +237,7 @@ class ExternalData:
             "sampling_step": cls.DEFAULTS["sampling_step"],
         }
 
+    @property
     def source(self) -> str:
         return self._source
 
