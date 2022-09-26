@@ -16,7 +16,7 @@ def test_ViresDataFetcher():
         "sampling_step": "PT1M",
         "start_time": "2022-01-01T00:00:00",
         "end_time": "2022-01-01T00:01:00",
-        "kwargs": dict(asynchronous=False, show_progress=False)
+        "kwargs": dict(asynchronous=False, show_progress=False),
     }
     v = ViresDataFetcher(parameters=parameters)
     ds = v.fetch_data()
