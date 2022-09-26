@@ -1,6 +1,6 @@
 {
     "python.terminal.activateEnvInCurrentTerminal": true,
-    "python.pythonPath": "${env:CONDA_PREFIX}/envs/swarmx/bin/python",
+    "python.pythonPath": "${env:CONDA_PREFIX}/envs/swarmpal/bin/python",
     "python.testing.pytestArgs": [
         "tests"
     ],
@@ -10,4 +10,5 @@
         "*.ipynb": "jupyter.notebook.ipynb"
     },
     "python.linting.flake8Enabled": true,
+    "editor.rulers": [80,120]
 }

@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 
 [project]
-name = "swarmx"
+name = "swarmpal"
 authors = [
     { name = "Ashley Smith", email = "ashley.smith@magneticearth.org" },
 ]
@@ -16,18 +16,17 @@ license = { file = "LICENSE" }
 description = "Toolbox for ESA's Swarm mission"
 readme = "README.md"
 
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 
 classifiers = [
-    "License :: OSI Approved :: BSD License",
+    "License :: OSI Approved :: MIT License",
     "Topic :: Scientific/Engineering",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
-    "License :: OSI Approved :: BSD License",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -37,10 +36,21 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
-    "typing_extensions >=3.7; python_version<'3.8'",
+    "numpy >= 1.22",
+    "scipy >= 1.8",
+    "viresclient >= 0.10.1",
+    "xarray >= 0.21",
 ]
 
 [project.optional-dependencies]
+dsecs = [
+    "apexpy>=1.1.0",
+    "pyproj>=3",
+]
+dsecs_cp38_manylinux = [
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v1.1.0-binaries/apexpy-1.1.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "pyproj>=3"
+]
 test = [
     "pytest >=6",
 ]
@@ -49,14 +59,18 @@ dev = [
     "nox >=2022",
 ]
 docs = [
-    "Sphinx~=3.0",
-     "myst_parser>=0.13",
-    "sphinx-book-theme>=0.1.0",
-    "sphinx_copybutton",
+    "Sphinx==4.4",
+    "myst-parser==0.15.2",
+    "myst-nb==0.13.1",
+    "sphinx-book-theme==0.3.2",
+    "sphinx_copybutton==0.5.0",
+    "matplotlib==3.5.1",
+    "ipywidgets==7.7.0",
 ]
 
+
 [project.urls]
-homepage = "https://github.com/Swarm-DISC/SwarmX"
+homepage = "https://github.com/Swarm-DISC/SwarmPAL"
 
 
 [tool.pytest.ini_options]
@@ -67,6 +81,10 @@ filterwarnings = ["error"]
 testpaths = [
     "tests",
 ]
+markers = [
+    "remote",
+    "dsecs",
+]
 
 
 [tool.pycln]
@@ -75,22 +93,23 @@ all = true
 
 [tool.mypy]
 files = "src"
-python_version = "3.7"
+python_version = "3.8"
 warn_unused_configs = true
+ignore_missing_imports = true
 
-disallow_any_generics = true
-disallow_subclassing_any = true
-disallow_untyped_calls = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
 check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_return_any = true
-no_implicit_reexport = true
-strict_equality = true
+# disallow_incomplete_defs = true
+# disallow_any_generics = true
+# disallow_subclassing_any = true
+# disallow_untyped_calls = true
+# disallow_untyped_defs = true
+# disallow_untyped_decorators = true
+# no_implicit_optional = true
+# warn_redundant_casts = true
+# warn_unused_ignores = true
+# warn_return_any = true
+# no_implicit_reexport = true
+# strict_equality = true
 
 [tool.isort]
 profile = "black"

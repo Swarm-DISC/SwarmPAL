@@ -6,14 +6,26 @@
 
 from __future__ import annotations
 
+from os import getenv
+
+from viresclient import set_token
+
 # Warning: do not change the path here. To use autodoc, you need to install the
 # package first.
 
 # -- Project information -----------------------------------------------------
 
-project = "swarmx"
+project = "swarmpal"
 copyright = "2022, Ashley Smith"
 author = "Ashley Smith"
+
+
+# -- VirES access config -----------------------------------------------------
+# This environment variable is set in readthedocs so that the docs build there
+# is able to access VirES to run the notebook code used in the docs
+token = getenv("VIRES_TOKEN")
+if token:
+    set_token(url="https://vires.services/ows", token=token, set_default=True)
 
 
 # -- General configuration ---------------------------------------------------
@@ -22,11 +34,13 @@ author = "Ashley Smith"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "myst_parser",
+    # "myst_parser",  # broke when enabling this with myst_nb
+    "myst_nb",
     "sphinx.ext.autodoc",
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "sphinx_copybutton",
+    "sphinx.ext.viewcode",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -47,11 +61,11 @@ html_theme = "sphinx_book_theme"
 
 html_title = f"{project}"
 
-html_baseurl = "https://swarmx.readthedocs.io/en/latest/"
+html_baseurl = "https://swarmpal.readthedocs.io/en/latest/"
 
 html_theme_options = {
     "home_page_in_toc": True,
-    "repository_url": "https://github.com/Swarm-DISC/swarmx",
+    "repository_url": "https://github.com/Swarm-DISC/swarmpal",
     "use_repository_button": True,
     "use_issues_button": True,
     "use_edit_page_button": True,
@@ -61,3 +75,6 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path: list[str] = []
+
+# Fix https://github.com/executablebooks/sphinx-book-theme/issues/105
+html_sourcelink_suffix = ""

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import swarmx as m
+import swarmpal as m
 
 
 def test_version():

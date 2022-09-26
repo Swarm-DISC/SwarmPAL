@@ -1,24 +1,31 @@
 
-Welcome to documentation!
-=========================
+swarmpal
+======
 
-
-Introduction
-------------
-
-This should be updated!
+This project is in the early planning stage.
 
 .. toctree::
    :maxdepth: 2
-   :titlesonly:
-   :caption: Contents
-   :glob:
+   :caption: Getting started
 
+   introduction
+   installation
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Shared components
 
-Indices and tables
-==================
+   toolboxes/shared/data_io
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. toctree::
+   :maxdepth: 2
+   :caption: Toolbox guides
+
+   toolboxes/fac/using_fac
+   toolboxes/secs/using_secs
+
+.. toctree::
+  :maxdepth: 2
+  :caption: API
+
+  api
