@@ -121,6 +121,8 @@ class ExternalData:
         VirES-compatible model specification. Defaults to "CHAOS" (i.e. full CHAOS model)
     start_time : str | datetime
     end_time : str | datetime
+    pad_times: list[datetime.timedelta]
+        Extend the requested time window by these two amounts
     source : str
         Defaults to "vires" (only one possible currently)
     parameters : dict
@@ -159,6 +161,7 @@ class ExternalData:
         "model": "",
         "auxiliaries": list(),
         "sampling_step": None,
+        "pad_times": None,
     }
 
     def __init__(
@@ -168,13 +171,28 @@ class ExternalData:
         model: str | None = None,
         start_time: str | datetime | None = None,
         end_time: str | datetime | None = None,
+        pad_times: list[datetime.timedelta] | None = None,
         parameters: dict | None = None,
         viresclient_kwargs: dict | None = None,
         initialise: bool = True,
     ) -> None:
         viresclient_kwargs = {} if viresclient_kwargs is None else viresclient_kwargs
+        # Convert to datetimes so that we can use timedelta given by pad_times
+        if isinstance(start_time, str):
+            start_time = datetime.fromisoformat(start_time)
+            end_time = datetime.fromisoformat(end_time)
+        # Store the unpadded time window
+        self.analysis_window = [start_time, end_time]
+        # Preferentially use the currently set pad_times, else use the default
+        pad_times = pad_times if pad_times else self._default_pad_times()
+        # Extend the requested time period according to pad_times
+        if pad_times:
+            start_time = start_time - pad_times[0]
+            end_time = end_time + pad_times[1]
+        # Initialise the properties
         self.xarray = None
         self.source = source
+        self.magnetic_model_name = model
         # Prepare access to external data source given
         if source in ("manual", "swarmpal_file"):
             pass
@@ -204,6 +222,10 @@ class ExternalData:
         return cls.COLLECTIONS
 
     @classmethod
+    def _default_pad_times(cls) -> list[datetime.timedelta] | None:
+        return cls.DEFAULTS.get("pad_times", None)
+
+    @classmethod
     def _prepare_parameters(cls, collection: str = None, model: str = None) -> dict:
         """Return parameters compatible with ViresDataFetcher"""
         model = cls.DEFAULTS["model"] if model is None else model
@@ -231,6 +253,14 @@ class ExternalData:
             )
 
     @property
+    def analysis_window(self) -> list[datetime]:
+        return self._analysis_window
+
+    @analysis_window.setter
+    def analysis_window(self, time_pair: list[datetime]):
+        self._analysis_window = time_pair
+
+    @property
     def xarray(self) -> Dataset:
         if self._xarray:
             return self._xarray
@@ -240,6 +270,14 @@ class ExternalData:
     @xarray.setter
     def xarray(self, xarray_dataset: Dataset | None):
         self._xarray = xarray_dataset
+
+    @property
+    def magnetic_model_name(self):
+        return self._magnetic_model_name
+
+    @magnetic_model_name.setter
+    def magnetic_model_name(self, name):
+        self._magnetic_model_name = name
 
     def initialise(self, xarray_or_file: Dataset | str | None = None):
         """Load the data
