@@ -112,7 +112,7 @@ class TfaProcessor:
         if data == "Series":
             x = self.X
         elif data == "Index":
-            x = self.I
+            x = self.wave_index
         elif data == "QD":
             pass
 
@@ -163,17 +163,18 @@ class TfaProcessor:
 
     def _evaluate_wave_index(self):
         N, D = self.X.shape
-        I = np.full((N, D), np.NaN)
+        _I = np.full((N, D), np.NaN)
 
         for i in range(D):
-            I[:, i] = np.sum(self.W[:, :, i], axis=0)
+            _I[:, i] = np.sum(self.W[:, :, i], axis=0)
 
-        return I
+        return _I
 
     @property
-    def I(self):
-        """Wave index"""
+    def wave_index(self):
+        """Evaluate the wave index"""
         try:
+            # Use precalculated if available
             return self._I
         except AttributeError:
             self._I = self._evaluate_wave_index()
