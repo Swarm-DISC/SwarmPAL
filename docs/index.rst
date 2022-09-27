@@ -1,6 +1,6 @@
 
-swarmpal
-======
+SwarmPAL
+========
 
 This project is in the early planning stage.
 
@@ -23,6 +23,7 @@ This project is in the early planning stage.
 
    toolboxes/fac/using_fac
    toolboxes/secs/using_secs
+   toolboxes/tfa/using_tfa
 
 .. toctree::
   :maxdepth: 2

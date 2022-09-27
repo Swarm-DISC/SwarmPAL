@@ -15,7 +15,7 @@ from viresclient import set_token
 
 # -- Project information -----------------------------------------------------
 
-project = "swarmpal"
+project = "SwarmPAL"
 copyright = "2022, Ashley Smith"
 author = "Ashley Smith"
 
@@ -69,6 +69,7 @@ html_theme_options = {
     "use_repository_button": True,
     "use_issues_button": True,
     "use_edit_page_button": True,
+    "announcement": "WARNING! THIS PACKAGE IS UNDER DEVELOPMENT AND ANYTHING CAN CHANGE!",
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

@@ -1,7 +1,6 @@
 """TFA library
 
-Authors
--------
+Authors:
 constantinos@noa.gr
 """
 
