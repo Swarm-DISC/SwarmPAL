@@ -46,6 +46,17 @@ class TfaEfiInputs(ExternalData):
 class TfaProcessor:
     def __init__(self, input_data, X_varname="B_NEC", params=None):
         self.input_data = input_data
+        # Update input data to include magnetic field residual
+        try:
+            self.input_data.xarray["B_NEC_res_Model"]
+        except KeyError:
+            self.input_data.xarray["B_NEC_res_Model"] = (
+                self.input_data.xarray["B_NEC"] - self.input_data.xarray["B_NEC_Model"]
+            )
+            self.input_data.xarray["B_NEC_res_Model"].attrs = {
+                "units": "nT",
+                "description": f"Field-model residual. Model = {self.input_data.magnetic_model_name}",
+            }
         self.params = (
             params
             if params
@@ -179,6 +190,17 @@ class TfaProcessor:
         except AttributeError:
             self._I = self._evaluate_wave_index()
         return self._I
+
+    @property
+    def W(self):
+        try:
+            return self._W
+        except AttributeError:
+            raise RuntimeError("Wavelet process has not yet been run!")
+
+    @W.setter
+    def W(self, W):
+        self._W = W
 
 
 class TFA_Process(ABC):

@@ -192,6 +192,7 @@ class ExternalData:
         # Initialise the properties
         self.xarray = None
         self.source = source
+        self.magnetic_model_name = model
         # Prepare access to external data source given
         if source in ("manual", "swarmpal_file"):
             pass
@@ -269,6 +270,14 @@ class ExternalData:
     @xarray.setter
     def xarray(self, xarray_dataset: Dataset | None):
         self._xarray = xarray_dataset
+
+    @property
+    def magnetic_model_name(self):
+        return self._magnetic_model_name
+
+    @magnetic_model_name.setter
+    def magnetic_model_name(self, name):
+        self._magnetic_model_name = name
 
     def initialise(self, xarray_or_file: Dataset | str | None = None):
         """Load the data
