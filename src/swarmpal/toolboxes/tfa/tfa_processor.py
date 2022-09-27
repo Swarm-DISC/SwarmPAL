@@ -43,7 +43,7 @@ class TfaEfiInputs(ExternalData):
 
 
 class TfaProcessor:
-    def __init__(self, input_data, params=None):
+    def __init__(self, input_data, X_varname="B_NEC", params=None):
         self.input_data = input_data
         self.params = (
             params
@@ -54,15 +54,36 @@ class TfaProcessor:
                 "maglat_lims": [-60, 60],
             }
         )
+        self.t = self.input_data.xarray["Timestamp"].dt.second.copy()
+        self.X = self.input_data.xarray[X_varname].data.copy()
+        self.meta = {"General": self.params}
 
     @property
     def analysis_window(self):
         """list[datetime]: pair of unpadded times"""
         return self.input_data.analysis_window
 
+    @property
+    def t(self):
+        """Time in seconds from t0"""
+        return self._t
+
+    @t.setter
+    def t(self, t):
+        self._t = t
+
+    @property
+    def X(self):
+        """Parameter being analysed"""
+        return self._X
+
+    @X.setter
+    def X(self, X):
+        self._X = X
+
     def apply(self, process):
         """Apply a TFA Process"""
-        pass
+        process.apply(self)
 
     def plot(self):
         pass
@@ -94,14 +115,14 @@ class Cadence(TFA_Process):
 
     def __init__(self, params=None):
         if params is None:
-            self.params = {"Sampling_Rate": 86400, "Interp": False}
+            self.params = {"Sampling_Rate": 1, "Interp": False}
         else:
             self.params = params
 
     def apply(self, target):
-        target.t, target.X = tfalib.constant_cadence(
+        target.t, target.X, _ = tfalib.constant_cadence(
             target.t, target.X, self.params["Sampling_Rate"], self.params["Interp"]
-        )[0:2]
+        )
         self.append_params(target)
 
         return target
@@ -217,3 +238,5 @@ if __name__ == "__main__":
     )
     # Initialise processor
     processor = TfaProcessor(inputs)
+    # Apply a process
+    processor.apply(Cadence)
