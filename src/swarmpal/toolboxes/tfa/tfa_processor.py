@@ -8,8 +8,8 @@ constantinos@noa.gr
 import datetime as dt
 from abc import ABC, abstractmethod
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 from swarmpal.io import ExternalData
 from swarmpal.toolboxes.tfa import tfalib
@@ -109,19 +109,19 @@ class TfaProcessor:
         process.apply(self)
 
     def plot(self, data="Series"):
-        if data == 'Series':
+        if data == "Series":
             x = self.X
-        elif data == 'Index':
+        elif data == "Index":
             x = self.I
-        elif data=='QD':
+        elif data == "QD":
             pass
-        
+
         D = self.X.shape[1]
-        
+
         plt.figure()
         for i in range(D):
-            plt.subplot(D,1,i+1)
-            plt.plot(self.t, x[:,i], '-b')
+            plt.subplot(D, 1, i + 1)
+            plt.plot(self.t, x[:, i], "-b")
             plt.xlim(self.analysis_window_indexes)
             plt.grid(True)
             # if i == 0:
@@ -129,9 +129,9 @@ class TfaProcessor:
 
     def image(self):
         M, N, D = self.W.shape
-        freqs = 1000/self.s
+        freqs = 1000 / self.s
         # freq_lims = [freqs[0], freqs[-1]]
-        # yticks = np.hstack((np.arange(1,10), np.arange(10,200,20), 
+        # yticks = np.hstack((np.arange(1,10), np.arange(10,200,20),
         #                    np.arange(200,1000,200), np.arange(1000,10000,1000)))
         # yticks = np.append(yticks, freq_lims)
         # yticklabels = ['%.0f'%i for i in yticks]
@@ -140,28 +140,33 @@ class TfaProcessor:
         for i in range(D):
             m = np.max([np.log10(np.min(self.W[::, :, i])), -6])
             x = np.log10(np.max(self.W[::, :, i]))
-            
-            plt.subplot(D,1,i+1)
-            plt.contourf(self.t, freqs, np.log10(self.W[::, :, i]), 
-                         cmap='jet', levels=np.linspace(m, x, 20), 
-                         extend='min')
+
+            plt.subplot(D, 1, i + 1)
+            plt.contourf(
+                self.t,
+                freqs,
+                np.log10(self.W[::, :, i]),
+                cmap="jet",
+                levels=np.linspace(m, x, 20),
+                extend="min",
+            )
             plt.xlim(self.analysis_window_indexes)
             # plt.yticks(ticks=yticks, labels=yticklabels)
             # plt.ylim(freq_lims)
-            plt.ylabel('Freq (mHz)')
-            cbh = plt.colorbar(orientation='vertical')
+            plt.ylabel("Freq (mHz)")
+            cbh = plt.colorbar(orientation="vertical")
             cb_ticks = cbh.get_ticks()
             cbh.set_ticks(cb_ticks)
-            cbh.set_ticklabels(['%.2f'%i for i in cb_ticks])
+            cbh.set_ticklabels(["%.2f" % i for i in cb_ticks])
             # if i == 0:
             #     plt.title(self.label)
 
     def _evaluate_wave_index(self):
         N, D = self.X.shape
-        I = np.full((N,D), np.NaN)
+        I = np.full((N, D), np.NaN)
 
         for i in range(D):
-            I[:,i] = np.sum(self.W[:,:,i], axis=0)
+            I[:, i] = np.sum(self.W[:, :, i], axis=0)
 
         return I
 
