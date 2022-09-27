@@ -1,4 +1,8 @@
-"""TODO Docstring for TFA
+"""TFA process tools
+
+Authors
+-------
+constantinos@noa.gr
 """
 
 import datetime as dt

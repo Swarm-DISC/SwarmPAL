@@ -1,7 +1,8 @@
-"""
-# INSERT ESA PROJECT BLOCK #
+"""TFA library
 
-@author: constantinos@noa.gr
+Authors
+-------
+constantinos@noa.gr
 """
 
 import sys
