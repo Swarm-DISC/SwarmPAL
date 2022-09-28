@@ -15,7 +15,7 @@ from viresclient import set_token
 
 # -- Project information -----------------------------------------------------
 
-project = "swarmx"
+project = "SwarmPAL"
 copyright = "2022, Ashley Smith"
 author = "Ashley Smith"
 
@@ -61,14 +61,15 @@ html_theme = "sphinx_book_theme"
 
 html_title = f"{project}"
 
-html_baseurl = "https://swarmx.readthedocs.io/en/latest/"
+html_baseurl = "https://swarmpal.readthedocs.io/en/latest/"
 
 html_theme_options = {
     "home_page_in_toc": True,
-    "repository_url": "https://github.com/Swarm-DISC/swarmx",
+    "repository_url": "https://github.com/Swarm-DISC/swarmpal",
     "use_repository_button": True,
     "use_issues_button": True,
     "use_edit_page_button": True,
+    "announcement": "WARNING! THIS PACKAGE IS UNDER DEVELOPMENT AND ANYTHING CAN CHANGE!",
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

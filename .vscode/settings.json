@@ -1,6 +1,6 @@
 {
     "python.terminal.activateEnvInCurrentTerminal": true,
-    "python.pythonPath": "${env:CONDA_PREFIX}/envs/swarmx/bin/python",
+    "python.pythonPath": "${env:CONDA_PREFIX}/envs/swarmpal/bin/python",
     "python.testing.pytestArgs": [
         "tests"
     ],

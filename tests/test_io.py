@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from xarray import Dataset
 
-from swarmx.io import ExternalData, MagExternalData, ViresDataFetcher
+from swarmpal.io import ExternalData, MagExternalData, ViresDataFetcher
 
 
 @pytest.mark.remote
@@ -14,11 +14,12 @@ def test_ViresDataFetcher():
         "models": ["IGRF"],
         "auxiliaries": ["QDLat"],
         "sampling_step": "PT1M",
+        "start_time": "2022-01-01T00:00:00",
+        "end_time": "2022-01-01T00:01:00",
+        "kwargs": dict(asynchronous=False, show_progress=False),
     }
     v = ViresDataFetcher(parameters=parameters)
-    start = "2022-01-01T00:00:00"
-    end = "2022-01-01T00:01:00"
-    ds = v.fetch_data(start, end, asynchronous=False, show_progress=False)
+    ds = v.fetch_data()
     if not isinstance(ds, Dataset):
         _type = type(ds)
         raise TypeError(f"Returned data should be xarray.Dataset, not {_type}")

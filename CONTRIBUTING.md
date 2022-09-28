@@ -1,4 +1,4 @@
-See the [SwarmX development guide on HackMD](https://hackmd.io/@swarm/dev/%2Ff6YIHfqxT9yL0giWJzhr_Q) for development of this package. The following is provided from the template provided by Scikit-HEP
+See the [SwarmPAL development guide on HackMD](https://hackmd.io/@swarm/dev/%2Ff6YIHfqxT9yL0giWJzhr_Q) for development of this package. The following is provided from the template provided by Scikit-HEP
 
 ---
 

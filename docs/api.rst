@@ -1,28 +1,40 @@
-swarmx modules
-==============
+swarmpal modules
+================
 
-swarmx.toolboxes.fac
-^^^^^^^^^^^^^^^^^^^^
+swarmpal.toolboxes.fac
+^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: swarmx.toolboxes.fac
+.. automodule:: swarmpal.toolboxes.fac
     :members:
 
-swarmx.toolboxes.secs
-^^^^^^^^^^^^^^^^^^^^^
+swarmpal.toolboxes.secs
+^^^^^^^^^^^^^^^^^^^^^^^
 
-.. automodule:: swarmx.toolboxes.secs
+.. automodule:: swarmpal.toolboxes.secs
     :members:
 
-swarmx.io
-^^^^^^^^^
+swarmpal.toolboxes.tfa
+^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: swarmx.io.ExternalData
+.. automodule:: swarmpal.toolboxes.tfa
+    :members:
+
+swarmpal.toolboxes.tfa.tfalib
+*****************************
+
+.. automodule:: swarmpal.toolboxes.tfa.tfalib
+    :members:
+
+swarmpal.io
+^^^^^^^^^^^
+
+.. autoclass:: swarmpal.io.ExternalData
     :members:
     :undoc-members:
     :show-inheritance:
     :inherited-members:
 
-.. autoclass:: swarmx.io.ViresDataFetcher
+.. autoclass:: swarmpal.io.ViresDataFetcher
     :members:
     :undoc-members:
     :show-inheritance:
