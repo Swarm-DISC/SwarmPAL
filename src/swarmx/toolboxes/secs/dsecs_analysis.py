@@ -66,7 +66,6 @@ def getUnitVectors(SwA,SwC):
     return SwA, SwC
 
 
-
 @dataclass
 class dsecsgrid:
     """
@@ -183,7 +182,6 @@ class dsecsgrid1D:
         #grid
         self.Lat,_ = auto.sub_Swarm_grids_1D(tmp1,tmp3,self.dlat,self.ExtLat)
         
-
 
 
 def mag_transform_dsecs(SwA,SwC,pole_lat,pole_lon):
