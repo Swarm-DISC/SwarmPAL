@@ -437,7 +437,7 @@ def get_eq(ds, QD_filter_max=60):
         out[-1] = out[-1].assign(unit_B_NEC_Model=_normalizev(out[-1]["B_NEC_Model"]))
         out[-1] = out[-1].assign(
             {
-                "B_parallel": (
+                "B_para_res": (
                     "Timestamp",
                     np.einsum(
                         "ij,ij->i",
@@ -447,7 +447,9 @@ def get_eq(ds, QD_filter_max=60):
                 )
             }
         )
+        out[-1] = out[-1].assign(B_NEC_res = out[-1]["B_NEC"]-out[-1]["B_NEC_Model"])
     return out
+    
 
 
 def _normalizev(v):

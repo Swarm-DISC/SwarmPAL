@@ -31,11 +31,15 @@ def get_data_slices(t1=dt.datetime(2016, 3, 18, 11, 3, 0),t2=dt.datetime(2016, 3
     inputs = SecsInputs(
     start_time=t1,
     end_time=t2,
-    model="IGRF")
+    model="IGRF",)
 
     SwA = auto.get_eq(inputs.s1.xarray)
 
     SwC = auto.get_eq(inputs.s2.xarray)
+
+    #SwA,SwC = getUnitVectors(SwA,SwC)
+
+
 
     return SwA, SwC
 
@@ -61,45 +65,171 @@ def getUnitVectors(SwA,SwC):
 
     return SwA, SwC
 
-def define_grid(SwA,SwC,dlat=0.5,lonratio=2,ExtLatOut=0,ExtLonOut=3):
 
-        #Define the output grid.
-    DlatOut = dlat      #resolution in latitude
-    LonRatioOut = lonratio     #ratio (satellite separation)/(grid resolution) in longitude
-    ExtLatOut = ExtLatOut       #Number of points to extend outside satellite data area in latitude
-    ExtLonOut = ExtLonOut       #Number of points to extend outside satellite data area in longitude
-
-    #Make grid around [-X,X] latitudes
-    limitOutputLat = 40
-    ind = np.nonzero(abs(SwA["Latitude"].data) <= limitOutputLat)
-    lat1 = SwA["Latitude"].data[ind]
-    lon1 = SwA["Longitude"].data[ind]
-    ind = np.nonzero(abs(SwC["Latitude"].data) <= limitOutputLat)
-    lat2 = SwC["Latitude"].data[ind]
-    lon2 = SwC["Longitude"].data[ind]
-
-    ###result should also be xarray
-    ###check with Heikki, sub_Swarm_grids from sub_Swarm_grids_2D.m returns more than 2 things
-    gridlat,gridlon,_,_ = sub_Swarm_grids(lat1,lon1,lat2,lon2,DlatOut,LonRatioOut,ExtLatOut,ExtLonOut)
-    #Transpose into [Nlon,Nlat] matrices
-    ### need to add this to dataarray somehow
-    
-    return gridlat.T, gridlon.T
 
 @dataclass
-class dsecs:
-    """Class to keep track of dsecs snalysis results and grids"""
-    ggLat: np.ndarray = field(init=False)
-    ggLon: np.ndarray = field(init=False)
-    Re: float
-    Ri: float
-    PoleLat: float = field(init=False)
-    PoleLon: float = field(init=False)
-    DlatOut = float       #resolution in latitude
-    LonRatioOut = float     #ratio (satellite separation)/(grid resolution) in longitude
-    ExtLatOut = int       #Number of points to extend outside satellite data area in latitude
-    ExtLonOut = int 
+class dsecsgrid:
+    """
+    
+    """
+    ggLat: np.ndarray = np.array([])
+    ggLon: np.ndarray = np.array([])
+    magLat: np.ndarray = np.array([])
+    magLon: np.ndarray = np.array([])
+    Re: float = 6371
+    Ri: float = 6371 + 130
+    poleLat: float = 90.
+    poleLon: float = 0.
+    dlatOut: float = 0.5       #resolution in latitude
+    lonRatioOut: float = 2     #ratio (satellite separation)/(grid resolution) in longitude
+    extLatOut: int = 0      #Number of points to extend outside satellite data area in latitude
+    extLonOut: int = 3
+    angle2D: np.ndarray = np.array([])
 
+
+
+    def create(self,SwA,SwC,limitangle=90):
+        """
+        Parameters
+        ----------
+        SwA : _type_
+            _description_
+        SwC : _type_
+            _description_
+
+        Returns
+        -------
+        _type_
+            _description_
+
+        Raises
+        ------
+        ValueError
+            _description_
+        """
+        self.poleLat,self.poleLon = _sub_FindPole(SwA)
+        #Make grid around [-X,X] latitudes
+        limitOutputLat = limitangle
+        ind = np.nonzero(abs(SwA["Latitude"].data) <= limitOutputLat)
+        lat1 = SwA["Latitude"].data[ind]
+        lon1 = SwA["Longitude"].data[ind]
+        ind = np.nonzero(abs(SwC["Latitude"].data) <= limitOutputLat)
+        lat2 = SwC["Latitude"].data[ind]
+        lon2 = SwC["Longitude"].data[ind]
+
+        ###result should also be xarray
+        ###check with Heikki, sub_Swarm_grids from sub_Swarm_grids_2D.m returns more than 2 things
+        self.ggLat,self.ggLon,self.angle2D,_ ,_= sub_Swarm_grids(lat1,lon1,lat2,lon2,
+        self.dlatOut,self.lonRatioOut,self.extLatOut,self.extLonOut)
+
+        #self.ggLat1D,_ = auto.sub_Swarm_grids_1D(lat1,lat2,)
+
+        self.magLat,self.magLon,_,_= sph2sph(self.poleLat,self.poleLon,self.ggLat,self.ggLon,[],[]) 
+        self.magLon = self.magLon % 360
+
+
+
+
+@dataclass
+class dsecsgrid1D:
+    Lat: np.ndarray = np.array([])
+    ExtLat: int = 5
+    dlat: float = 0.5
+    Re: float = 6371
+    Ri: float = 6371 + 130
+
+    def create(self,lat1,lat2):
+
+        """_summary_
+        """
+
+        self.Lat,_ = auto.sub_Swarm_grids_1D(lat1,lat2,self.dlat,self.ExtLat)
+
+    def create_dipole(self,lat1,lat2,r1,r2):
+        """_summary_
+
+        Parameters
+        ----------
+        lat1 : _type_
+            _description_
+        lat2 : _type_
+            _description_
+
+        Returns
+        -------
+        _type_
+            _description_
+
+        Raises
+        ------
+        ValueError
+            _description_
+        """
+
+        #Use the LOCAL DIPOLE footpoints in grid construction
+        latB = np.concatenate((lat1,lat2))
+        rB = np.concatenate((r1,r2))
+        Na = len(lat1)
+        thetaB=(90-latB)/180*pi
+        thetaFP=np.asin(np.sqrt(self.Ri/rB)*np.sin(thetaB)) #co-latitude of the footpoints, mapped to the northern hemisphere
+        ind=np.argwhere(thetaB > np.pi/2)
+        thetaFP[ind]=np.pi-thetaFP[ind]
+        latFP=90-thetaFP/np.pi*180;
+        tmp1=latFP[:Na]
+        tmp1 = np.arange(np.min(np.abs(tmp1)), np.max(1 + np.abs(tmp1)),0.2)
+        #tmp1 = min(abs(tmp1)) : 0.2 : max(1+abs(tmp1));
+        tmp3=latFP[Na:];
+        tmp3 = np.arange(np.min(np.abs(tmp3)), np.max(1 + np.abs(tmp3)),0.2)
+        #grid
+        self.Lat,_ = auto.sub_Swarm_grids_1D(tmp1,tmp3,self.dlat,self.ExtLat)
+        
+
+
+
+def mag_transform_dsecs(SwA,SwC,pole_lat,pole_lon):
+    """_summary_
+
+    Parameters
+    ----------
+    SwA : _type_
+        _description_
+    SwC : _type_
+        _description_
+    pole_lat : _type_
+        _description_
+    pole_lon : _type_
+        _description_
+    """
+
+    _,_,SwA["magUvT"],SwA["magUvP"] = sph2sph(pole_lat,pole_lon,SwA["Latitude"].data,SwA["Longitude"].data,SwA["ggUvT"].data,SwA["ggUvP"].data)  #unit vector along SwA magnetic field
+    _,_,SwC["magUvT"],SwC["magUvP"] = sph2sph(pole_lat,pole_lon,SwC["Latitude"].data,SwC["Longitude"].data,SwC["ggUvT"].data,SwC["ggUvP"].data)  #unit vector along SwC magnetic field
+    SwA["magLat"],SwA["magLon"],SwA["magBt"],SwA["magBp"] = sph2sph(pole_lat,pole_lon,SwA["Latitude"].data,SwA["Longitude"].data,SwA["B_NEC"].sel(NEC='N').data,SwA["B_NEC"].sel(NEC='E').data)  #SwA locations & data
+    SwC["magLat"],SwC["magLon"],SwC["magBt"],SwC["magBp"] = sph2sph(pole_lat,pole_lon,SwC["Latitude"].data,SwC["Longitude"].data,SwC["B_NEC"].sel(NEC='N').data,SwC["B_NEC"].sel(NEC='E').data)  #SwC locations & data
+    SwA["magLon"] = SwA["magLon"] % 360
+    SwC["magLon"] = SwC["magLon"] % 360
+
+    return SwA, SwC
+
+
+def trim_data(SwA,SwC):
+    """
+    """
+
+    Vx = np.gradient(SwA["magLat"])     #northward velocity [deg/step]
+    Vy = np.gradient(SwA["magLon"]) * np.cos(np.radians(SwA["magLat"]))  #eastward velocity [deg/step]
+    _,ind = sub_FindLongestNonZero(abs(Vy) < abs(Vx))
+    SwA = SwA.sel(Timestamp=SwA["Timestamp"][ind]) 
+
+
+    Vx = np.gradient(SwC["magLat"])
+    Vy = np.gradient(SwC["magLon"]) * np.cos(np.radians(SwC["magLat"]))
+    _,ind = sub_FindLongestNonZero(abs(Vy) < abs(Vx))
+
+    ### replace with indexing whole dataset
+    SwC = SwC.sel(Timestamp=SwC["Timestamp"][ind]) 
+
+
+    return
 
 
 def sub_load_real_data(result):
@@ -151,7 +281,7 @@ def sub_load_real_data(result):
     return result, SwA, SwC
 
 
-def sub_FindPole(SwA):
+def _sub_FindPole(SwA):
 
     #define search grid
     dlat = 0.5      #latitude step [degree]
@@ -175,8 +305,9 @@ def sub_FindPole(SwA):
     for n in range(len(latP)):
     #Rotate the main field unit vector at Swarm-A measurement points to the system
     #whose pole is at (latP(n), lonP(n)).
-        lat,_,Bt,Bp = sph2sph(latP[n],lonP[n],SwA["Latitude"].data[indA],SwA["Longitude"].data[indA],SwA["ggUvT"].data[indA],SwA["ggUvP"].data[indA])
-        Br = SwA["UvR"]
+        lat,_,Bt,Bp = sph2sph(latP[n],lonP[n],SwA["Latitude"].data[indA],SwA["Longitude"].data[indA],
+        -SwA["unit_B_NEC_Model"].sel(NEC='N').data[indA],SwA["unit_B_NEC_Model"].sel(NEC='E').data[indA])
+        Br = -SwA["unit_B_NEC_Model"].sel(NEC='C').data[indA]
 
         #Remove points that are very close to this pole location (otherwise 1/sin is problematic)
         ind = np.nonzero(abs(lat) < 89.5)
@@ -202,7 +333,7 @@ def sub_FindPole(SwA):
     
     ###skipped plotting routine here (see sub_FindPole.m), also flattened latP,lonP and errMat
 
-    return polelat,polelon
+    return polelat, polelon
 
 
 def sub_rotate(result,SwA,SwC,suunta):
