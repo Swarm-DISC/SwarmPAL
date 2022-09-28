@@ -1,7 +1,7 @@
 import numpy as np
 import datetime as dt
-from swarmx.toolboxes.secs import SecsInputs
-from swarmx.toolboxes.secs.aux_tools import sub_Swarm_grids,sph2sph,sub_FindLongestNonZero
+from swarmpal.toolboxes.secs import SecsInputs
+from swarmpal.toolboxes.secs.aux_tools import sub_Swarm_grids,sph2sph,sub_FindLongestNonZero
 from sub_fit_1D_DivFree import SwarmMag2J_test_fit_1D_DivFree
 import xarray as xr
 

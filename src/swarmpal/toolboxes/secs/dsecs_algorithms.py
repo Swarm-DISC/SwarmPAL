@@ -6,7 +6,7 @@ Adapted from MatLab code by Heikki Vanhamäki.
 
 import numpy as np
 import scipy
-from swarmx.toolboxes.secs import aux_tools as auto
+from swarmpal.toolboxes.secs import aux_tools as auto
 
 
 

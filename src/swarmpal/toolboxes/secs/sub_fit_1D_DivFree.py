@@ -1,6 +1,6 @@
 import numpy as np
-from swarmx.toolboxes.secs.dsecs_algorithms import SECS_1D_DivFree_magnetic, SECS_1D_DivFree_vector
-from swarmx.toolboxes.secs.aux_tools import sub_Swarm_grids_1D, sub_inversion
+from swarmpal.toolboxes.secs.dsecs_algorithms import SECS_1D_DivFree_magnetic, SECS_1D_DivFree_vector
+from swarmpal.toolboxes.secs.aux_tools import sub_Swarm_grids_1D, sub_inversion
 
 def SwarmMag2J_test_fit_1D_DivFree(SwA,SwC,result):
 
