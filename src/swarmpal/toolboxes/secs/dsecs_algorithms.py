@@ -177,7 +177,7 @@ def SECS_1D_DivFree_vector(latV, latSECS, ri):
         d_theta[1:] = (theta_secs[:-1] - theta_secs[1:]) / 2
         d_theta[-1] = theta_secs[-2] - theta_secs[-1]
     else:
-        d_theta = np.arrya([0.5 / 180 * np.pi])
+        d_theta = np.array([0.5 / 180 * np.pi])
 
     # limit for near pole area [radians]
     limit = np.abs(d_theta) / 2
@@ -188,7 +188,7 @@ def SECS_1D_DivFree_vector(latV, latSECS, ri):
         ct = np.cos(theta_v[i])
         st = np.sin(theta_v[i])
         for j in range(nsecs):
-            if (np.abs(theta_secs[j]) - theta_v[i]) >= limit[j]:
+            if (np.abs(theta_secs[j] - theta_v[i])) >= limit[j]:
                 # Current at co-latittude theta_v[i] caused by 1D SECS at theataSECS[j]
                 # see equation (4) of Vanhamaki et al. 2003
                 matVphi[i, j] = (ct + np.sign(theta_v[i] - theta_secs[j])) / st
@@ -247,7 +247,7 @@ def SECS_1D_DivFree_magnetic(latB, latSECS, rb, rsecs, M):
     # Series of (ratio of radii)^m, m=1...M
 
     t_aux = np.zeros((len(latB), M))
-    t_aux[:, 0] = 0.2 * np.pi / rb * t * np.where(rb < rsecs, 1, rsecs / rb)
+    t_aux[:, 0] = 0.2 * np.pi / rb * t * np.where(rb <= rsecs, 1, rsecs / rb)
 
     for i in range(1, M):
         t_aux[:, i] = t * t_aux[:, i - 1]
