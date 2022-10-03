@@ -165,7 +165,7 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
     )
     #####works for 3x3 matrix, check what input matrix is and check again####
     svdU, svdS, svdVh = np.linalg.svd(sysMat, full_matrices=False)
-    print(svdU)
+    #print(svdU)
     svdV = svdVh.T
     # svdS = np.diag(svdS)
     print("done\n")
