@@ -731,7 +731,7 @@ def SECS_2D_CurlFree_antisym_magnetic(
 def secs_2d_curlFree_antisym_lineintegral(
     thetaB, phiB, thetaSECS, phiSECS, rb, rsecs, smallr
 ):
-    """_summary_
+    """Line integral for DSECS 2d curl free.
 
     Parameters
     ----------
@@ -865,7 +865,7 @@ def get_data_slices(
     t2=dt.datetime(2016, 3, 18, 11, 40, 0),
     model="IGRF",
 ):
-    """_summary_
+    """Get data and split it into slices suitable for DSECS analysis.
 
     Parameters
     ----------
@@ -897,12 +897,11 @@ def get_data_slices(
     return SwA, SwC
 
 
-def analyze(dataA, dataC):
 
-    return
 
 
 def getUnitVectors(SwA, SwC):
+    """Get the magnetic unit vectors."""
 
     # Geographical components of unit vector in the main field direction
     # from sub_ReadMagDataLR, check again model and signs
@@ -929,6 +928,7 @@ def getUnitVectors(SwA, SwC):
 
 
 class grid2D:
+    """Class for 2D DSECS grids"""
     def __init__(self):
         self.ggLat = np.array([])
         self.ggLon = np.array([])
@@ -943,7 +943,7 @@ class grid2D:
     def create(
         self, lat1, lon1, lat2, lon2, dlat, lonRat, extLat, extLon, poleLat, poleLon
     ):
-        """_summary_
+        """Initialize from data
 
         Parameters
         ----------
@@ -983,13 +983,14 @@ class grid2D:
 
 
 class grid1D:
+    """Simple class to hold a 1D lat grid"""
     def __init__(self):
 
         self.lat = np.array([])
         self.diff2 = np.array([])
 
     def create(self, lat1, lat2, dlat, extLat):
-        """
+        """Initialize from data.
 
         Parameters
         ----------
@@ -1018,7 +1019,7 @@ class grid1D:
 
 
 class dsecsgrid:
-    """ """
+    """Class for all the grids needed in DSECS analysis """
     def __init__(self):
         self.out = grid2D()
         self.secs2D = grid2D()
@@ -1036,7 +1037,7 @@ class dsecsgrid:
         self.extLat1D = 1
 
     def FindPole(self, SwA):
-
+        """Find the best pole location for the analysis"""
         # define search grid
         dlat = 0.5  # latitude step [degree]
         minlat = 60  # latitude range
@@ -1099,7 +1100,9 @@ class dsecsgrid:
     # self.poleLat, self.poleLon = dsecsgrid._sub_FindPole(SwA)
 
     def create(self, SwA, SwC):
-        """
+        """Initialize the grids from data.
+
+
         Parameters
         ----------
         SwA : _type_
@@ -1166,7 +1169,7 @@ class dsecsgrid:
 
 
 def getLocalDipoleFPtrack(latB, rB, Ri):
-    """
+    """Get the local dipole footpoints for the CF grid creation.
 
     Parameters
     ----------
@@ -1200,7 +1203,7 @@ def getLocalDipoleFPtrack(latB, rB, Ri):
 
 
 def mag_transform_dsecs(SwA, SwC, pole_lat, pole_lon):
-    """_summary_
+    """Rotate the data to magnetic coordinate systems.
 
     Parameters
     ----------
@@ -1263,7 +1266,7 @@ def mag_transform_dsecs(SwA, SwC, pole_lat, pole_lon):
 
 
 def trim_data(SwA, SwC):
-    """ """
+    """Find periods with suitable spaceraft velocity for analysis."""
 
     Vx = np.gradient(SwA["magLat"])  # northward velocity [deg/step]
     Vy = np.gradient(SwA["magLon"]) * np.cos(
@@ -1287,6 +1290,7 @@ def trim_data(SwA, SwC):
 
 
 class dsecsdata:
+    """Class for DSECS variables and fitting procedures"""
 
     def __init__(self):
         self.lonB = np.array([])
@@ -1308,6 +1312,7 @@ class dsecsdata:
         self.cf2D: np.ndarray([])
 
     def populate(self, SwA, SwC):
+        """Initilize a DSECS analaysis case from data"""
 
         #initialize grid
         grid = dsecsgrid()
@@ -1340,7 +1345,7 @@ class dsecsdata:
         
 
     def fit1D_df(self):
-        """_summary_
+        """1D divergence free fit for data.
 
         Returns
         -------
