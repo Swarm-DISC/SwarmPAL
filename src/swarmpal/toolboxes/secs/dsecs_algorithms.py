@@ -885,7 +885,7 @@ def get_data_slices(
     inputs = SecsInputs(
         start_time=t1,
         end_time=t2,
-        model="IGRF",
+        model=model,
     )
 
     SwA = auto.get_eq(inputs.s1.xarray)
