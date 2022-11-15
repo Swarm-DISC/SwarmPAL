@@ -932,8 +932,6 @@ class grid2D:
     def __init__(self):
         self.ggLat = np.array([])
         self.ggLon = np.array([])
-        self.ggLat = np.array([])
-        self.ggLon = np.array([])
         self.magLat = np.array([])
         self.magLon = np.array([])
         self.angle2D = np.array([])
@@ -1310,6 +1308,10 @@ class dsecsdata:
         self.df2D: np.ndarray([])
         self.cf1D: np.ndarray([])
         self.cf2D: np.ndarray([])
+        self.matBr1D: np.ndarray([])
+        self.matBt1D: np.ndarray([])
+        self.matBpara1D: np.ndarray([])
+
 
     def populate(self, SwA, SwC):
         """Initilize a DSECS analaysis case from data"""
@@ -1353,7 +1355,7 @@ class dsecsdata:
             _description_
         """
 
-        matBr, matBt = SECS_1D_DivFree_magnetic(
+        self.matBr1D, self.matBt1D = SECS_1D_DivFree_magnetic(
             self.latB, self.grid.secs1Ddf.lat, self.rB, self.grid.Ri, 500
         )
 
@@ -1361,9 +1363,11 @@ class dsecsdata:
 
         y = self.Bpara #measurement, parallel magnetic field
 
-        A = (matBr.T * self.uvR).T + (matBt.T * self.uvT).T
-        regmat = self.grid.secs1Ddf.diff2 
-        x = auto.sub_inversion(A,regmat,self.epsSVD,self.alpha,y)
+        self.matBpara1D = (self.matBr1D.T * self.uvR).T + (self.matBt1D.T * self.uvT).T #
+
+
+        regmat = self.grid.secs1Ddf.diff2 #regularization
+        x = auto.sub_inversion(self.matBpara1D,regmat,self.epsSVD,self.alpha,y)
         self.df1D = x
-        return x,y,A
+        return x,y,self.matBpara1D
 
