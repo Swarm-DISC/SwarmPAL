@@ -36,6 +36,7 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
+    "hapiclient >= 0.2.3",
     "numpy >= 1.22",
     "scipy >= 1.8",
     "viresclient >= 0.10.1",
