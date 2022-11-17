@@ -5,12 +5,11 @@ from __future__ import annotations
 
 from datetime import datetime
 from os import PathLike
-from typing import Optional, Tuple
 
 from pandas import to_datetime as to_pandas_datetime
 from xarray import Dataset
 
-from swarmpal.io.datafetchers import get_fetcher, DataFetcherBase
+from swarmpal.io.datafetchers import DataFetcherBase, get_fetcher
 
 
 class PalDataItem:
@@ -46,18 +45,18 @@ class PalDataItem:
         self._fetcher = fetcher
 
     @property
-    def xarray(self) -> Optional[Dataset]:
+    def xarray(self) -> Dataset | None:
         """Points to the xarray.Dataset contained within this object"""
         if self._xarray is None:
             self.initialise()
         return self._xarray
 
     @xarray.setter
-    def xarray(self, xarray_dataset: Optional[Dataset]) -> None:
+    def xarray(self, xarray_dataset: Dataset | None) -> None:
         self._xarray = xarray_dataset
 
     @property
-    def analysis_window(self) -> Tuple[datetime]:
+    def analysis_window(self) -> tuple[datetime]:
         """The start and end times of the analysis window (considering optional padding"""
         try:
             return self._analysis_window
@@ -69,7 +68,7 @@ class PalDataItem:
         return self._analysis_window
 
     @analysis_window.setter
-    def analysis_window(self, analysis_window: Tuple[datetime]):
+    def analysis_window(self, analysis_window: tuple[datetime]):
         self._analysis_window = analysis_window
 
     def initialise(self):
@@ -77,19 +76,19 @@ class PalDataItem:
         self.xarray = self._fetcher.fetch_data()
 
     @staticmethod
-    def _ensure_datetime(times: "Tuple[datetime|str]") -> Tuple[datetime]:
+    def _ensure_datetime(times: tuple[datetime | str]) -> tuple[datetime]:
         """Converts times to datetimes if they are not already"""
         if isinstance(times[0], str):
             times = tuple(map(datetime.fromisoformat, times))
         return times
 
     @staticmethod
-    def _datetime_to_str(times: Tuple[datetime]) -> Tuple[str]:
+    def _datetime_to_str(times: tuple[datetime]) -> tuple[str]:
         """Convert datetime objects to iso strings"""
         return tuple(map(lambda x: x.isoformat(), times))
 
     @staticmethod
-    def _pad_times(params: dict) -> Tuple[dict, Tuple[datetime]]:
+    def _pad_times(params: dict) -> tuple[dict, tuple[datetime]]:
         """Use job parameters to adjust time window
 
         Returns the modified params dictionary, as well as the analysis window
@@ -137,9 +136,7 @@ class PalDataItem:
 
     @staticmethod
     def from_file(
-        filename: Optional[PathLike] = None,
-        group: Optional[str] = None,
-        **params
+        filename: PathLike | None = None, group: str | None = None, **params
     ) -> PalDataItem:
         """Create a PalDataItem from a file
 
@@ -162,7 +159,7 @@ class PalDataItem:
         return PalDataItem(fetcher)
 
     @staticmethod
-    def from_manual(xarray_dataset: Optional[Dataset] = None, **params) -> PalDataItem:
+    def from_manual(xarray_dataset: Dataset | None = None, **params) -> PalDataItem:
         """Create a PalDataItem manually from an existing xarray Dataset
 
         Parameters

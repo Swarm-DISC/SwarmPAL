@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from os import PathLike
 from os.path import exists as path_exists
-from typing import Optional
 
 from hapiclient import hapi, hapitime2datetime
 from numpy.typing import ArrayLike
@@ -18,39 +17,40 @@ from xarray import Dataset, open_dataset
 
 @dataclass
 class Parameters(ABC):
-    """Control which dataset is accessed, and how the fetcher behaves
-    """
+    """Control which dataset is accessed, and how the fetcher behaves"""
+
     ...
 
 
 @dataclass
 class ViresParameters(Parameters):
     """TODO: Extend to allow configuration of filters"""
+
     collection: str
-    measurements: "list[str]"
+    measurements: list[str]
     start_time: str
     end_time: str
     server_url: str = "https://vires.services/ows"
-    models: "list[str]" = field(default_factory=list)
-    auxiliaries: "list[str]" = field(default_factory=list)
-    sampling_step: "str | None" = None
-    kwargs: "dict" = field(default_factory=dict)
+    models: list[str] = field(default_factory=list)
+    auxiliaries: list[str] = field(default_factory=list)
+    sampling_step: str | None = None
+    kwargs: dict = field(default_factory=dict)
 
 
 @dataclass
 class HapiParameters(Parameters):
     collection: str
-    measurements: "list[str]"
+    measurements: list[str]
     start_time: str
     end_time: str
     server_url: str = "https://vires.services/hapi"
-    options: "dict" = field(default_factory=dict)
+    options: dict = field(default_factory=dict)
 
 
 @dataclass
 class FileParameters(Parameters):
     filename: PathLike
-    group: Optional[str] = None
+    group: str | None = None
 
 
 @dataclass
@@ -80,8 +80,7 @@ class DataFetcherBase(ABC):
 
 
 class ViresDataFetcher(DataFetcherBase):
-    """Connects to and retrieves data from VirES through viresclient
-    """
+    """Connects to and retrieves data from VirES through viresclient"""
 
     @property
     def source(self) -> str:
@@ -171,16 +170,14 @@ class HapiDataFetcher(DataFetcherBase):
         ds = Dataset(
             data_vars={
                 timevar: (timevar, tdata),
-                **{
-                    _name: (_dim, data[_name]) for _name, _dim, in zip(varnames, dims)
-                }
+                **{_name: (_dim, data[_name]) for _name, _dim, in zip(varnames, dims)},
             }
         )
         # Assign metadata for each data variable
         for p in meta["parameters"][1:]:
             ds[p["name"]].attrs = {
                 "units": p.get("units"),
-                "description": p.get("description")
+                "description": p.get("description"),
             }
         return ds
 
@@ -194,8 +191,7 @@ class HapiDataFetcher(DataFetcherBase):
         )
 
     def fetch_data(self) -> Dataset:
-        """Make a HAPI query and load an xarray Dataset
-        """
+        """Make a HAPI query and load an xarray Dataset"""
         data, meta = hapi(
             self.parameters.server_url,
             self.parameters.collection,
@@ -220,7 +216,7 @@ class FileDataFetcher(DataFetcherBase):
     def parameters(self, parameters: dict) -> None:
         self._parameters = FileParameters(**parameters)
 
-    def __init__(self, filename: PathLike, group: Optional[str] = None) -> None:
+    def __init__(self, filename: PathLike, group: str | None = None) -> None:
         self.parameters = dict(filename=filename, group=group)
         if not path_exists(self.parameters.filename):
             raise FileNotFoundError(self.parameters.filename)
@@ -283,7 +279,7 @@ if __name__ == "__main__":
         **params,
         server_url="https://vires.services/ows",
         kwargs=dict(asynchronous=False, show_progress=False),
-        models=["IGRF"]
+        models=["IGRF"],
     )
     vires_data = get_fetcher("vires")(**vires_params).fetch_data()
     hapi_data = get_fetcher("hapi")(**hapi_params).fetch_data()
