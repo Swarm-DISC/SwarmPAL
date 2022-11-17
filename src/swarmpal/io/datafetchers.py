@@ -16,7 +16,7 @@ from xarray import Dataset, open_dataset
 
 
 @dataclass
-class Parameters(ABC):
+class Parameters:
     """Control which dataset is accessed, and how the fetcher behaves"""
 
     ...
@@ -283,5 +283,3 @@ if __name__ == "__main__":
     )
     vires_data = get_fetcher("vires")(**vires_params).fetch_data()
     hapi_data = get_fetcher("hapi")(**hapi_params).fetch_data()
-    print(hapi_data)
-    print(vires_data)
