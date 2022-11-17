@@ -25,8 +25,14 @@ swarmpal.toolboxes.tfa.tfalib
 .. automodule:: swarmpal.toolboxes.tfa.tfalib
     :members:
 
-swarmpal.io
-^^^^^^^^^^^
+swarmpal.io (new)
+^^^^^^^^^^^^^^^^^
+
+.. automodule:: swarmpal.io.paldata
+    :members:
+
+swarmpal.io (old)
+^^^^^^^^^^^^^^^^^
 
 .. autoclass:: swarmpal.io.ExternalData
     :members:
