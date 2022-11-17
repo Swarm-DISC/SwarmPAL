@@ -77,7 +77,11 @@ homepage = "https://github.com/Swarm-DISC/SwarmPAL"
 minversion = "6.0"
 addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = true
-filterwarnings = ["error"]
+filterwarnings = [
+    "error",
+    # Temporary measures which should be fixed
+    "ignore:unclosed <ssl.SSLSocket:ResourceWarning",
+]
 testpaths = [
     "tests",
 ]
