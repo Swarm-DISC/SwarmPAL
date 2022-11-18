@@ -16,9 +16,9 @@ def test_paldataitem_vires():
     )
     vires_params = dict(
         **params,
-        server_url="https://vires.services/ows",
-        kwargs=dict(asynchronous=False, show_progress=False),
         models=["IGRF"],
+        filters=["(Longitude > 92.8) AND (Latitude < -72.57)"],
+        options=dict(asynchronous=False, show_progress=False),
     )
     item = PalDataItem.from_vires(**vires_params)
     item.initialise()

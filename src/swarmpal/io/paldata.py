@@ -187,7 +187,7 @@ class PalData:
     ----------
     *paldataitems: PalDataItem
         Provide instances of PalDataItem as the arguments
-    **kwargs: PalDataItem
+    **paldataitems_kw: PalDataItem
         Provide instances of PalDataItem as keyword arguments
 
     Examples
@@ -253,7 +253,7 @@ if __name__ == "__main__":
     vires_params = dict(
         **params,
         server_url="https://vires.services/ows",
-        kwargs=dict(asynchronous=False, show_progress=False),
+        options=dict(asynchronous=False, show_progress=False),
         # models=["IGRF"]
     )
     # Create PalData from two inputs, one from vires, one from hapi

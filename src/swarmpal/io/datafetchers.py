@@ -24,8 +24,6 @@ class Parameters:
 
 @dataclass
 class ViresParameters(Parameters):
-    """TODO: Extend to allow configuration of filters"""
-
     collection: str
     measurements: list[str]
     start_time: str
@@ -34,7 +32,8 @@ class ViresParameters(Parameters):
     models: list[str] = field(default_factory=list)
     auxiliaries: list[str] = field(default_factory=list)
     sampling_step: str | None = None
-    kwargs: dict = field(default_factory=dict)
+    filters: list[str] = field(default_factory=list)
+    options: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -114,6 +113,8 @@ class ViresDataFetcher(DataFetcherBase):
             auxiliaries=self.parameters.auxiliaries,
             sampling_step=self.parameters.sampling_step,
         )
+        for filter in self.parameters.filters:
+            vires_request.add_filter(filter)
         return vires_request
 
     def fetch_data(self) -> Dataset:
@@ -121,7 +122,7 @@ class ViresDataFetcher(DataFetcherBase):
         return self.vires_request.get_between(
             self.parameters.start_time,
             self.parameters.end_time,
-            **self.parameters.kwargs,
+            **self.parameters.options,
         ).as_xarray()
 
 
@@ -278,7 +279,7 @@ if __name__ == "__main__":
     vires_params = dict(
         **params,
         server_url="https://vires.services/ows",
-        kwargs=dict(asynchronous=False, show_progress=False),
+        options=dict(asynchronous=False, show_progress=False),
         models=["IGRF"],
     )
     vires_data = get_fetcher("vires")(**vires_params).fetch_data()

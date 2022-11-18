@@ -22,8 +22,9 @@ def test_vires_fetcher():
     vires_params = dict(
         **params,
         server_url="https://vires.services/ows",
-        kwargs=dict(asynchronous=False, show_progress=False),
         models=["IGRF"],
+        filters=["(Longitude > 92.8) AND (Latitude < -72.57)"],
+        options=dict(asynchronous=False, show_progress=False),
     )
     vires_fetcher = ViresDataFetcher(**vires_params)
     vires_dataset = vires_fetcher.fetch_data()
