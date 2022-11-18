@@ -1,6 +1,8 @@
+from datetime import datetime, timedelta
 from os.path import join as join_path
 
 import pytest
+from pandas import to_datetime as to_pandas_datetime
 from xarray import Dataset, open_dataset
 
 from swarmpal.io.paldata import PalData, PalDataItem
@@ -78,3 +80,44 @@ def test_paldata(xarray_data_file):
     )
     assert isinstance(mypal["one"].xarray, Dataset)
     assert isinstance(mypal["two"].xarray, Dataset)
+
+
+@pytest.mark.remote
+def test_time_pad_vires_hapi():
+    start_time = datetime(2016, 1, 1, 0, 0, 0)
+    end_time = datetime(2016, 1, 1, 0, 0, 10)
+    dt0 = timedelta(seconds=3)
+    dt1 = timedelta(seconds=5)
+    params = dict(
+        collection="SW_OPER_MAGA_LR_1B",
+        measurements=["F", "B_NEC"],
+        start_time=start_time,
+        end_time=end_time,
+        pad_times=[dt0, dt1],
+    )
+    vires_params = dict(
+        **params,
+        server_url="https://vires.services/ows",
+        options=dict(asynchronous=False, show_progress=False),
+    )
+    mypal = PalData(PalDataItem.from_vires(**vires_params))
+    # Check that the start and end times of data are offset correctly
+    t0, t1 = to_pandas_datetime(mypal[0].xarray["Timestamp"][[0, -1]])
+    assert t0 == start_time - dt0
+    assert t1 == end_time + dt1 - timedelta(seconds=1)
+    # Check that analysis window matches the given start, end times
+    assert mypal[0].analysis_window[0] == start_time
+    assert mypal[0].analysis_window[1] == end_time
+
+    hapi_params = dict(
+        **params,
+        server_url="https://vires.services/hapi",
+    )
+    mypal = PalData(PalDataItem.from_hapi(**hapi_params))
+    # Check that the start and end times of data are offset correctly
+    t0, t1 = to_pandas_datetime(mypal[0].xarray["Timestamp"][[0, -1]])
+    assert t0 == start_time - dt0
+    assert t1 == end_time + dt1 - timedelta(seconds=1)
+    # Check that analysis window matches the given start, end times
+    assert mypal[0].analysis_window[0] == start_time
+    assert mypal[0].analysis_window[1] == end_time
