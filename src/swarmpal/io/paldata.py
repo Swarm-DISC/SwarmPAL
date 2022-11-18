@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from os import PathLike
+from re import match as regex_match
 
 from pandas import to_datetime as to_pandas_datetime
 from xarray import Dataset
@@ -70,6 +71,21 @@ class PalDataItem:
     @analysis_window.setter
     def analysis_window(self, analysis_window: tuple[datetime]):
         self._analysis_window = analysis_window
+
+    @property
+    def magnetic_models(self) -> dict:
+        """Dictionary of model names and details"""
+        # Get xarray attribute data and then parse it
+        #  input looks like: ['Model = IGRF(max_degree=13,min_degree=1)']
+        mlist = self.xarray.attrs.get("MagneticModels", [])
+        # xarray will write a single-item list[str] as str, so catch that
+        mlist = [mlist] if isinstance(mlist, str) else mlist
+        models = {}
+        for model_string in mlist:
+            # Gives, e.g. ('Model', 'IGRF(max_degree=13,min_degree=1)')
+            name, detail = regex_match(r"(.*) = (.*)", model_string).groups()
+            models[name] = detail
+        return models
 
     def initialise(self):
         """Trigger the fetching of the data"""

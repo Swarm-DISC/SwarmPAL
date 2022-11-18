@@ -25,6 +25,16 @@ def test_paldataitem_vires():
     item = PalDataItem.from_vires(**vires_params)
     item.initialise()
     assert isinstance(item.xarray, Dataset)
+    return item.xarray
+
+
+@pytest.mark.remote
+@pytest.fixture
+def xarray_data_file(tmp_path):
+    ds = test_paldataitem_vires()
+    target_output = join_path(tmp_path, "test_data.nc")
+    ds.to_netcdf(target_output)
+    return target_output
 
 
 @pytest.mark.remote
@@ -43,16 +53,6 @@ def test_paldataitem_hapi():
     item = PalDataItem.from_hapi(**hapi_params)
     item.initialise()
     assert isinstance(item.xarray, Dataset)
-    return item.xarray
-
-
-@pytest.mark.remote
-@pytest.fixture
-def xarray_data_file(tmp_path):
-    ds = test_paldataitem_hapi()
-    target_output = join_path(tmp_path, "test_data.nc")
-    ds.to_netcdf(target_output)
-    return target_output
 
 
 def test_paldataitem_file(xarray_data_file):
@@ -121,3 +121,12 @@ def test_time_pad_vires_hapi():
     # Check that analysis window matches the given start, end times
     assert mypal[0].analysis_window[0] == start_time
     assert mypal[0].analysis_window[1] == end_time
+
+
+def test_paldata_magnetic_models(xarray_data_file):
+    mypal = PalData(
+        PalDataItem.from_file(xarray_data_file),
+    )
+    models = mypal[0].magnetic_models
+    assert list(models.keys())[0] == "IGRF"
+    assert list(models.values())[0] == "IGRF(max_degree=13,min_degree=1)"
