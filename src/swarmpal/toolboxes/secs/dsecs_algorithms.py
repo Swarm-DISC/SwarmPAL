@@ -1420,7 +1420,6 @@ class dsecsdata:
         """2D divergence free fit for data.
 
         """
-        gridtest = self.grid.secs2D
         #Calculate B-matrices and form the field-aligned matrix
         thetaB = (90 - self.latB) / 180 * np.pi
         phiB = self.lonB / 180 * np.pi
@@ -1429,20 +1428,18 @@ class dsecsdata:
 
         matBr2D, matBt2D, matBp2D = SECS_2D_DivFree_magnetic(thetaB, phiB, 
                                     theta2D, phi2D, self.rB, self.grid.Ri)
-        N2d = len(self.grid.secs2D.lat)
+        N2d = np.size(self.grid.secs2D.lat)
 
-        self.matBpara2D = np.tile(self.uvR,(1,N2d)) * matBr2D + \
-                     np.tile(self.uvT,(1,N2d)) * matBt2D + \
-                     np.tile(self.uvP,(1,N2d)) * matBp2D
+        self.matBpara2D = (matBr2D.T * self.uvR).T + (matBt2D.T * self.uvT).T + (matBp2D.T * self.uvP).T
 
         #Remove field explained by the 1D DF SECS (must have been fitted earlier).
         Bpara2D = self.Bpara - self.matBpara1D @ self.df1D
 
-        regmat = self.grid.secs2D.diff2 #regularization
+        regmat = self.grid.secs2D.diff2lat2D #regularization
         self.df2D = auto.sub_inversion(self.matBpara2D, regmat, self.epsSVD2D, 
                                   self.alpha2D, Bpara2D)
 
-        return self.df2D, Bpara2D, self.matBpara2D
+        return self.df2D, Bpara2D, self.matBpara2D, theta2D, phi2D
 
 
 
