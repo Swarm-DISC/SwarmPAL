@@ -1357,6 +1357,7 @@ class dsecsdata:
         self.matBr1D: np.ndarray([])
         self.matBt1D: np.ndarray([])
         self.matBpara1D: np.ndarray([])
+        self.matBpara2D: np.ndarray([])
 
 
     def populate(self, SwA, SwC):
@@ -1429,7 +1430,7 @@ class dsecsdata:
 
         matBr2D, matBt2D, matBp2D = SECS_2D_DivFree_magnetic(thetaB, phiB, 
                                     theta2D, phi2D, self.rB, self.grid.Ri)
-        N2d = np.size(self.grid.secs2D.lat)
+        #N2d = np.size(self.grid.secs2D.lat)
 
         self.matBpara2D = (matBr2D.T * self.uvR).T + (matBt2D.T * self.uvT).T + (matBp2D.T * self.uvP).T
 
@@ -1440,7 +1441,10 @@ class dsecsdata:
         self.df2D = auto.sub_inversion(self.matBpara2D, regmat, self.epsSVD2D, 
                                   self.alpha2D, Bpara2D)
 
-        return self.df2D, Bpara2D, self.matBpara2D, theta2D, phi2D
+        #check results with Heikki's data
+        df2dBr = matBr2D @ self.df2D
+
+        return self.df2D, Bpara2D, self.matBpara2D, df2dBr
 
 
 
