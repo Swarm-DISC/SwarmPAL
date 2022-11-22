@@ -542,14 +542,15 @@ def SECS_2D_DivFree_magnetic(thetaB, phiB, thetaSECS, phiSECS, rb, rsecs):
 
         #  %sin and cos of angle C, divided by sin(theta').
         # See Eqs. (A2)-(A5) and Fig. 14 of Vanhamäki et al.(2003)
-        # sinC = np.zeros(CosThetaPrime.shape)
-        # cosC = np.zeros(CosThetaPrime.shape)
-        sinC = np.sin(thetaSECS) * np.sin(phiSECS - phiB[n]) / Sin2ThetaPrime
-        cosC = (np.cos(thetaSECS) - np.cos(thetaB[n]) * CosThetaPrime) / (
-            np.sin(thetaB[n] * Sin2ThetaPrime)
+        ind = np.nonzero(Sin2ThetaPrime > 1e-10)[0]
+        sinC = np.zeros(CosThetaPrime.shape)
+        cosC = np.zeros(CosThetaPrime.shape)
+        sinC[ind] = np.sin(thetaSECS[ind]) * np.sin(phiSECS[ind] - phiB[n]) / Sin2ThetaPrime[ind]
+        cosC[ind] = (np.cos(thetaSECS[ind]) - np.cos(thetaB[n]) * CosThetaPrime[ind]) / (
+            np.sin(thetaB[n] * Sin2ThetaPrime[ind])
         )
-        sinC = np.where(Sin2ThetaPrime <= 1e-10, 0, sinC)
-        cosC = np.where(Sin2ThetaPrime <= 1e-10, 0, cosC)
+        #sinC = np.where(Sin2ThetaPrime <= 1e-10, 0, sinC)
+        #cosC = np.where(Sin2ThetaPrime <= 1e-10, 0, cosC)
 
         # auxiliary variable
         auxroot = np.sqrt(1 - 2 * ratio[n] * CosThetaPrime + ratio[n] ** 2)
