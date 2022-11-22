@@ -978,6 +978,49 @@ class grid2D:
         )
         self.magLon = self.magLon % 360
 
+class grid2Dfit:
+    """Class for 2D DSECS grids for fit"""
+    def __init__(self):
+        self.lat = np.ndarray([])
+        self.lon = np.ndarray([])
+        self.angle2D = np.array([])
+        self.diff2lon2D = np.array([])
+        self.diff2lat2D = np.array([])
+
+    def create(
+        self, lat1, lon1, lat2, lon2, dlat, lonRat, extLat, extLon
+    ):
+        """Initialize from data
+
+        Parameters
+        ----------
+        lat1 : _type_
+            _description_
+        lon1 : _type_
+            _description_
+        lat2 : _type_
+            _description_
+        lon2 : _type_
+            _description_
+        dlat : _type_
+            _description_
+        lonRat : _type_
+            _description_
+        extLat : _type_
+            _description_
+        extLon : _type_
+            _description_
+        """
+        self.lat, self.lon, self.angle2D, self.diff2lon2D, self.diff2lat2D = auto.sub_Swarm_grids(
+            lat1,
+            lon1,
+            lat2,
+            lon2,
+            dlat,
+            lonRat,
+            extLat,
+            extLon,
+        )
 
 
 class grid1D:
@@ -1020,7 +1063,7 @@ class dsecsgrid:
     """Class for all the grids needed in DSECS analysis """
     def __init__(self):
         self.out = grid2D()
-        self.secs2D = grid2D()
+        self.secs2D = grid2Dfit()
         self.secs1Ddf = grid1D()
         self.secs1Dcf = grid1D()
         self.outputlimitlat = 40
@@ -1033,6 +1076,8 @@ class dsecsgrid:
         self.extLatOut = 0
         self.extLonOut = 3
         self.extLat1D = 1
+        self.extLat2D = 5
+        self.extLon2D = 7
 
     def FindPole(self, SwA):
         """Find the best pole location for the analysis"""
@@ -1144,16 +1189,14 @@ class dsecsgrid:
         )
 
         self.secs2D.create(
-            SwA["Latitude"].data,
-            SwA["Longitude"].data,
-            SwC["Latitude"].data,
-            SwC["Longitude"].data,
+            SwA["magLat"].data,
+            SwA["magLon"].data,
+            SwC["magLat"].data,
+            SwC["magLon"].data,
             self.dlatOut,
             self.lonRatioOut,
-            self.extLatOut,
-            self.extLonOut,
-            self.poleLat,
-            self.poleLon,
+            self.extLat2D,
+            self.extLon2D,
         )
 
         self.secs1Ddf.create(
@@ -1302,8 +1345,10 @@ class dsecsdata:
         self.uvT = np.array([])
         self.uvP = np.array([])
         self.grid: dsecsgrid = dsecsgrid()
-        self.alpha: float = 1e-5
-        self.epsSVD: float = 4e-4
+        self.alpha1D: float = 1e-5
+        self.epsSVD1D: float = 4e-4
+        self.alpha2D: float = 50e-5
+        self.epsSVD2D: float = 10e-4
         self.df1D: np.ndarray([])
         self.df2D: np.ndarray([])
         self.cf1D: np.ndarray([])
@@ -1367,7 +1412,37 @@ class dsecsdata:
 
 
         regmat = self.grid.secs1Ddf.diff2 #regularization
-        x = auto.sub_inversion(self.matBpara1D,regmat,self.epsSVD,self.alpha,y)
+        x = auto.sub_inversion(self.matBpara1D,regmat,self.epsSVD1D,self.alpha1D,y)
         self.df1D = x
         return x,y,self.matBpara1D
+
+    def fit2D_df(self):
+        """2D divergence free fit for data.
+
+        """
+        gridtest = self.grid.secs2D
+        #Calculate B-matrices and form the field-aligned matrix
+        thetaB = (90 - self.latB) / 180 * np.pi
+        phiB = self.lonB / 180 * np.pi
+        theta2D = (90 - self.grid.secs2D.lat) / 180 * np.pi
+        phi2D = self.grid.secs2D.lon / 180 * np.pi
+
+        matBr2D, matBt2D, matBp2D = SECS_2D_DivFree_magnetic(thetaB, phiB, 
+                                    theta2D, phi2D, self.rB, self.grid.Ri)
+        N2d = len(self.grid.secs2D.lat)
+
+        self.matBpara2D = np.tile(self.uvR,(1,N2d)) * matBr2D + \
+                     np.tile(self.uvT,(1,N2d)) * matBt2D + \
+                     np.tile(self.uvP,(1,N2d)) * matBp2D
+
+        #Remove field explained by the 1D DF SECS (must have been fitted earlier).
+        Bpara2D = self.Bpara - self.matBpara1D @ self.df1D
+
+        regmat = self.grid.secs2D.diff2 #regularization
+        self.df2D = auto.sub_inversion(self.matBpara2D, regmat, self.epsSVD2D, 
+                                  self.alpha2D, Bpara2D)
+
+        return self.df2D, Bpara2D, self.matBpara2D
+
+
 
