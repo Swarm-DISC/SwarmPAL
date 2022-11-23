@@ -9,7 +9,6 @@ from abc import ABC, abstractmethod
 
 import matplotlib.pyplot as plt
 import numpy as np
-import xarray as xa
 
 from swarmpal.io import ExternalData
 from swarmpal.toolboxes.tfa import tfalib
@@ -172,7 +171,7 @@ class TfaInput(ExternalData):
         else:
             self.DEFAULTS["pad_times"] = [dt.timedelta(hours=3), dt.timedelta(hours=3)]
 
-        # Parse sampling_time argument to float and set the class varible
+        # Parse sampling_time argument to float and set the class variable
         self.SAMPLING_TIME = isotime2num(sampling_time)
         self.DEFAULTS["sampling_step"] = sampling_time
 
