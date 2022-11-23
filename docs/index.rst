@@ -26,6 +26,16 @@ This project is in the early planning stage.
    toolboxes/tfa/using_tfa
 
 .. toctree::
+   :maxdepth: 2
+   :caption: TFA temp
+
+   toolboxes/tfa/using_tfa_1
+   toolboxes/tfa/using_tfa_2
+   toolboxes/tfa/using_tfa_3
+   toolboxes/tfa/using_tfa_4
+   toolboxes/tfa/using_tfa_5
+
+.. toctree::
   :maxdepth: 2
   :caption: API
 

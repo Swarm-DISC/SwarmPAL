@@ -43,6 +43,9 @@ extensions = [
     "sphinx.ext.viewcode",
 ]
 
+# Increase allowed notebook run time
+nb_execution_timeout = 300
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
 
