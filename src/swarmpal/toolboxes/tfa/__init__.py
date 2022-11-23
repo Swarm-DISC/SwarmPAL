@@ -7,11 +7,11 @@ from swarmpal.toolboxes.tfa.tfa_processor import (  # Cadence,; TfaEfiInputs,; T
 )
 
 __all__ = (
-    # Cadence,
-    Cleaning,
-    Filtering,
-    # TfaEfiInputs,
-    # TfaMagInputs,
-    TfaProcessor,
-    Wavelet,
+    # "Cadence",
+    "Cleaning",
+    "Filtering",
+    # "TfaEfiInputs",
+    # "TfaMagInputs",
+    "TfaProcessor",
+    "Wavelet",
 )
