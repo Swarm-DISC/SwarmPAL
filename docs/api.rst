@@ -1,20 +1,32 @@
 swarmpal modules
-==============
+================
 
 swarmpal.toolboxes.fac
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: swarmpal.toolboxes.fac
     :members:
 
 swarmpal.toolboxes.secs
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: swarmpal.toolboxes.secs
     :members:
 
+swarmpal.toolboxes.tfa
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: swarmpal.toolboxes.tfa
+    :members:
+
+swarmpal.toolboxes.tfa.tfalib
+*****************************
+
+.. automodule:: swarmpal.toolboxes.tfa.tfalib
+    :members:
+
 swarmpal.io
-^^^^^^^^^
+^^^^^^^^^^^
 
 .. autoclass:: swarmpal.io.ExternalData
     :members:
