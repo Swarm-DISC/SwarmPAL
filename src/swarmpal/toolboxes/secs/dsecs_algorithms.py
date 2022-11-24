@@ -1444,8 +1444,19 @@ class dsecsdata:
         self.df2D = auto.sub_inversion(self.matBpara2D, regmat, self.epsSVD2D, 
                                   self.alpha2D, Bpara2D)
 
-        #check results with Heikki's data
+        #Calculate the current produced by the 2D DF SECS.
+        thetaJ = (90 - self.grid.out.magLat.ravel())/180 * np.pi
+        phiJ = self.grid.out.magLon.ravel()/180 * np.pi
+        matJt,matJp = SECS_2D_DivFree_vector(thetaJ, phiJ, theta2D, phi2D, self.grid.Ri, self.grid.secs2D.angle2D)
+        df2dMagJt = np.reshape(matJt @ self.df2D, self.grid.out.magLat.shape)
+        df2dMagJp = np.reshape(matJp @ self.df2D, self.grid.out.magLat.shape)
+
+        #Calculate the magnetic field produced by the 2D DF SECS
+        ### still split into SwA and SwC
         df2dBr = matBr2D @ self.df2D
+        df2dMagBt = matBt2D @ self.df2D
+        df2dMagBp = self.matBp2D @ self.df2D
+        df2dBpara = self.matBpara2D @ self.df2D
 
         return self.df2D, Bpara2D, self.matBpara2D, df2dBr
 
@@ -1461,6 +1472,7 @@ class dsecsdata:
         #Remove effect of 1D & 2D DF currents (must have been fitted earlier)
         #a=SwA.magBp(indA)-SwA.df1dMagBp(indA)-SwA.df2dMagBp(indA);
         #SwA.df1dMagBp = 0 by definition
+        #####magBp missing
         Bp = self.magBp - self.matBp2D * self.df2d
 
         #Calculate the B-matrix that gives magnetic field at Swarm orbit from the SECS.
@@ -1471,6 +1483,33 @@ class dsecsdata:
         #Fit the dipolar 1D CF SECS. Use zero constraint on the 2nd latitudinal derivative.
         regmat = self.grid.secs1Dcf.diff2 #regularization
         self.cf1D = auto.sub_inversion(matBp, regmat, self.epsSVD1Dcf, self.alpha1Dcf, Bp)
+
+        #Calculate the theta-current (southward) produced by the 1D CF SECS.
+        latJ = self.grid.out.magLat.ravel()
+        matJt = SECS_1D_CurlFree_vector(latJ, self.grid.secs1Dcf.lat, self.grid.Ri) \
+                - SECS_1D_CurlFree_vector(latJ, -self.grid.secs1Dcf.lat, self.grid.Ri)
+        tmp = np.reshape(matJt @ self.cf1D, self.grid.out.magLat.shape)
+        ###define indR
+        cf1dDipMagJt[indR]=tmp[indR]
+
+        #Calculate the radial current produced by the 1D CF SECS using finite differences.
+        #For FAC we should scale by 1/sin(inclination).
+        dlat = self.Dlat1D   #step size in latitude
+        dtheta = dlat/180 * np.pi
+        thetaJ = (90 - latJ)/180 * np.pi
+        apuNorth = (SECS_1D_CurlFree_vector(latJ + dlat,self.grid.secs1Dcf.lat,self.grid.Ri) - \
+                    SECS_1D_CurlFree_vector(latJ + dlat,- self.grid.secs1Dcf.lat,self.grid.Ri)) @ self.cf1D
+        apuSouth = (SECS_1D_CurlFree_vector(latJ - dlat,self.grid.secs1Dcf.lat,self.grid.Ri) - \
+                    SECS_1D_CurlFree_vector(latJ - dlat,-self.grid.secs1Dcf.lat,self.grid.Ri)) @ self.cf1D
+        tmp = -(np.sin(thetaJ + dtheta) * apuSouth - np.sin(thetaJ - dtheta) * apuNorth) / \
+                (2 * dtheta * self.grid.Ri * np.sin(thetaJ))  #radial current = -div
+        tmp = np.reshape(tmp * 1000, self.grid.out.magLat.shape)  #A/km^2 --> nA/m^2
+        cf1dDipJr[indR] = tmp[indR]
+
+        #Calculate the magnetic field produced by the 1D CF SECS at the Swarm satellites.
+        #There is only eastward field, so the other components remain zero (as formatted).
+        ###need to split into SwA and SwC
+        cf1dDipMagBp = matBp @ self.cf1D
 
         return self.cf1D, Bp, matBp
 
