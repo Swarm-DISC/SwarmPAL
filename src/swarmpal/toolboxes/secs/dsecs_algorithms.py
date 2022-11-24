@@ -1203,6 +1203,7 @@ class dsecsgrid:
         self.secs1Ddf.create(
             SwA["magLat"], SwC["magLat"], self.dlatOut, self.extLat1D
         )
+        
         trackA = getLocalDipoleFPtrack(SwA["magLat"].data, SwA["Radius"].data*1e-3, self.Ri)
         trackC = getLocalDipoleFPtrack(SwC["magLat"].data, SwC["Radius"].data*1e-3, self.Ri)
         self.secs1Dcf.create(trackA, trackC, self.dlatOut, self.extLat1D)
@@ -1346,8 +1347,10 @@ class dsecsdata:
         self.uvT = np.array([])
         self.uvP = np.array([])
         self.grid: dsecsgrid = dsecsgrid()
-        self.alpha1D: float = 1e-5
-        self.epsSVD1D: float = 4e-4
+        self.alpha1Ddf: float = 1e-5
+        self.epsSVD1Ddf: float = 4e-4
+        self.alpha1Dcf: float = 20e-5
+        self.epsSVD1Dcf: float = 100e-4
         self.alpha2D: float = 50e-5
         self.epsSVD2D: float = 10e-4
         self.df1D: np.ndarray([])
@@ -1394,7 +1397,7 @@ class dsecsdata:
         
 
     def fit1D_df(self):
-        """1D divergence free fit for data.
+        """1D divergence-free fit for data.
 
         Returns
         -------
@@ -1414,12 +1417,12 @@ class dsecsdata:
 
 
         regmat = self.grid.secs1Ddf.diff2 #regularization
-        x = auto.sub_inversion(self.matBpara1D,regmat,self.epsSVD1D,self.alpha1D,y)
+        x = auto.sub_inversion(self.matBpara1D,regmat,self.epsSVD1Ddf,self.alpha1Ddf,y)
         self.df1D = x
         return x,y,self.matBpara1D
 
     def fit2D_df(self):
-        """2D divergence free fit for data.
+        """2D divergence-free fit for data.
 
         """
         #Calculate B-matrices and form the field-aligned matrix
@@ -1428,11 +1431,11 @@ class dsecsdata:
         theta2D = (90 - self.grid.secs2D.lat) / 180 * np.pi
         phi2D = self.grid.secs2D.lon / 180 * np.pi
 
-        matBr2D, matBt2D, matBp2D = SECS_2D_DivFree_magnetic(thetaB, phiB, 
+        matBr2D, matBt2D, self.matBp2D = SECS_2D_DivFree_magnetic(thetaB, phiB, 
                                     theta2D, phi2D, self.rB, self.grid.Ri)
         #N2d = np.size(self.grid.secs2D.lat)
 
-        self.matBpara2D = (matBr2D.T * self.uvR).T + (matBt2D.T * self.uvT).T + (matBp2D.T * self.uvP).T
+        self.matBpara2D = (matBr2D.T * self.uvR).T + (matBt2D.T * self.uvT).T + (self.matBp2D.T * self.uvP).T
 
         #Remove field explained by the 1D DF SECS (must have been fitted earlier).
         Bpara2D = self.Bpara - self.matBpara1D @ self.df1D
@@ -1445,6 +1448,32 @@ class dsecsdata:
         df2dBr = matBr2D @ self.df2D
 
         return self.df2D, Bpara2D, self.matBpara2D, df2dBr
+
+    def fit1d_cf(self):
+        """1D curl-free fit for data.
+        """        
+
+        ####split data into hemispheres
+        ind = np.nonzero(.............)
+        latB_hem = self.latB[ind]
+        rB_hem = self.rB[ind]
+
+        #Remove effect of 1D & 2D DF currents (must have been fitted earlier)
+        #a=SwA.magBp(indA)-SwA.df1dMagBp(indA)-SwA.df2dMagBp(indA);
+        #SwA.df1dMagBp = 0 by definition
+        Bp = self.magBp - self.matBp2D * self.df2d
+
+        #Calculate the B-matrix that gives magnetic field at Swarm orbit from the SECS.
+        #The symmetric system is a combination of northern and southern hemisphere systems.
+        matBp = SECS_1D_CurlFree_magnetic(latB_hem, self.grid.secs1Dcf.lat, rB_hem, self.grid.Ri, 0) \
+            - SECS_1D_CurlFree_magnetic(latB_hem, -self.grid.secs1Dcf.lat, rB_hem, self.grid.Ri, 0)
+
+        #Fit the dipolar 1D CF SECS. Use zero constraint on the 2nd latitudinal derivative.
+        regmat = self.grid.secs1Dcf.diff2 #regularization
+        self.cf1D = auto.sub_inversion(matBp, regmat, self.epsSVD1Dcf, self.alpha1Dcf, Bp)
+
+        return self.cf1D, Bp, matBp
+
 
 
 
