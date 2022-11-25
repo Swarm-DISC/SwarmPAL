@@ -466,3 +466,66 @@ def _normalizev(v):
         _description_
     """
     return (v.T / np.linalg.norm(v, axis=1)).T
+
+def sub_points_along_fieldline(thetaSECS,Rsecs,L,minD):
+    """Calculate points to be used in the Biot-Savart integral along field line 
+        in function SECS_2D_CurlFree_AntiSym_magnetic_lineintegral
+
+    Parameters
+    ----------
+    thetaSECS : float
+        Co-latitude of the CF SECS, [radian]
+    Rsecs : float
+        Radius of the sphere where CF SECS is located, [km]
+    L : float
+        L-value of the field line starting from the CF SECS pole, [km]
+%       NOTE: this is in kilometers, so really L*Rsecs;
+    minD : float
+        minimum horizontal distance between the CF SECS pole and footpoints of 
+        the points where magnetic field is needed, [km], SCALAR
+
+    Returns
+    -------
+    array
+        co-latitudes of the integration points (= end points of the current 
+        elements), [radian]
+    """
+
+    #Minimum length of integration steps (NOTE: actually the minimum average lenght)
+    minStep = 10  #step in km
+
+    #Adjust step according to horizontal distance
+    #NOTE: maybe should increase more rapidly than linearly
+    step = min( 200, max(minStep,0.1 * minD))
+
+    #Length of the field line from one ionosphere to the other.
+    x = np.pi / 2 - thetaSECS
+    s = L * abs( np.sin(x) * np.sqrt(3 * np.sin(x)**2 + 1) + 1/np.sqrt(3) * np.arcsinh(np.sqrt(3) * np.sin(x)))
+
+    #Number of steps and step size in co-latitude assuming uniform horizontally adjusted step length
+    Nint = int(np.ceil(s / step))
+    dt0 = abs((2 * thetaSECS - np.pi)) / Nint
+
+    #Take larger steps at high altitudes.
+    #Altitude of Swarm is 450-520 km.
+    tmp = np.full((Nint,), np.nan)
+    tmp[0] = min(thetaSECS,np.pi - thetaSECS)  #always start from north hemisphere
+    n=0
+    while tmp[n] < np.pi/2:  #stop just before reaching the equator
+        h = L * np.sin(tmp[n])**2 - Rsecs  #height [km]
+        #adjust step according to altitude
+        #NOTE: maybe should increase more rapidly than linearly
+        dt = dt0 * min(500, max(1,h / 300 - 2))   #start to increase above 900 km
+        tmp[n+1] = tmp[n] + dt
+        n += 1
+
+    #Make north and south hemispheres symmetric
+    tmp = tmp[:n]
+    print(tmp)
+    t = np.hstack([tmp,np.pi/2,np.pi-tmp[::-1]])
+
+    #Flip if start from south hemisphere
+    if thetaSECS > np.pi/2:
+        t = t[::-1]
+
+    return t
