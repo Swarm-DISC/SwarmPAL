@@ -260,33 +260,6 @@ def isotime2num(iso_str):
     return duration
 
 
-# class TfaAsmInputs(ExternalData):
-#     COLLECTIONS = [
-#         *[f"SW_OPER_MAG{x}_LR_1B" for x in "ABC"],
-#         *[f"SW_OPER_MAG{x}_HR_1B" for x in "ABC"],
-#     ]
-
-#     DEFAULTS = {
-#         "measurements": ["F"],
-#         "model": "'CHAOS-Core' + 'CHAOS-Static'",
-#         "auxiliaries": ["QDLat", "QDLon", "MLT"],
-#         "sampling_step": None,
-#         "pad_times": [dt.timedelta(hours=3), dt.timedelta(hours=3)],
-#     }
-
-
-# class TfaEfiInputs(ExternalData):
-#     COLLECTIONS = [
-#         *[f"SW_OPER_EFI{x}_LP_1B" for x in "ABC"],
-#     ]
-
-#     DEFAULTS = {
-#         "measurements": [],
-#         "model": "'CHAOS-Core' + 'CHAOS-Static'",
-#         "auxiliaries": ["QDLat", "QDLon", "MLT"],
-#         "sampling_step": None,
-#     }
-
 
 class TfaProcessor:
     input_data: TfaInput
@@ -303,11 +276,13 @@ class TfaProcessor:
     input_data : TfaInput object
         The object containing the data
     active_variable: dict
-        Dictionary of the form {"varname": "B_NEC", "component": 0}
-        which specifies the name of the variable that will be used for
-        further processing. If this variable is a vector, an additional key is
-        required containing the component of this vector that will be
-        processed
+        Dictionary of the form {"varname": "F"} which specifies the name of 
+        the variable that will be used for further processing. If this 
+        variable is a vector, an additional key is required containing the 
+        component of this vector that will be processed, e.g. 
+        {"varname": "B_NEC", "component": 0}. Component number uses the 
+        Python convention of starting from zero, so 0 is the first component
+        (N in the NEC case), 1 is the second (E) and 2 is the third (C).
     params: dict
         Parameters for the processing
 
@@ -448,8 +423,8 @@ class TfaProcessor:
         freqs = 1000 / self.input_data.xarray["scale"].data
 
         if cbar_lims is None:
-            m = np.max([np.log10(np.min(self.input_data.xarray["W"])), -6])
-            x = np.log10(np.max(self.input_data.xarray["W"]))
+            m = np.max([np.log10(np.min(self.input_data.xarray["wavelet_power"])), -6])
+            x = np.log10(np.max(self.input_data.xarray["wavelet_power"]))
         else:
             m, x = cbar_lims
         cb_ticks = np.arange(np.ceil(m), np.floor(x))
@@ -460,7 +435,7 @@ class TfaProcessor:
             plt.contourf(
                 self.input_data.xarray["time"].data[inds],
                 freqs,
-                np.log10(self.input_data.xarray["W"][:, inds]),
+                np.log10(self.input_data.xarray["wavelet_power"][:, inds]),
                 cmap="jet",
                 levels=np.linspace(m, x, 20),
                 extend="both",
@@ -469,7 +444,7 @@ class TfaProcessor:
             plt.contourf(
                 self.input_data.xarray["time"].data[inds],
                 freqs,
-                self.input_data.xarray["W"][:, inds],
+                self.input_data.xarray["wavelet_power"][:, inds],
                 cmap="jet",
                 levels=np.linspace(m, x, 20),
                 extend="both",
@@ -527,7 +502,7 @@ class TfaProcessor:
         # plt.figure()
         plt.plot(
             self.input_data.xarray["time"].data[inds],
-            self.input_data.xarray["I"].data[inds],
+            self.input_data.xarray["wavelet_index"].data[inds],
         )
         plt.title(self.input_data.COLLECTION)
         plt.ylabel("Wave Index")
@@ -540,12 +515,13 @@ class TfaProcessor:
             pass
 
     def wave_index(self):
-        if "W" in self.input_data.xarray:
-            I = np.nansum(self.input_data.xarray["W"].data, 0)
-            self.input_data.xarray = self.input_data.xarray.assign({"I": (("time"), I)})
+        if "wavelet_power" in self.input_data.xarray:
+            I = np.nansum(self.input_data.xarray["wavelet_power"].data, 0)
+            self.input_data.xarray = self.input_data.xarray.assign(
+                {"wavelet_index": (("time"), I)})
         else:
             print(
-                "wave_index(): No wavelet array 'W' found! Must apply the Wavelet function first!"
+                "wave_index(): No wavelet array 'wavelet_power' found! Must apply the Wavelet function first!"
             )
 
     def interp_nans(self):
@@ -556,23 +532,23 @@ class TfaProcessor:
         )
 
     def wave_detection(self, threshold=0):
-        if "W" in self.input_data.xarray:
+        if "wavelet_power" in self.input_data.xarray:
             # remove points below the threshold
-            threshInds = self.input_data.xarray["W"].data < threshold
-            self.input_data.xarray["W"].data[threshInds] = np.NaN
+            threshInds = self.input_data.xarray["wavelet_power"].data < threshold
+            self.input_data.xarray["wavelet_power"].data[threshInds] = np.NaN
 
             # remove points that are outside the segments
             # (if segments have been defined)
             if len(self.segment_index) > 0:
                 outInds = np.isnan(self.segment_index)
-                self.input_data.xarray["W"].data[:, outInds] = np.NaN
+                self.input_data.xarray["wavelet_power"].data[:, outInds] = np.NaN
 
             # find peak frequency for each time and exclude events with peak
             # at the edges of the frequency range
-            maxInds = np.argmax(self.input_data.xarray["W"].data, 0)
-            self.input_data.xarray["W"].data[:, np.where(maxInds == 0)] = np.NaN
+            maxInds = np.argmax(self.input_data.xarray["wavelet_power"].data, 0)
+            self.input_data.xarray["wavelet_power"].data[:, np.where(maxInds == 0)] = np.NaN
             nFreqs = len(self.input_data.xarray["scale"])
-            self.input_data.xarray["W"].data[
+            self.input_data.xarray["wavelet_power"].data[
                 :, np.where(maxInds == nFreqs - 1)
             ] = np.NaN
 
@@ -596,7 +572,7 @@ class TfaProcessor:
                 )
 
                 ibi = data.as_xarray()
-                # interpolate to the times of the W array
+                # interpolate to the times of the wavelet_power array
                 bubble = np.interp(
                     self.input_data.xarray["time"].data.astype(np.float64),
                     ibi["Timestamp"].data.astype(np.float64),
@@ -604,12 +580,12 @@ class TfaProcessor:
                 )
 
                 bubbleInds = np.where(bubble > 0.20)
-                self.input_data.xarray["W"].data[:, bubbleInds] = np.NaN
+                self.input_data.xarray["wavelet_power"].data[:, bubbleInds] = np.NaN
                 return bubble
 
         else:
             print(
-                "wave_detection(): No wavelet array 'W' found! Must apply the Wavelet function first!"
+                "wave_detection(): No wavelet array 'wavelet_power' found! Must apply the Wavelet function first!"
             )
 
 
@@ -626,24 +602,6 @@ class TFA_Process(ABC):
     # append the parameters to the "meta" dictionary of the target TFA_Data object
     def append_params(self, target):
         target.params[self.__name__] = self.params
-
-
-# class Cadence(TFA_Process):
-#     __name__ = "Cadence"
-
-#     def __init__(self, params=None):
-#         if params is None:
-#             self.params = {"Sampling_Rate": 86400, "Interp": False}
-#         else:
-#             self.params = params
-
-#     def apply(self, target):
-#         target.t, target.X = tfalib.constant_cadence(
-#             target.t, target.X, self.params["Sampling_Rate"], self.params["Interp"]
-#         )[0:2]
-#         self.append_params(target)
-
-#         return target
 
 
 class Cleaning(TFA_Process):
@@ -749,15 +707,15 @@ class Wavelet(TFA_Process):
         # delete old ones, if they exist, first! This is necessary for multiple
         # applications of the Wavelet() process, otherwise it conlficts with
         # the variables that are already in the xarray
-        if "W" in target.input_data.xarray:
-            target.input_data.xarray = target.input_data.xarray.drop("W")
+        if "wavelet_power" in target.input_data.xarray:
+            target.input_data.xarray = target.input_data.xarray.drop("wavelet_power")
         if "scale" in target.input_data.xarray:
             target.input_data.xarray = target.input_data.xarray.drop("scale")
 
         # insert new values to xarray Dataset
         target.input_data.xarray = target.input_data.xarray.assign_coords({"scale": s})
         target.input_data.xarray = target.input_data.xarray.assign(
-            {"W": (("scale", "time"), norm)}
+            {"wavelet_power": (("scale", "time"), norm)}
         )
 
         self.append_params(target)
@@ -765,14 +723,10 @@ class Wavelet(TFA_Process):
         return target
 
 
+
 # if __name__ == "__main__":
-#     # Initialise access to inputs
-#     inputs = TfaMagInputs(
-#         collection="SW_OPER_MAGA_LR_1B",
-#         model="IGRF",
-#         start_time=dt.datetime(2015, 6, 23, 0, 0, 0),
-#         end_time=dt.datetime(2015, 6, 23, 5, 0, 0),
-#         viresclient_kwargs={"asynchronous": False, "show_progress": False},
-#     )
-#     # Initialise processor
-#     processor = TfaProcessor(inputs)
+#
+#
+#
+
+
