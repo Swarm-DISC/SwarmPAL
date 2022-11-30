@@ -59,13 +59,13 @@ dev = [
     "nox >=2022",
 ]
 docs = [
-    "Sphinx==4.4",
-    "myst-parser==0.15.2",
-    "myst-nb==0.13.1",
-    "sphinx-book-theme==0.3.2",
-    "sphinx_copybutton==0.5.0",
-    "matplotlib==3.5.1",
-    "ipywidgets==7.7.0",
+    "Sphinx==4.5",
+    "myst-nb==0.17.1",
+    "sphinx-book-theme==0.3.3",
+    "sphinx_copybutton==0.5.1",
+    "matplotlib==3.6",
+    "ipywidgets==8.0",
+    "ipython!=8.7.0",
 ]
 
 
