@@ -45,6 +45,8 @@ extensions = [
 
 # Increase allowed notebook run time
 nb_execution_timeout = 300
+# Fix execution of notebooks with different kernel names
+nb_kernel_rgx_aliases = {".*": "python3"}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
