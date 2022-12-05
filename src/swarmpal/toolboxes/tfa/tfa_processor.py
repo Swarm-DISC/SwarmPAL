@@ -19,6 +19,31 @@ class TfaInput(ExternalData):
     This extends the ExternalData class, so it uses the same inputs, plus a
     few more to taylor the data to the ones that are being used by the TFA
     tool.
+    
+    Parameters
+    ----------
+    collection : str
+        One of ExternalData.COLLECTIONS
+    start_time : datetime
+        The starting time for the analysis
+    end_time : datetime
+        The ending time for the analysis
+    initialise : bool
+        Set to True to download the requested data. If False, the TfaInput 
+        onject will be initialized, but without any actual data inside        
+    varname : str
+        The name of the variable to be analysed, e.g. "F" for the magnetic 
+        field magnitude by the ASM instrument, or "B_NEC" for the vector 
+        field from the VFM instrument, etc.
+    sampling_time : str
+        Sting that specifies the time between two consecutive measurements 
+        to be given according to the ISO 8601 standard for time intervals
+        e.g. PT1S for one second resolution, PT0.02S for 0.02 seconds, 
+        PT1M for one minute resolution etc
+    remove_chaos : bool
+        Set to True to allow a subsequent call of subtract_chaos() to 
+        remove the CHAOS-Core and CHAOS-Static field model from the data. 
+        It only applies to magnetic field variables.
     """
 
     # default values for the class parameters
@@ -47,16 +72,18 @@ class TfaInput(ExternalData):
         "pad_times": [dt.timedelta(hours=3), dt.timedelta(hours=3)],
     }
 
-    def flag_cleaning(self, varname=None, flagname=None):
+    def flag_cleaning(self, varname=None, flagname=None, max_val=None):
         """Set flagged values to NaN"""
         # if no inputs are given, default to the class variables
         if varname is None:
             varname = self.VARNAME
         if flagname is None:
             flagname = self.FLAGNAME
+        if max_val is None:
+            max_val = self.MAX_FLAG_VAL
 
-        inds_to_remove = self.xarray[flagname] > self.MAX_FLAG_VAL
-        if "NEC" in self.VARNAME:
+        inds_to_remove = self.xarray[flagname] > max_val
+        if ("NEC" in self.VARNAME) or ("XYZ" in self.VARNAME):
             # 3-D case
             self.xarray[varname][inds_to_remove, :] = np.NaN
         else:
@@ -66,7 +93,7 @@ class TfaInput(ExternalData):
     def calculate_magnitude(self, input_varname=None, output_varname=None):
         """If requested, calculate the magnitude of a vector variable"""
         # only run if vector field was given as input
-        if "NEC" in self.VARNAME:
+        if ("NEC" in self.VARNAME) or ("XYZ" in self.VARNAME):
             # if no inputs are given, default to the class variables
             if input_varname is None:
                 input_varname = self.VARNAME
@@ -283,9 +310,6 @@ class TfaProcessor:
         {"varname": "B_NEC", "component": 0}. Component number uses the 
         Python convention of starting from zero, so 0 is the first component
         (N in the NEC case), 1 is the second (E) and 2 is the third (C).
-    params: dict
-        Parameters for the processing
-
     """
 
     def __init__(self, input_data, active_variable, params=None):
@@ -345,8 +369,24 @@ class TfaProcessor:
         """Apply a TFA Process"""
         process.apply(self)
 
-    def create_segment_index(self):
+    def create_segment_index(self, lat_lims = None):
         """Create an array with the segment index for each time"""
+        
+        if not (lat_lims is None):
+            if hasattr(lat_lims, '__len__') and (not isinstance(lat_lims, str)):
+                if len(lat_lims) == 2:
+                    self.params["General"]["maglat_lims"] = lat_lims
+                elif len(lat_lims) == 1:
+                    self.params["General"]["maglat_lims"] = [
+                        -np.abs(lat_lims), +np.abs(lat_lims)
+                        ]
+                else:
+                    print("create_segment_index: 'lat_lims' not a 2-element \
+                          vector - using default value")
+            else:
+                self.params["General"]["maglat_lims"] = [
+                    -np.abs(lat_lims), +np.abs(lat_lims)
+                    ]
 
         # interpolate mag_lat to new "time"
         old_t = (
@@ -394,6 +434,7 @@ class TfaProcessor:
         return (inds, [t_min, t_max])
 
     def plotX(self, full=False, segment=None):
+        """Plot the active variable time series"""
 
         (inds, [t_min, t_max]) = self.get_segment_inds_and_lims(segment)
 
@@ -417,7 +458,11 @@ class TfaProcessor:
             pass
 
     def image(self, full=False, segment=None, cbar_lims=None, log=True):
-
+        """
+        Plot the dynamic spectrum of the result of the wavelet transform
+        
+        The wavelet process must have been successfully aplied first.
+        """
         (inds, [t_min, t_max]) = self.get_segment_inds_and_lims(segment)
 
         freqs = 1000 / self.input_data.xarray["scale"].data
@@ -463,7 +508,8 @@ class TfaProcessor:
         # plt.title(self.input_data.COLLECTION)
 
     def plotAUX(self, full=False, segment=None):
-
+        """Plot Mag.Lat. and MLT time series"""
+        
         [t_min, t_max] = self.get_segment_inds_and_lims(segment)[1]
 
         # plt.figure()
@@ -471,8 +517,9 @@ class TfaProcessor:
         plt.plot(
             self.input_data.xarray["Timestamp"].data,
             self.input_data.xarray["QDLat"].data,
-            "-b",
+            "-b", label = "QD Lat"
         )
+        plt.plot(0, 0, '-r', label = "MLT") # this is just for the legend
         ax = plt.gca()
         ax.set_ylabel("QDLat (deg)")
         ax.set_ylim([-90, 90])
@@ -481,13 +528,14 @@ class TfaProcessor:
         ax2.plot(
             self.input_data.xarray["Timestamp"].data,
             self.input_data.xarray["MLT"].data,
-            "-r",
+            "-r", label = "MLT"
         )
         ax2.set_ylabel("MLT (hr)")
         ax2.set_ylim([0, 24])
         ax2.set_yticks([0, 6, 12, 18, 24])
         # ax.title(self.input_data.COLLECTION)
         ax.grid(True)
+        ax.legend()
         if not full and segment is None:
             ax.set_xlim(self.input_data.TIME_LIMS)
         elif not full:
@@ -496,10 +544,20 @@ class TfaProcessor:
             pass
 
     def plotI(self, full=False, segment=None):
+        """
+        Plot the wave index time series. 
+        
+        The wavelet process must have been successfully aplied first and then
+        the wave_index() function has to be executed to produce the index. 
+        Optionally, the user can run the wave_detection() function, before the
+        wave_index() to remove parts of the signal that have been identified
+        as suspicious false positives (e.g. spikes) or that might be related
+        to ESF signatures (Plasma Bubbles).
+        """
 
         (inds, [t_min, t_max]) = self.get_segment_inds_and_lims(segment)
 
-        # plt.figure()
+        #plt.figure()
         plt.plot(
             self.input_data.xarray["time"].data[inds],
             self.input_data.xarray["wavelet_index"].data[inds],
@@ -515,6 +573,12 @@ class TfaProcessor:
             pass
 
     def wave_index(self):
+        """
+        Produce the index of wave activity for the frequencies that were used
+        in the wavelet process.
+        
+        The wavelet process must have been successfully aplied first.
+        """
         if "wavelet_power" in self.input_data.xarray:
             I = np.nansum(self.input_data.xarray["wavelet_power"].data, 0)
             self.input_data.xarray = self.input_data.xarray.assign(
@@ -525,6 +589,7 @@ class TfaProcessor:
             )
 
     def interp_nans(self):
+        """Interpolate NaN values by a piecewise linear interpolation scheme"""
         i = np.arange(len(self.input_data.xarray["X"]))
         nonNaNinds = np.where(~np.isnan(self.input_data.xarray["X"].data))
         self.input_data.xarray["X"].data = np.interp(
@@ -532,6 +597,16 @@ class TfaProcessor:
         )
 
     def wave_detection(self, threshold=0):
+        """
+        Remove parts of the wavelet spectrum that might not be true waves.
+        
+        The wavelet process must have been successfully aplied first.
+
+        This function removes (sets to NaN) parts of the wavelet spectrum that
+        might be due to spikes, data gaps, ESFs or trailing parts of wave 
+        activity from either above or below the range of frequencies that were
+        used to perform the wavelet transform.
+        """
         if "wavelet_power" in self.input_data.xarray:
             # remove points below the threshold
             threshInds = self.input_data.xarray["wavelet_power"].data < threshold
@@ -647,18 +722,28 @@ class Cleaning(TFA_Process):
 
 class Filtering(TFA_Process):
     __name__ = "Filtering"
-
+    
     def __init__(self, params=None):
         if params is None:
-            self.params = {"Sampling_Rate": 1, "Cutoff": 5 / 1000}
+            self.params = None
         else:
             self.params = params
-
+            
     def apply(self, target):
+        if self.params is None:
+            self.params = {
+                "Sampling_Rate": 1/target.input_data.SAMPLING_TIME,
+                "Cutoff_Frequency": 20/1000
+                }
+        else:
+            self.params["Sampling_Rate"] = 1/target.input_data.SAMPLING_TIME
+            
+            if "Cutoff_Scale" in self.params:
+                self.params["Cutoff_Frequency"] = 1/self.params["Cutoff_Scale"]
+
         target.input_data.xarray["X"].data = tfalib.filter(
-            target.input_data.xarray["X"].data,
-            self.params["Sampling_Rate"],
-            self.params["Cutoff"],
+            target.input_data.xarray["X"].data, self.params["Sampling_Rate"],
+            self.params["Cutoff_Frequency"]
         )
         self.append_params(target)
 
@@ -670,20 +755,47 @@ class Wavelet(TFA_Process):
 
     def __init__(self, params=None):
         if params is None:
+            self.params=None 
+        else:
+            if "Min_Frequency" in params and "Max_Frequency" in params:
+                if params["Min_Frequency"] < params["Max_Frequency"]:
+                    self.params = params
+                else:
+                    print("Min_Frequency must be smaller than Max_Frequency")
+            elif "Min_Frequency" in params or "Max_Frequency" in params:
+                print("The limits must both be in either frequency or scale,\
+                      no combinations allowed.")
+            else:
+                if params["Min_Scale"] < params["Max_Scale"]:
+                    self.params = params
+                else:
+                    print("Min_Scale must be smaller than Max_Scale")
+  
+    def apply(self, target):
+        if self.params is None:
             self.params = {
-                "Time_Step": 1,
+                "Time_Step": target.input_data.SAMPLING_TIME,
                 "Min_Scale": 1000 / 100,
                 "Max_Scale": 1000 / 1,
                 "dj": 0.1,
             }
         else:
-            self.params = params
+            self.params["Time_Step"] = target.input_data.SAMPLING_TIME
+            
+            if "Min_Frequency" in self.params and "Max_Frequency" in self.params:
+                if self.params["Max_Frequency"] <= 1/(2*self.params["Time_Step"]):
+                    self.params["Min_Scale"] = 1/self.params["Max_Frequency"]
+                    self.params["Max_Scale"] = 1/self.params["Min_Frequency"]
+                else:
+                    print("Max_Frequency needs to be smaller than 1/(2*Time_Step)")
+
+            else:
+                if self.params["Min_Scale"] < 2 * self.params["Time_Step"]:
+                    print("Min_Scale needs to be bigger or equal to 2*Time_Step")
 
         self.params["Wavelet_Function"] = "Morlet"
         self.params["Wavelet_Param"] = 6.2036
         self.params["Wavelet_Norm_Factor"] = 0.74044116
-
-    def apply(self, target):
 
         s = tfalib.wavelet_scales(
             self.params["Min_Scale"], self.params["Max_Scale"], self.params["dj"]
