@@ -3,6 +3,7 @@
 
 
 import datetime as dt
+import logging
 import re
 import sys
 from abc import ABC, abstractmethod
@@ -103,7 +104,7 @@ class TfaInput(ExternalData):
             X = np.sqrt(np.sum(self.xarray[input_varname] ** 2, 1))
             self.append_array(output_varname, X.data, dims=("Timestamp"))
         else:
-            print(
+            logging.warn(
                 "TfaInput: Will not calculate magnitude! Input field is not in vector form."
             )
 
@@ -120,7 +121,7 @@ class TfaInput(ExternalData):
             B_res = self.xarray[field_varname].data - self.xarray[model_varname].data
             self.xarray[field_varname].data = B_res
         else:
-            print(
+            logging.warn(
                 "TfaInput: Cannot subtract CHAOS if the 'remove_chaos' parameter has not been set to True"
             )
 
@@ -139,7 +140,7 @@ class TfaInput(ExternalData):
             self.xarray = self.xarray.assign_coords({"MFA": ["M", "F", "A"]})
             self.xarray = self.xarray.assign({"B_MFA": (("Timestamp", "MFA"), B_MFA)})
         else:
-            print("TfaInput: Cannot run Conversion to MFA for non-NEC inputs")
+            logging.warn("TfaInput: Cannot run Conversion to MFA for non-NEC inputs")
 
     def __init__(
         self, varname="B_NEC", remove_chaos=False, sampling_time="PT1S", *args, **kwargs
@@ -381,7 +382,7 @@ class TfaProcessor:
                         +np.abs(lat_lims),
                     ]
                 else:
-                    print(
+                    logging.warn(
                         "create_segment_index: 'lat_lims' not a 2-element \
                           vector - using default value"
                     )
@@ -590,7 +591,7 @@ class TfaProcessor:
                 {"wavelet_index": (("time"), wavindex)}
             )
         else:
-            print(
+            logging.warn(
                 "wave_index(): No wavelet array 'wavelet_power' found! Must apply the Wavelet function first!"
             )
 
@@ -648,7 +649,7 @@ class TfaProcessor:
                     measurements=["Bubble_Probability"], sampling_step="PT1S"
                 )
 
-                print("wave_detection: Retrieving IBI L2 product")
+                logging.warn("wave_detection: Retrieving IBI L2 product")
                 data = request.get_between(
                     self.analysis_window[0].strftime("%Y-%m-%dT%H:%M:%S"),
                     self.analysis_window[1].strftime("%Y-%m-%dT%H:%M:%S"),
@@ -667,7 +668,7 @@ class TfaProcessor:
                 return bubble
 
         else:
-            print(
+            logging.warn(
                 "wave_detection(): No wavelet array 'wavelet_power' found! Must apply the Wavelet function first!"
             )
 
@@ -770,9 +771,9 @@ class Wavelet(TFA_Process):
                 if params["Min_Frequency"] < params["Max_Frequency"]:
                     self.params = params
                 else:
-                    print("Min_Frequency must be smaller than Max_Frequency")
+                    logging.warn("Min_Frequency must be smaller than Max_Frequency")
             elif "Min_Frequency" in params or "Max_Frequency" in params:
-                print(
+                logging.warn(
                     "The limits must both be in either frequency or scale,\
                       no combinations allowed."
                 )
@@ -780,7 +781,7 @@ class Wavelet(TFA_Process):
                 if params["Min_Scale"] < params["Max_Scale"]:
                     self.params = params
                 else:
-                    print("Min_Scale must be smaller than Max_Scale")
+                    logging.warn("Min_Scale must be smaller than Max_Scale")
 
     def apply(self, target):
         if self.params is None:
@@ -798,11 +799,13 @@ class Wavelet(TFA_Process):
                     self.params["Min_Scale"] = 1 / self.params["Max_Frequency"]
                     self.params["Max_Scale"] = 1 / self.params["Min_Frequency"]
                 else:
-                    print("Max_Frequency needs to be smaller than 1/(2*Time_Step)")
+                    logging.warn(
+                        "Max_Frequency needs to be smaller than 1/(2*Time_Step)"
+                    )
 
             else:
                 if self.params["Min_Scale"] < 2 * self.params["Time_Step"]:
-                    print("Min_Scale needs to be bigger or equal to 2*Time_Step")
+                    logging.warn("Min_Scale needs to be bigger or equal to 2*Time_Step")
 
         self.params["Wavelet_Function"] = "Morlet"
         self.params["Wavelet_Param"] = 6.2036
