@@ -14,6 +14,8 @@ import numpy as np
 from swarmpal.io import ExternalData
 from swarmpal.toolboxes.tfa import tfalib
 
+logging.basicConfig(level=logging.WARN)
+
 
 class TfaInput(ExternalData):
     """
