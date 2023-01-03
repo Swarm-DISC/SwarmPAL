@@ -937,9 +937,10 @@ class grid2D:
         self.angle2D = np.array([])
         self.diff2lon2D = np.array([])
         self.diff2lat2D = np.array([])
+        self.origin = "geo"
 
     def create(
-        self, lat1, lon1, lat2, lon2, dlat, lonRat, extLat, extLon, poleLat, poleLon
+        self, lat1, lon1, lat2, lon2, dlat, lonRat, extLat, extLon, poleLat, poleLon,
     ):
         """Initialize from data
 
@@ -962,7 +963,7 @@ class grid2D:
         extLon : _type_
             _description_
         """
-        self.ggLat, self.ggLon, self.angle2D, self.diff2lon2D, self.diff2lat2D = sub_Swarm_grids(
+        Lat, Lon, self.angle2D, self.diff2lon2D, self.diff2lat2D = sub_Swarm_grids(
             lat1,
             lon1,
             lat2,
@@ -973,11 +974,18 @@ class grid2D:
             extLon,
         )
 
-        self.magLat, self.magLon, _, _ = sph2sph(
+        if self.origin == "geo":
+            self.ggLat,self.ggLon = Lat, Lon
+            self.magLat, self.magLon, _, _ = sph2sph(
             poleLat, poleLon, self.ggLat, self.ggLon, [], []
         )
-        self.magLon = self.magLon % 360
-
+            self.magLon = self.magLon % 360
+        elif self.origin == "mag":
+            self.magLat,self.magLon = Lat, Lon
+            self.ggLat, self.ggLon, _, _ = sph2sph(
+            poleLat, 0, self.magLat, self.magLon, [], []
+        )
+            self.magLon = self.magLon % 360       
 
 
 class grid1D:
@@ -1019,10 +1027,13 @@ class grid1D:
 class dsecsgrid:
     """Class for all the grids needed in DSECS analysis """
     def __init__(self):
-        self.out = grid2D()
-        self.secs2D = grid2D()
+        self.out = grid2D(origin="geo")
+        self.secs2Ddf = grid2D(origin="mag")
         self.secs1Ddf = grid1D()
-        self.secs1Dcf = grid1D()
+        self.secs1DcfNorth = grid1D()
+        self.secs1DcfSouth = grid1D()
+        self.secs2DcfNorth = grid2D(origin="mag")
+        self.secs2DcfSouth = grid2D(origin="mag")
         self.outputlimitlat = 40
         self.Re =6371
         self.Ri = 6371 + 130
@@ -1033,6 +1044,8 @@ class dsecsgrid:
         self.extLatOut = 0
         self.extLonOut = 3
         self.extLat1D = 1
+        self.indsN = dict()
+        self.insdS = dict()
 
     def FindPole(self, SwA):
         """Find the best pole location for the analysis"""
@@ -1143,11 +1156,11 @@ class dsecsgrid:
             self.poleLon,
         )
 
-        self.secs2D.create(
-            SwA["Latitude"].data,
-            SwA["Longitude"].data,
-            SwC["Latitude"].data,
-            SwC["Longitude"].data,
+        self.secs2Ddf.create(
+            SwA["magLat"].data,
+            SwA["magLon"].data,
+            SwC["magLat"].data,
+            SwC["magLon"].data,
             self.dlatOut,
             self.lonRatioOut,
             self.extLatOut,
@@ -1159,9 +1172,21 @@ class dsecsgrid:
         self.secs1Ddf.create(
             SwA["magLat"], SwC["magLat"], self.dlatOut, self.extLat1D
         )
-        trackA = getLocalDipoleFPtrack(SwA["magLat"].data, SwA["Radius"].data*1e-3, self.Ri)
-        trackC = getLocalDipoleFPtrack(SwC["magLat"].data, SwC["Radius"].data*1e-3, self.Ri)
-        self.secs1Dcf.create(trackA, trackC, self.dlatOut, self.extLat1D)
+
+        indsN = dict()
+        indsS = dict()
+        for dat,sat in zip([SwA,SwC],['A','C']):
+            indsN[sat] = np.argwhere(dat["ApexLatitude"] > 0)
+            indsS[sat] = np.argwhere(dat["ApexLatitude"] <= 0)
+
+        
+        trackAN = getLocalDipoleFPtrack(SwA["magLat"].data[indsN["A"]], SwA["Radius"].data[indsN["A"]]*1e-3, self.Ri)
+        trackCN = getLocalDipoleFPtrack(SwC["magLat"].data[indsN["C"]], SwC["Radius"].data[indsN["C"]]*1e-3, self.Ri)
+        trackAS = getLocalDipoleFPtrack(SwA["magLat"].data[indsS["A"]], SwA["Radius"].data[indsS["A"]]*1e-3, self.Ri)
+        trackCS = getLocalDipoleFPtrack(SwC["magLat"].data[indsS["C"]], SwC["Radius"].data[indsS["C"]]*1e-3, self.Ri)
+        self.secs1DcfNorth.create(trackAN, trackCN, self.dlatOut, self.extLat1D)
+        self.secs1DcfSouth.create(trackAS, trackCS, self.dlatOut, self.extLat1D)
+        
 
         # self.ggLat1D,_ = auto.sub_Swarm_grids_1D(lat1,lat2,)
 
