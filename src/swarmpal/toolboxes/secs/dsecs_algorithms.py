@@ -740,10 +740,10 @@ def secs_2d_curlFree_antisym_lineintegral(
         Theta coordinate of the points where magnetic field is calculated.
     phiB : ndarray
         Phi coordinate of the points where magnetic field is calculated.
-    thetaSECS : ndarray
-        Theta coordinate of the SECS poles.
-    phiSECS : ndarray
-        Phi coordinate of the SECS poles.
+    thetaSECS : float
+        Theta coordinate of the SECS pole in radian.
+    phiSECS : float
+        Phi coordinate of the SECS pole in radian.
     rb : ndarray
         Geocentric radius of the points where the magnetic field is calculated.
     rsecs : float
@@ -753,12 +753,8 @@ def secs_2d_curlFree_antisym_lineintegral(
 
     Returns
     -------
-    ndarray
-        _description_
-    ndarray
-        _description_
-    ndarray
-        _description_
+    bx, by, bz : ndarray
+        Cartesian components of the magnetic field at the magnetometer locations [nT]
     """
 
     # ravel and reassign
@@ -769,55 +765,55 @@ def secs_2d_curlFree_antisym_lineintegral(
     # Need the theta-angles of the integration points and the integration step
     L = rsecs / np.sin(thetaSECS) ** 2
 
-    if 0:
-        # fixed number of integration steps
-        Nint = int(10e3)
-    else:
-        step = 10  # step in km
-        # length of field line from one ionosphere to the other
-        x = np.pi / 2 - thetaSECS
-        s = L * np.abs(
-            np.sin(x) * np.sqrt(3 * np.sin(x) ** 2 - 1)
-            + 1 / np.sqrt(3) * np.arcsinh(np.sqrt(3) * np.sin(x))
-        )
-        Nint = np.ceil(s / step)
+    # xyz coordinates of the field points
+    x0 = rb * np.sin(thetaB) * np.cos(phiB)
+    y0 = rb * np.sin(thetaB) * np.sin(phiB)
+    z0 = rb * np.cos(thetaB)
 
-    dt = (
-        2 * thetaSECS - np.pi
-    ) / Nint  # negative if SECS pole at the northern hemisphere
-    t = (np.pi - thetaSECS) + (np.arange(1, Nint + 1, dtype=np.double) - 0.5) * dt
+    #Need minimum horizontal distance between the CF SECS and footpoints of the B-field points
+    #Map B-field points to Rsecs
+    thetaFP = np.arcsin(np.sqrt(rsecs/rb) * np.sin(thetaB))  #co-latitude of the footpoints, mapped to the northern hemisphere
+    ind = np.nonzero(thetaB > np.pi/2)
+    thetaFP[ind] = np.pi - thetaFP[ind]
+    #Horizontal distances as  cosine of co-latitude in the SECS-centered system
+    #See Eq. (A5) and Fig. 14 of Vanhamäki et al.(2003)
+    tmp = np.cos(thetaFP) * np.cos(thetaSECS) + np.sin(thetaFP) * np.sin(thetaSECS) * np.cos(phiSECS - phiB)
+    minD = rsecs * np.arccos(np.max(tmp))
+
+    #Calculate the theta-angles of the points used in the integration
+    #make sure t is ROW vector
+    t = auto.sub_points_along_fieldline(thetaSECS,rsecs,L,minD)
 
     # xyz - coordinates of the integration points (= locations of the current elements)
     # Make sure these are ROW vectors
     x = L * np.sin(t) ** 3 * np.cos(phiSECS)
     y = L * np.sin(t) ** 3 * np.sin(phiSECS)
-    z = -L * np.sin(t) ** 2 * np.cos(t)
-
-    # xyz coordinates of the field points
-
-    x0 = rb * np.sin(thetaB) * np.cos(phiB)
-    y0 = rb * np.sin(thetaB) * np.sin(phiB)
-    z0 = rb * np.cos(thetaB)
+    z = -L * np.sin(t) ** 2 * np.cos(t) ###why minus here?
 
     # xyz  components of the current elements
-    dlx = 3 * L * dt * np.cos(t) * np.sin(t) ** 2 * np.cos(phiSECS)
-    dly = 3 * L * dt * np.cos(t) * np.sin(t) ** 2 * np.sin(phiSECS)
-    dlz = -L * dt * np.sin(t) * (1 - 3 * np.cos(t) ** 2)
+    dlx = -np.diff(x)
+    dly = -np.diff(y)
+    dlz = -np.diff(z)
+
+    #xyz-coordinates of the mid-points
+    x = (x[:-1] + x[1:]) / 2
+    y = (y[:-1] + y[1:]) / 2
+    z = (z[:-1] + z[1:]) / 2
 
     # |distances between current elements and field points|^3
     diffx = (np.expand_dims(x0, -1) - x).T  # (x0[:,np.newaxis] -x).T
     diffy = (np.expand_dims(y0, -1) - x).T  # (y0[:,np.newaxis] -y).T
     diffz = (np.expand_dims(z0, -1) - x).T  # (z0[:,np.newaxis] -z).T
 
-    if 1:
-        tt = np.sqrt(diffx * diffx + diffy * diffx + diffz * diffx)
-        root = tt * tt * tt
-    # root=_calc_root(diffx,diffy,diffz)
+    tt = np.sqrt(diffx * diffx + diffy * diffy + diffz * diffz)
+    root = tt * tt * tt
+
     # Remove singularity by setting a lower lomit to the distance between current elements and field points.
     # Use the small number
     root = np.where(
         root < smallr * smallr * smallr, smallr, root
-    )  # np.maximum(root,smallr**3)
+    )
+
     # xyz components of the magnetic field
     # now there is a common factor mu0/(4*pi) = 1e.7
     # If scaling factors as in [A] , radii in [km] and magnetic field in [nT] --> extra factor of 1e6
