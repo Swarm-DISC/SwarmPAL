@@ -19,7 +19,7 @@ This project is in the early planning stage.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Toolbox guides
+   :caption: Toolbox Introductions
 
    toolboxes/fac/using_fac
    toolboxes/secs/using_secs
@@ -27,7 +27,7 @@ This project is in the early planning stage.
 
 .. toctree::
    :maxdepth: 2
-   :caption: TFA temp
+   :caption: TFA Toolbox
 
    toolboxes/tfa/using_tfa_1
    toolboxes/tfa/using_tfa_2
@@ -38,4 +38,7 @@ This project is in the early planning stage.
   :maxdepth: 2
   :caption: API
 
-  api
+  api-io
+  api-fac
+  api-secs
+  api-tfa
