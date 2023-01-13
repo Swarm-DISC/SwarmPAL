@@ -157,6 +157,7 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
 
         ### test also with real input, is magVec column or row vector?#########
         # dataVec = np.concatenate((magVec, np.zeros((regMat.shape[0],1))))
+        print(magVec.shape)
         dataVec = np.concatenate((magVec, np.zeros(regMat.shape[0])))
 
     # Calculate SVD
