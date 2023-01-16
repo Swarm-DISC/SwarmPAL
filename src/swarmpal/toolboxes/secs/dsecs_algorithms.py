@@ -930,7 +930,7 @@ def getUnitVectors(SwA, SwC):
 
 class grid2D:
     """Class for 2D DSECS grids"""
-    def __init__(self):
+    def __init__(self,origin="geo"):
         self.ggLat = np.array([])
         self.ggLon = np.array([])
         self.magLat = np.array([])
@@ -938,9 +938,10 @@ class grid2D:
         self.angle2D = np.array([])
         self.diff2lon2D = np.array([])
         self.diff2lat2D = np.array([])
+        self.origin = origin
 
     def create(
-        self, lat1, lon1, lat2, lon2, dlat, lonRat, extLat, extLon, poleLat, poleLon
+        self, lat1, lon1, lat2, lon2, dlat, lonRat, extLat, extLon, poleLat, poleLon,
     ):
         """Initialize from data
 
@@ -963,7 +964,8 @@ class grid2D:
         extLon : _type_
             _description_
         """
-        self.ggLat, self.ggLon, self.angle2D, self.diff2lon2D, self.diff2lat2D = sub_Swarm_grids(
+        
+        Lat, Lon, self.angle2D, self.diff2lon2D, self.diff2lat2D = sub_Swarm_grids(
             lat1,
             lon1,
             lat2,
@@ -973,55 +975,28 @@ class grid2D:
             extLat,
             extLon,
         )
+        if self.origin == "geo":
+            self.ggLat = Lat
+            self.ggLon = Lon
+            self.magLat, self.magLon, _, _ = sph2sph(
+                poleLat, poleLon, self.ggLat, self.ggLon, [], []
+            )
+            self.magLon = self.magLon % 360
 
-        self.magLat, self.magLon, _, _ = sph2sph(
-            poleLat, poleLon, self.ggLat, self.ggLon, [], []
-        )
-        self.magLon = self.magLon % 360
 
-class grid2Dfit:
-    """Class for 2D DSECS grids for fit"""
-    def __init__(self):
-        self.lat = np.ndarray([])
-        self.lon = np.ndarray([])
-        self.angle2D = np.array([])
-        self.diff2lon2D = np.array([])
-        self.diff2lat2D = np.array([])
+        elif self.origin == "mag":
+            self.magLat = Lat
+            self.magLon = Lon
+            self.ggLat, self.ggLon, _, _ = sph2sph(
+                poleLat, 0, self.magLat, self.magLon, [], []
+            )
+            self.ggLon = self.ggLon % 360
+        else:
+            print("Origin must be geo or mag")
 
-    def create(
-        self, lat1, lon1, lat2, lon2, dlat, lonRat, extLat, extLon
-    ):
-        """Initialize from data
 
-        Parameters
-        ----------
-        lat1 : _type_
-            _description_
-        lon1 : _type_
-            _description_
-        lat2 : _type_
-            _description_
-        lon2 : _type_
-            _description_
-        dlat : _type_
-            _description_
-        lonRat : _type_
-            _description_
-        extLat : _type_
-            _description_
-        extLon : _type_
-            _description_
-        """
-        self.lat, self.lon, self.angle2D, self.diff2lon2D, self.diff2lat2D = auto.sub_Swarm_grids(
-            lat1,
-            lon1,
-            lat2,
-            lon2,
-            dlat,
-            lonRat,
-            extLat,
-            extLon,
-        )
+
+
 
 
 class grid1D:
@@ -1063,8 +1038,8 @@ class grid1D:
 class dsecsgrid:
     """Class for all the grids needed in DSECS analysis """
     def __init__(self):
-        self.out = grid2D()
-        self.secs2D = grid2Dfit()
+        self.out = grid2D(origin="geo")
+        self.secs2D = grid2D(origin="mag")
         self.secs1Ddf = grid1D()
         self.secs1Dcf = grid1D()
         self.outputlimitlat = 40
@@ -1198,6 +1173,8 @@ class dsecsgrid:
             self.lonRatioOut,
             self.extLat2D,
             self.extLon2D,
+            self.poleLat,
+            self.poleLon,
         )
 
         self.secs1Ddf.create(
@@ -1425,8 +1402,8 @@ class dsecsdata:
         #Calculate B-matrices and form the field-aligned matrix
         thetaB = (90 - self.latB) / 180 * np.pi
         phiB = self.lonB / 180 * np.pi
-        theta2D = (90 - self.grid.secs2D.lat) / 180 * np.pi
-        phi2D = self.grid.secs2D.lon / 180 * np.pi
+        theta2D = (90 - self.grid.secs2D.magLat) / 180 * np.pi
+        phi2D = self.grid.secs2D.magLon / 180 * np.pi
 
         matBr2D, matBt2D, matBp2D = SECS_2D_DivFree_magnetic(thetaB, phiB, 
                                     theta2D, phi2D, self.rB, self.grid.Ri)
