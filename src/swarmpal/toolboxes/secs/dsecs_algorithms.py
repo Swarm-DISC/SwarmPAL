@@ -526,9 +526,13 @@ def SECS_2D_DivFree_magnetic(thetaB, phiB, thetaSECS, phiSECS, rb, rsecs):
     # If Rb is scalar, use same radius for all points.
 
     rb = rb + 0 * thetaB
+    print(rb.shape)
+    print(rb)
+    print(thetaB.shape)
 
     # Ratio of the radii, smaller/larger
     ratio = np.minimum(rb, [rsecs]) / np.maximum(rb, [rsecs])
+    print(ratio)
 
     # There is a common factor mu0/(4*pi)=1e-7. Also 1/Rb is a common factor
     # If scaling factors are in [A], radii in [km] and magnetic field in [nT]  --> extra factor of 1e6
@@ -547,13 +551,13 @@ def SECS_2D_DivFree_magnetic(thetaB, phiB, thetaSECS, phiSECS, rb, rsecs):
 
         #  %sin and cos of angle C, divided by sin(theta').
         # See Eqs. (A2)-(A5) and Fig. 14 of Vanhamäki et al.(2003)
-        ind = np.nonzero(Sin2ThetaPrime > 1e-10)[0]
+        ind = np.argwhere(Sin2ThetaPrime > 1e-10)
         sinC = np.zeros(CosThetaPrime.shape)
         cosC = np.zeros(CosThetaPrime.shape)
         sinC[ind] = np.sin(thetaSECS[ind]) * np.sin(phiSECS[ind] - phiB[n]) / Sin2ThetaPrime[ind]
         cosC[ind] = (np.cos(thetaSECS[ind]) - np.cos(thetaB[n]) * CosThetaPrime[ind]) / (
-            np.sin(thetaB[n] * Sin2ThetaPrime[ind])
-        )
+            np.sin(thetaB[n]) * Sin2ThetaPrime[ind])
+        
         #sinC = np.where(Sin2ThetaPrime <= 1e-10, 0, sinC)
         #cosC = np.where(Sin2ThetaPrime <= 1e-10, 0, cosC)
 
@@ -569,7 +573,7 @@ def SECS_2D_DivFree_magnetic(thetaB, phiB, thetaSECS, phiSECS, rb, rsecs):
         elif rb[n] > rsecs:
             auxVertical = ratio[n]
             # See eq. (A8) of Amm and Viljanen (1999)
-            auxHorizontal = -factor[n] * (1 - ratio[n] * CosThetaPrime) / (auxroot - 1)
+            auxHorizontal = -factor[n] * ((1 - ratio[n] * CosThetaPrime) / (auxroot) - 1)
         else:
             # Actually horizontal field is not well defined but this is the average.
             # See eqs. (10) and (A8) of Amm and Viljanen (1999).
