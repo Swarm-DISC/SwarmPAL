@@ -1,7 +1,7 @@
-"""TFA library
+"""
+# INSERT ESA PROJECT BLOCK #
 
-Authors:
-constantinos@noa.gr
+@author: constantinos@noa.gr
 """
 
 import sys
@@ -717,7 +717,6 @@ def mfa(B_NEC, B_MEAN_NEC, R_NEC=None):
     # find the direction of the poloidal component
     B_POL_UNIT = np.cross(B_AZIM_UNIT, B_MEAN_UNIT)
     # no need to normalize as this is already the cross product of two unitary vectors
-
     MFA[:, 0] = np.sum(B_NEC * B_POL_UNIT, axis=1)
 
     # test that magnitude is conserved
