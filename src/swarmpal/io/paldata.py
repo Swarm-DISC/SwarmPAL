@@ -3,14 +3,19 @@ PalData tools for containing data
 """
 from __future__ import annotations
 
+import json
+import logging
 from datetime import datetime
 from os import PathLike
 from re import match as regex_match
 
+from datatree import DataTree
 from pandas import to_datetime as to_pandas_datetime
 from xarray import Dataset
 
 from swarmpal.io.datafetchers import DataFetcherBase, get_fetcher
+
+logging.basicConfig(level=logging.WARN)
 
 
 class PalDataItem:
@@ -87,9 +92,22 @@ class PalDataItem:
             models[name] = detail
         return models
 
+    def _serialise_pal_metadata(self):
+        def _format_handler(x):
+            if isinstance(x, datetime):
+                return x.isoformat()
+            raise TypeError("Unknown type")
+
+        meta = {
+            "analysis_window": self.analysis_window,
+            "magnetic_models": self.magnetic_models,
+        }
+        return json.dumps(meta, default=_format_handler)
+
     def initialise(self):
-        """Trigger the fetching of the data"""
+        """Trigger the fetching of the data and attach PAL metadata"""
         self.xarray = self._fetcher.fetch_data()
+        self.xarray.attrs["PAL_meta"] = self._serialise_pal_metadata()
 
     @staticmethod
     def _ensure_datetime(times: tuple[datetime | str]) -> tuple[datetime]:
@@ -194,64 +212,57 @@ class PalDataItem:
 
 
 class PalData:
-    """Holds multiple PalDataItem objects and connects to toolboxes
+    """Holds an Xarray DataTree of PAL inputs and outputs
 
-    PalData is created given PalDataItem objects a *args or **kwargs
-    Each item is then accessible like `PalData[0]` or, e.g., `PalData["item_0"]`
+    - PalData can be created from PalDataItem objects passed to .set_inputs.
+    - PalData can be created from existing datatree (e.g. stored on disk)
+        See https://xarray-datatree.readthedocs.io/en/latest/io.html
+    - The data is stored within the .datatree property.
 
     Parameters
     ----------
-    *paldataitems: PalDataItem
-        Provide instances of PalDataItem as the arguments
-    **paldataitems_kw: PalDataItem
-        Provide instances of PalDataItem as keyword arguments
+    name: str
+        Provide a name to label the datatree
+    datatree: DataTree
+        Provide an existing DataTree directly instead
 
     Examples
     --------
     >>> from swarmpal.io import PalData, PalDataItem
     >>>
-    >>> mypal = PalData(
-    >>>     PalDataItem.from_file("file_1.nc"),
-    >>>     PalDataItem.from_file("file_2.nc"),
+    >>> params = dict(
+    >>>     collection="SW_OPER_MAGA_LR_1B",
+    >>>     measurements=["F", "B_NEC"],
+    >>>     start_time="2016-01-01T00:00:00",
+    >>>     end_time="2016-01-02T00:00:00",
+    >>>     server_url="https://vires.services/ows",
     >>> )
-    >>> mypal.initialise()
-    >>> # The two datasets are available via:
-    >>> mypal[0].xarray, mypal[1].xarray
-    >>>
-    >>> mypal = PalData(
-    >>>     item_1=PalDataItem.from_file("file_1.nc"),
-    >>>     item_2=PalDataItem.from_file("file_2.nc"),
+    >>> my_pal = PalData(name="trial")
+    >>> my_pal.set_inputs(
+    >>>     SwarmAlpha=PalDataItem.from_vires(**params)
     >>> )
-    >>> mypal.initialise()
-    >>> # The two datasets are available via:
-    >>> mypal["item_1"].xarray, mypal["item_2"].xarray
+    >>> # Access data directly through the datatree
+    >>> my_pal.datatree["inputs/SwarmAlpha"]
     """
 
-    def __init__(self, *paldataitems: PalDataItem, **paldataitems_kw: PalDataItem):
-        self._registry = {}
-        if paldataitems and paldataitems_kw:
-            raise ValueError("Do not supply both args and kwargs")
-        for item in (*paldataitems, *paldataitems_kw.values()):
-            if not isinstance(item, PalDataItem):
-                raise TypeError(f"{item} should be a PalDataItem")
-        for key, item in enumerate(paldataitems):
-            self._registry[key] = item
-        for key, item in paldataitems_kw.items():
-            self._registry[key] = item
+    def __init__(self, name: str | None = None, datatree: DataTree | None = None):
+        self.datatree = datatree if datatree else DataTree(name=name)
 
-    def __getitem__(self, x):
-        try:
-            return self._registry[x]
-        except KeyError:
-            raise KeyError(f"Item '{x}' not found in PalData")
+    def set_inputs(self, **paldataitems: PalDataItem):
+        """Supply named input datasets through PalDataItem
 
-    def __iter__(self):
-        yield from self._registry.values()
-
-    def initialise(self):
-        """Trigger the fetching of the data"""
-        for paldataitem in self._registry.values():
-            paldataitem.initialise()
+        Parameters
+        ----------
+        **paldataitems_kw: PalDataItem
+            Provide instances of PalDataItem as keyword arguments
+        """
+        if self.datatree:
+            logging.warn("Resetting contents of PalData")
+            self.datatree = DataTree(name=self.datatree.name)
+        for name, item in paldataitems.items():
+            # Use paldataitems to populate the DataTree; triggers download
+            self.datatree[f"inputs/{name}"] = DataTree(item.xarray)
+            # TODO: Validate and extract PAL meta as a property
 
 
 if __name__ == "__main__":
@@ -273,8 +284,8 @@ if __name__ == "__main__":
         # models=["IGRF"]
     )
     # Create PalData from two inputs, one from vires, one from hapi
-    mypal1 = PalData(
-        PalDataItem.from_vires(**vires_params),
-        PalDataItem.from_hapi(**hapi_params),
+    mypal1 = PalData()
+    mypal1.set_inputs(
+        vires_source=PalDataItem.from_vires(**vires_params),
+        hapi_source=PalDataItem.from_hapi(**hapi_params),
     )
-    mypal1.initialise()

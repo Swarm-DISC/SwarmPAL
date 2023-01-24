@@ -42,6 +42,7 @@ dependencies = [
     "scipy >= 1.8",
     "viresclient >= 0.11",
     "xarray >= 0.21",
+    "xarray-datatree >= 0.0.11",
 ]
 
 [project.optional-dependencies]
