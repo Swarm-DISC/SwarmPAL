@@ -211,7 +211,6 @@ class TfaInput(ExternalData):
         kwargs["end_time"] += self.DEFAULTS["pad_times"][-1]
 
         if "EXPT" in self.COLLECTION:
-
             from viresclient import SwarmRequest
 
             SERVER_URL = "https://vires.services/ows"
@@ -240,7 +239,6 @@ class TfaInput(ExternalData):
             )
 
         elif "AUX_OBS" in self.COLLECTION:
-
             from viresclient import SwarmRequest
 
             SERVER_URL = "https://vires.services/ows"
@@ -273,7 +271,7 @@ def isotime2num(iso_str):
     s_date = re.findall("P(.+)T", iso_str)
     # check of values of years, months and days and add their values to duration
     if s_date:
-        for (c, m) in date_vals:
+        for c, m in date_vals:
             match = re.findall(r"([\d\.]+)" + c, s_date[0])
             if match:
                 duration += float(match[0]) * m
@@ -282,7 +280,7 @@ def isotime2num(iso_str):
     s_time = re.findall("T(.+)", iso_str)
     # check of values of hours, mins and secs and add their values to duration
     if s_time:
-        for (c, m) in time_vals:
+        for c, m in time_vals:
             match = re.findall(r"([\d\.]+)" + c, s_time[0])
             if match:
                 duration += float(match[0]) * m
