@@ -38,6 +38,7 @@ class ViresParameters(Parameters):
 
 @dataclass
 class HapiParameters(Parameters):
+    # TODO: switch to naming used by hapiclient
     collection: str
     measurements: list[str]
     start_time: str
@@ -162,7 +163,7 @@ class HapiDataFetcher(DataFetcherBase):
         for p in meta["parameters"][1:]:
             n_extra_dims = len(p.get("size", []))
             extra_dims = (f"{p['name']}_dim{i+1}" for i in range(n_extra_dims))
-            dims = (*dims, ("Timestamp", *extra_dims))
+            dims = (*dims, (timevar, *extra_dims))
         # Convert time data to timezone-naive DatetimeIndex
         tdata = to_pandas_datetime(hapitime2datetime(data[timevar]))
         tdata = tdata.tz_convert("UTC").tz_convert(None)
