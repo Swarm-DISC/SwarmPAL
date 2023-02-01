@@ -20,7 +20,6 @@ from swarmpal.toolboxes.secs.aux_tools import (
 
 
 def sub_fit_1D_DivFree(SwA, SwC, result):
-
     # extract radii of the Earth and ionospheric current layer
     Re = result["Re"]
     Ri = result["Ri"]
@@ -713,7 +712,6 @@ def SECS_2D_CurlFree_antisym_magnetic(
 
     # loop over secs poles
     for n in range(Nsecs):
-
         # small number with dimension distance ^3 to avoid division by zero
         smallr = (
             1.1 * rsecs * limitangle[n]
@@ -1010,7 +1008,6 @@ class grid1D:
     """Simple class to hold a 1D lat grid"""
 
     def __init__(self):
-
         self.lat = np.array([])
         self.diff2 = np.array([])
 
@@ -1365,7 +1362,6 @@ def getLocalDipoleFPtrack1D(latB, rB, Ri):
 
 
 def getLocalDipoleFPtrack2D(latB, lonB, rB, Ri):
-
     thetaB = (90 - latB) / 180 * np.pi
     thetaFP = np.arcsin(
         np.sqrt(Ri / rB) * np.sin(thetaB)
@@ -1680,7 +1676,6 @@ class dsecsdata:
             [indRN, indRS],
             [self.grid.secs1DcfNorth, self.grid.secs1DcfSouth],
         ):
-
             latB_hem = self.latB[ind]
             rB_hem = self.rB[ind]
             Bp = self.magBp - self.matBp2Ddf @ self.df2D
@@ -1759,7 +1754,6 @@ def fit2d_cf(self):
         [self.grid.secs2DcfNorth, self.grid.secs2DcfSouth],
         [self.grid.secs2dcfRemoteNorth, self.grid.secs2dcfRemoteSouth],
     ):
-
         ###need to ravel these?
         Br_hem = Br[ind]
         Bt_hem = Bt[ind]
