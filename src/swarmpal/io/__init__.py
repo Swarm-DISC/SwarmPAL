@@ -1,10 +1,18 @@
 from swarmpal.io._data_container import ExternalData, MagExternalData, ViresDataFetcher
-from swarmpal.io.paldata import PalData, PalDataItem
+from swarmpal.io.paldata import (
+    PalData,
+    PalDataItem,
+    PalDataTreeAccessor,
+    PalProcess,
+    create_paldata,
+)
 
 __all__ = (
+    "create_paldata",
     "ExternalData",
     "MagExternalData",
     "PalData",
     "PalDataItem",
-    "ViresDataFetcher",
+    "PalDataTreeAccessor",
+    "PalProcess" "ViresDataFetcher",
 )

@@ -5,11 +5,12 @@ from __future__ import annotations
 
 import json
 import logging
+from abc import ABC, abstractmethod
 from datetime import datetime
 from os import PathLike
 from re import match as regex_match
 
-from datatree import DataTree
+from datatree import DataTree, register_datatree_accessor
 from pandas import to_datetime as to_pandas_datetime
 from xarray import Dataset
 
@@ -263,6 +264,98 @@ class PalData:
             # Use paldataitems to populate the DataTree; triggers download
             self.datatree[f"inputs/{name}"] = DataTree(item.xarray)
             # TODO: Validate and extract PAL meta as a property
+
+
+class PalMeta:
+    @staticmethod
+    def serialise(meta: dict) -> str:
+        def _format_handler(x):
+            if isinstance(x, datetime):
+                return x.isoformat()
+            raise TypeError("Unknown type")
+
+        return json.dumps(meta, default=_format_handler)
+
+    @staticmethod
+    def deserialise(meta: str) -> dict:
+        return json.loads(meta)
+
+
+@register_datatree_accessor("swarmpal")
+class PalDataTreeAccessor:
+    """Provide custom attributes and methods on XArray DataTrees for SwarmPAL functionality.
+
+    See e.g. https://github.com/Unidata/MetPy/blob/main/src/metpy/xarray.py
+    """
+
+    def __init__(self, datatree) -> None:
+        self._datatree = datatree
+
+    def apply(self, palprocess: PalProcess) -> DataTree:
+        return palprocess(self._datatree)
+
+    @property
+    def pal_meta(self) -> dict:
+        pal_metadata_set = {}
+        for datatree in self._datatree.descendants:
+            pal_meta = datatree.attrs.get("PAL_meta", "{}")
+            pal_meta = json.loads(pal_meta)
+            pal_metadata_set[datatree.name] = pal_meta
+        return pal_metadata_set
+
+    @property
+    def magnetic_model_varnames(self) -> list[str]:
+        magnetic_model_names = set()
+        for _, pal_meta in self.pal_items_metadata.items():
+            models = pal_meta.get("magnetic_models", {})
+            for model_name, _ in models.items():
+                magnetic_model_names.add(model_name)
+        return [f"B_NEC_{x}" for x in magnetic_model_names]
+
+
+def create_paldata(**paldataitems: PalDataItem):
+    datatree = DataTree(name="paldata")
+    for name, item in paldataitems.items():
+        # Use paldataitems to populate the DataTree; triggers download
+        datatree[f"{name}"] = DataTree(item.xarray)
+    return datatree
+
+
+class PalProcess(ABC):
+    def __init__(self, active_tree: str, config: dict):
+        self._active_tree = active_tree
+        self._config = config
+
+    @property
+    @abstractmethod
+    def process_name(self) -> str:
+        return "PalProcess"
+
+    @property
+    def active_tree(self):
+        return self._active_tree
+
+    @property
+    def config(self):
+        return self._config
+
+    def __call__(self, datatree):
+        # Check metadata to see if this has already been run
+        procname = self.process_name
+        pal_meta = datatree[self.active_tree].attrs.get("PAL_meta", "{}")
+        pal_meta = PalMeta.deserialise(pal_meta)
+        if procname in pal_meta.keys():
+            raise RuntimeError(f"{procname} process has already been applied")
+        # Apply process to create updated datatree
+        datatree = self._call(datatree)
+        # Update metadata with details of the applied process
+        pal_meta[procname] = self.config
+        datatree[self.active_tree].attrs["PAL_meta"] = PalMeta.serialise(pal_meta)
+        return datatree
+
+    @abstractmethod
+    def _call(self, datatree) -> DataTree:
+        ...
 
 
 if __name__ == "__main__":
