@@ -148,18 +148,23 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
         Vector of SECS amplitudes
     """
 
+    
     # Combine into one matrix and add zero constraint on the data vector
     if regMat.size == 0 or np.isnan(alpha):
         sysMat = secsMat
         dataVec = magVec
     else:
+
         sysMat = np.concatenate((secsMat, alpha * regMat))
 
         ### test also with real input, is magVec column or row vector?#########
         # dataVec = np.concatenate((magVec, np.zeros((regMat.shape[0],1))))
         print(magVec.shape)
+        print(np.zeros(regMat.shape[0]).shape)
         dataVec = np.concatenate((magVec, np.zeros(regMat.shape[0])))
+     
 
+    
     # Calculate SVD
     print(
         f"\n  Calculating SVD of a [{sysMat.shape[0]},{sysMat.shape[1]}] " "matrix ... "
@@ -324,9 +329,11 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
 
     # Latitudinal extent of the satellite data, only that part where there is
     # data from both satellites.
+    #print(lat1.shape)
+    #print(lat2.shape)
     maxlat = min(np.nanmax(lat1), np.nanmax(lat2))
     minlat = max(np.nanmin(lat1), np.nanmin(lat2))
-
+  
     # Average satellite path, and the satellite spacing in longitudinal direction.
     ind1 = np.nonzero((lat1 >= minlat) & (lat1 <= maxlat))
     # ind2 = np.nonzero((lat2 >= minlat) & (lat2 <= maxlat)) ## not used
@@ -355,12 +362,15 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
     dLon2D = np.full((Nlat, Nlon), np.nan)
 
     # Make the 2D grid
+    #print(latA.shape)
+    #print(lonA.shape)
     for n in range(Nlat):
         lat2D[n, :] = apulat[n]
 
         # Average satellite longitude at this latitude, and the
         # grid spacing in longitudinal direction
         apulona = sub_LonInterp(latA, lonA, apulat[n], "linear", "extrapolate")
+        
 
         # check interpolation
         apuf = interp1d(latA, lonEro, kind="linear", fill_value="extrapolate")
@@ -479,8 +489,7 @@ def sub_points_along_fieldline(thetaSECS, Rsecs, L, minD):
         Rsecs : float
             Radius of the sphere where CF SECS is located, [km]
         L : float
-            L-value of the field line starting from the CF SECS pole, [km]
-    %       NOTE: this is in kilometers, so really L*Rsecs;
+            L-value of the field line starting from the CF SECS pole, [km    NOTE: this is in kilometers, so really L*Rsecs;
         minD : float
             minimum horizontal distance between the CF SECS pole and footpoints of
             the points where magnetic field is needed, [km], SCALAR
@@ -493,21 +502,29 @@ def sub_points_along_fieldline(thetaSECS, Rsecs, L, minD):
     """
 
     # Minimum length of integration steps (NOTE: actually the minimum average lenght)
+    #print('hupep7')
+    #print('thetaS ' + type(thetaSECS).__name__)
+    #print(thetaSECS)
     minStep = 10  # step in km
 
     # Adjust step according to horizontal distance
     # NOTE: maybe should increase more rapidly than linearly
     step = min(200, max(minStep, 0.1 * minD))
-
+    #print('hupep8')
     # Length of the field line from one ionosphere to the other.
     x = np.pi / 2 - thetaSECS
+    #print(x)
+    #print('hh')
     s = L * abs(
         np.sin(x) * np.sqrt(3 * np.sin(x) ** 2 + 1)
         + 1 / np.sqrt(3) * np.arcsinh(np.sqrt(3) * np.sin(x))
     )
-
+    #print(s)
+    #print('hupep9')
     # Number of steps and step size in co-latitude assuming uniform horizontally adjusted step length
+    #print(np.ceil(s / step))
     Nint = int(np.ceil(s / step))
+    #print('hupep10')
     dt0 = abs(2 * thetaSECS - np.pi) / Nint
 
     # Take larger steps at high altitudes.
@@ -525,7 +542,7 @@ def sub_points_along_fieldline(thetaSECS, Rsecs, L, minD):
 
     # Make north and south hemispheres symmetric
     tmp = tmp[:n]
-    print(tmp)
+    #print(tmp)
     t = np.hstack([tmp, np.pi / 2, np.pi - tmp[::-1]])
 
     # Flip if start from south hemisphere
