@@ -1665,8 +1665,9 @@ def fit2d_cf(self):
         [self.indRN, self.indRS],
         [self.grid.secs2DcfNorth, self.grid.secs2DcfSouth],
         [self.grid.secs2dcfRemoteNorth, self.grid.secs2dcfRemoteSouth],
+        strict=True,
     ):
-     
+
         Br_hem = Br[ind]
         Bt_hem = Bt[ind]
         Bp_hem = Bp[ind]
@@ -1677,7 +1678,7 @@ def fit2d_cf(self):
         # Calculate B-matrices.
         theta2D = (90 - gridhem.lat) / 180 * np.pi
         phi2D = gridhem.lon / 180 * np.pi
-   
+
         matBr2D, matBt2D, matBp2D = SECS_2D_CurlFree_antisym_magnetic(
             thetaB_hem, phiB_hem, theta2D, phi2D, rB_hem, self.grid.Ri, gridhem.angle2D
         )
