@@ -180,15 +180,15 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
     lkmS = len(svdS)
     slim = epsSVD * svdS[0]
     ss = 1.0 / svdS
-    ind = np.nonzero(svdS <= slim)
-    ss[ind] = 0
+    #ind = np.nonzero(svdS <= slim)
+    ss[svdS <= slim] = 0
 
     print(
         f"epsilon = {epsSVD}, singular values range from {svdS[0]} to "
-        f"{svdS[lkmS - 1]} \n"
+        f"{svdS[-1]} \n"
     )
     print(
-        f"--> {len(ind)} values smaller than {slim} deleted (of {lkmS} " "values)\n\n"
+        f"--> {np.count_nonzero(svdS <= slim)} values smaller than {slim} deleted (of {lkmS} " "values)\n\n"
     )
 
     # Calculate the result vector
@@ -514,7 +514,7 @@ def sub_points_along_fieldline(thetaSECS, Rsecs, L, minD):
     # Length of the field line from one ionosphere to the other.
     x = np.pi / 2 - thetaSECS
     #print(x)
-    #print('hh')
+    print('hh')
     s = L * abs(
         np.sin(x) * np.sqrt(3 * np.sin(x) ** 2 + 1)
         + 1 / np.sqrt(3) * np.arcsinh(np.sqrt(3) * np.sin(x))
@@ -543,7 +543,7 @@ def sub_points_along_fieldline(thetaSECS, Rsecs, L, minD):
     # Make north and south hemispheres symmetric
     tmp = tmp[:n]
     #print(tmp)
-    t = np.hstack([tmp, np.pi / 2, np.pi - tmp[::-1]])
+    t = np.hstack((tmp, np.pi / 2, np.pi - tmp[::-1]))
 
     # Flip if start from south hemisphere
     if thetaSECS > np.pi / 2:
