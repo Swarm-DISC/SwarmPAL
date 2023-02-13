@@ -1,5 +1,5 @@
-import numpy as np
 import logging
+import numpy as np
 from scipy.interpolate import interp1d
 
 logger = logging.getLogger(__name__)
