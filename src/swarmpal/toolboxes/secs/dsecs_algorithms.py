@@ -3,7 +3,7 @@
 Adapted from MatLab code by Heikki Vanhamäki.
 
 """
-import datetime as dt
+
 import numpy as np
 import swarmpal.toolboxes.secs.aux_tools as auto
 from swarmpal.toolboxes.secs import SecsInputs
@@ -1393,7 +1393,7 @@ def trim_data(SwA, SwC):
     Vy = np.gradient(SwC["magLon"]) * np.cos(np.radians(SwC["magLat"]))
     _, ind = sub_FindLongestNonZero(abs(Vy) < abs(Vx))
 
-    ### replace with indexing whole dataset
+    # replace with indexing whole dataset
     SwC = SwC.sel(Timestamp=SwC["Timestamp"][ind])
 
     return SwA, SwC
@@ -1580,7 +1580,7 @@ class dsecsdata:
 
     def fit1d_cf(self):
         """1D curl-free fit for data."""
-        #        ####split data into hemispheres
+        # split data into hemispheres
         # ind = np.nonzero(.............)
         indN = np.argwhere(self.apexlats > 0)
         indRN = np.argwhere(self.grid.out.magLat > 0)
@@ -1650,7 +1650,6 @@ class dsecsdata:
 
 def fit2d_cf(self):
     """2D curl-free fit for data."""
-    ### grid generation (also remote grid) missing
     # Fit is done to all components of the magnetic disturbance.
     # Remove field explained by the 1D & 2D DF SECS and 1D CF SECS (dipolar)
     Br = self.Br - self.df1dBr - self.df2dBr - self.cf1dDipBr
@@ -1661,14 +1660,13 @@ def fit2d_cf(self):
     thetaB = (90 - self.latB) / 180 * np.pi
     phiB = self.lonB / 180 * np.pi
 
-    ### add indN and indRN to class
     for ind, rind, gridhem, remote_hem in zip(
         [self.indN, self.indS],
         [self.indRN, self.indRS],
         [self.grid.secs2DcfNorth, self.grid.secs2DcfSouth],
         [self.grid.secs2dcfRemoteNorth, self.grid.secs2dcfRemoteSouth],
     ):
-        ###need to ravel these?
+     
         Br_hem = Br[ind]
         Bt_hem = Bt[ind]
         Bp_hem = Bp[ind]
@@ -1679,16 +1677,11 @@ def fit2d_cf(self):
         # Calculate B-matrices.
         theta2D = (90 - gridhem.lat) / 180 * np.pi
         phi2D = gridhem.lon / 180 * np.pi
-        ###should rename those to cf and df?
+   
         matBr2D, matBt2D, matBp2D = SECS_2D_CurlFree_antisym_magnetic(
             thetaB_hem, phiB_hem, theta2D, phi2D, rB_hem, self.grid.Ri, gridhem.angle2D
         )
 
-        ###ask Heikki if we should keep this switch
-        # if result.remoteCFdip:
-        # if True:
-        # B-matrices for remote grid
-        ### split remote grid into north and south
         remoteTheta = (90 - remote_hem.lat) / 180 * np.pi
         remotePhi = remote_hem.lon / 180 * np.pi
         remoteMatBr2D, remoteMatBt2D, remoteMatBp2D = SECS_2D_CurlFree_antisym_magnetic(
