@@ -1112,7 +1112,7 @@ class dsecsgrid:
 
         indsN = dict()
         indsS = dict()
-        for dat, sat in zip([SwA, SwC], ["A", "C"], strict=True):
+        for dat, sat in zip([SwA, SwC], ["A", "C"]):
             indsN[sat] = np.argwhere(dat["ApexLatitude"].data > 0)
             indsS[sat] = np.argwhere(dat["ApexLatitude"].data <= 0)
 
@@ -1591,7 +1591,6 @@ class dsecsdata:
             [indN, indS],
             [indRN, indRS],
             [self.grid.secs1DcfNorth, self.grid.secs1DcfSouth],
-            strict=True,
         ):
             latB_hem = self.latB[ind]
             rB_hem = self.rB[ind]
@@ -1665,7 +1664,6 @@ def fit2d_cf(self):
         [self.indRN, self.indRS],
         [self.grid.secs2DcfNorth, self.grid.secs2DcfSouth],
         [self.grid.secs2dcfRemoteNorth, self.grid.secs2dcfRemoteSouth],
-        strict=True,
     ):
 
         Br_hem = Br[ind]
