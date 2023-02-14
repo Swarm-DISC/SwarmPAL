@@ -5,6 +5,7 @@ Adapted from MatLab code by Heikki Vanhamäki.
 """
 
 import numpy as np
+
 import swarmpal.toolboxes.secs.aux_tools as auto
 from swarmpal.toolboxes.secs import SecsInputs
 from swarmpal.toolboxes.secs.aux_tools import (
@@ -1665,7 +1666,6 @@ def fit2d_cf(self):
         [self.grid.secs2DcfNorth, self.grid.secs2DcfSouth],
         [self.grid.secs2dcfRemoteNorth, self.grid.secs2dcfRemoteSouth],
     ):
-
         Br_hem = Br[ind]
         Bt_hem = Bt[ind]
         Bp_hem = Bp[ind]
