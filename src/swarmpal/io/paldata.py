@@ -16,7 +16,7 @@ from xarray import Dataset
 
 from swarmpal.io.datafetchers import DataFetcherBase, get_fetcher
 
-logging.basicConfig(level=logging.WARN)
+logger = logging.getLogger(__name__)
 
 
 class PalDataItem:
@@ -258,7 +258,7 @@ class PalData:
             Provide instances of PalDataItem as keyword arguments
         """
         if self.datatree:
-            logging.warn("Resetting contents of PalData")
+            logger.warn("Resetting contents of PalData")
             self.datatree = DataTree(name=self.datatree.name)
         for name, item in paldataitems.items():
             # Use paldataitems to populate the DataTree; triggers download
@@ -300,13 +300,14 @@ class PalDataTreeAccessor:
         for datatree in self._datatree.descendants:
             pal_meta = datatree.attrs.get("PAL_meta", "{}")
             pal_meta = json.loads(pal_meta)
-            pal_metadata_set[datatree.name] = pal_meta
+            treepath = datatree.relative_to(self._datatree)
+            pal_metadata_set[treepath] = pal_meta
         return pal_metadata_set
 
     @property
     def magnetic_model_varnames(self) -> list[str]:
         magnetic_model_names = set()
-        for _, pal_meta in self.pal_items_metadata.items():
+        for _, pal_meta in self.pal_meta.items():
             models = pal_meta.get("magnetic_models", {})
             for model_name, _ in models.items():
                 magnetic_model_names.add(model_name)
@@ -314,6 +315,30 @@ class PalDataTreeAccessor:
 
 
 def create_paldata(**paldataitems: PalDataItem):
+    """Generates a Datatree from a number of PalDataItem's supplied as kwargs
+
+    Returns
+    -------
+    Datatree
+        A Datatree containing Datasets defined from each PalDataItem
+
+    Examples
+    --------
+    >>> from swarmpal.io import create_paldata, PalDataItem
+    >>>
+    >>> data_params = dict(
+    >>>     collection="SW_OPER_MAGA_LR_1B",
+    >>>     measurements=["B_NEC"],
+    >>>     models=["IGRF"],
+    >>>     start_time="2016-01-01T00:00:00",
+    >>>     end_time="2016-01-01T03:00:00",
+    >>>     server_url="https://vires.services/ows",
+    >>>     options=dict(asynchronous=False, show_progress=False),
+    >>> )
+    >>> data = create_paldata(
+    >>>     "sample/alpha"=PalDataItem.from_vires(**data_params)
+    >>> )
+    """
     datatree = DataTree(name="paldata")
     for name, item in paldataitems.items():
         # Use paldataitems to populate the DataTree; triggers download
@@ -322,6 +347,8 @@ def create_paldata(**paldataitems: PalDataItem):
 
 
 class PalProcess(ABC):
+    """Abstract class to define processes to act on datatrees"""
+
     def __init__(self, active_tree: str, config: dict):
         self._active_tree = active_tree
         self._config = config
@@ -332,20 +359,22 @@ class PalProcess(ABC):
         return "PalProcess"
 
     @property
-    def active_tree(self):
+    def active_tree(self) -> str:
+        """Defines which branch of the datatree will be used"""
         return self._active_tree
 
     @property
-    def config(self):
+    def config(self) -> dict:
+        """Dictionary that configures the process behaviour"""
         return self._config
 
-    def __call__(self, datatree):
+    def __call__(self, datatree) -> DataTree:
         # Check metadata to see if this has already been run
         procname = self.process_name
         pal_meta = datatree[self.active_tree].attrs.get("PAL_meta", "{}")
         pal_meta = PalMeta.deserialise(pal_meta)
         if procname in pal_meta.keys():
-            raise RuntimeError(f"{procname} process has already been applied")
+            logger.warn(f"Rerunning {procname}: May overwrite existing data")
         # Apply process to create updated datatree
         datatree = self._call(datatree)
         # Update metadata with details of the applied process
