@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from os import PathLike
 from os.path import exists as path_exists
 
@@ -19,15 +20,15 @@ from xarray import Dataset, open_dataset
 class Parameters:
     """Control which dataset is accessed, and how the fetcher behaves"""
 
-    ...
+    pad_times: tuple[timedelta] = ()
 
 
 @dataclass
 class ViresParameters(Parameters):
-    collection: str
-    measurements: list[str]
-    start_time: str
-    end_time: str
+    collection: str = ""
+    measurements: list[str] = field(default_factory=list)
+    start_time: str | datetime = ""
+    end_time: str | datetime = ""
     server_url: str = "https://vires.services/ows"
     models: list[str] = field(default_factory=list)
     auxiliaries: list[str] = field(default_factory=list)
@@ -39,17 +40,17 @@ class ViresParameters(Parameters):
 @dataclass
 class HapiParameters(Parameters):
     # TODO: switch to naming used by hapiclient
-    collection: str
-    measurements: list[str]
-    start_time: str
-    end_time: str
-    server_url: str = "https://vires.services/hapi"
+    server: str = ""
+    dataset: str = ""
+    parameters: str = ""
+    start: str = ""
+    stop: str = ""
     options: dict = field(default_factory=dict)
 
 
 @dataclass
 class FileParameters(Parameters):
-    filename: PathLike
+    filename: PathLike | None = None
     group: str | None = None
 
 
@@ -186,20 +187,20 @@ class HapiDataFetcher(DataFetcherBase):
     def _get_hapi_info(self) -> dict:
         # Get info response from HAPI server
         return hapi(
-            self.parameters.server_url,
-            self.parameters.collection,
-            ",".join(self.parameters.measurements),
+            self.parameters.server,
+            self.parameters.dataset,
+            self.parameters.parameters,
             **self.parameters.options,
         )
 
     def fetch_data(self) -> Dataset:
         """Make a HAPI query and load an xarray Dataset"""
         data, meta = hapi(
-            self.parameters.server_url,
-            self.parameters.collection,
-            ",".join(self.parameters.measurements),
-            self.parameters.start_time,
-            self.parameters.end_time,
+            self.parameters.server,
+            self.parameters.dataset,
+            self.parameters.parameters,
+            self.parameters.start,
+            self.parameters.stop,
             **self.parameters.options,
         )
         return self._hapi_to_xarray(data, meta)

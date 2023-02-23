@@ -123,26 +123,51 @@ class PalDataItem:
         return tuple(map(lambda x: x.isoformat(), times))
 
     @staticmethod
+    def _get_start_end_times(params: dict) -> tuple[dict, tuple[datetime]]:
+        """Get start and end times from the job parameters
+
+        Accounts for difference between VirES ("start_time", "end_time"),
+        and HAPI ("start", "stop")
+        """
+        if "start_time" in params.keys():
+            start = params["start_time"]
+            end = params["end_time"]
+        elif "start" in params.keys():
+            start = params["start"]
+            end = params["stop"]
+        return PalDataItem._ensure_datetime((start, end))
+
+    @staticmethod
+    def _update_start_end_times(params: dict, start: str, end: str):
+        """Update the job parameters with new (start, end) times"""
+        if "start_time" in params.keys():
+            params["start_time"] = start
+            params["end_time"] = end
+        elif "start" in params.keys():
+            params["start"] = start
+            params["stop"] = end
+        return params
+
+    @staticmethod
     def _pad_times(params: dict) -> tuple[dict, tuple[datetime]]:
         """Use job parameters to adjust time window
 
         Returns the modified params dictionary, as well as the analysis window
         """
         # Store original times as the analysis window
-        analysis_window = (params["start_time"], params["end_time"])
-        analysis_window = PalDataItem._ensure_datetime(analysis_window)
+        analysis_window = PalDataItem._get_start_end_times(params)
         pad_times = params.pop("pad_times", None)
         if pad_times:
             # Adjust original times according to the pad values
-            fetch_times = (
+            times_to_fetch = (
                 analysis_window[0] - pad_times[0],
                 analysis_window[1] + pad_times[1],
             )
         else:
-            fetch_times = analysis_window
-        # Convert times back to ISO strings
-        fetch_times = PalDataItem._datetime_to_str(fetch_times)
-        params["start_time"], params["end_time"] = fetch_times
+            times_to_fetch = analysis_window
+        # Convert times back to ISO strings and use to update the job parameters
+        times_to_fetch = PalDataItem._datetime_to_str(times_to_fetch)
+        params = PalDataItem._update_start_end_times(params, *times_to_fetch)
         return (params, analysis_window)
 
     @staticmethod
