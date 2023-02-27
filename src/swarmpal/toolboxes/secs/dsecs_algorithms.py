@@ -3,12 +3,8 @@
 Adapted from MatLab code by Heikki Vanhamäki.
 
 """
-import datetime as dt
 
 import numpy as np
-
-# from sub_fit_1D_DivFree import SwarmMag2J_test_fit_1D_DivFree
-import xarray as xr
 
 import swarmpal.toolboxes.secs.aux_tools as auto
 from swarmpal.toolboxes.secs import SecsInputs
@@ -36,8 +32,6 @@ def _legPol_n1(n, x, ind=False):
     ndarray
         (len(x),n) shaped array of the polynomial values.
     """
-
-    v = np.array([])
 
     Pa = np.zeros((len(x), n))
     Pa[:, 0] = np.sqrt(1 - x**2)
@@ -306,8 +300,6 @@ def SECS_1D_CurlFree_magnetic(latB, latSECS, rb, rsecs, geometry):
         theta = (90.0 - latB) / 180 * np.pi
         aux = np.sqrt(rsecs / rb) * np.sin(theta)
 
-        # print(rsecs.shape)
-
         aux[np.abs(aux) > 1] = 0
         fptheta = np.arcsin(aux)
         fptheta = np.where(theta > np.pi / 2, np.pi - fptheta, fptheta)
@@ -474,13 +466,8 @@ def SECS_2D_DivFree_magnetic(thetaB, phiB, thetaSECS, phiSECS, rb, rsecs):
     # If Rb is scalar, use same radius for all points.
 
     rb = rb + 0 * thetaB
-    # print(rb.shape)
-    # print(rb)
-    # print(thetaB.shape)
-
     # Ratio of the radii, smaller/larger
     ratio = np.minimum(rb, [rsecs]) / np.maximum(rb, [rsecs])
-    # print(ratio)
 
     # There is a common factor mu0/(4*pi)=1e-7. Also 1/Rb is a common factor
     # If scaling factors are in [A], radii in [km] and magnetic field in [nT]  --> extra factor of 1e6
@@ -764,7 +751,7 @@ def secs_2d_curlFree_antisym_lineintegral(
     # Make sure these are ROW vectors
     x = L * np.sin(t) ** 3 * np.cos(phiSECS)
     y = L * np.sin(t) ** 3 * np.sin(phiSECS)
-    z = L * np.sin(t) ** 2 * np.cos(t)  ###why minus here?
+    z = L * np.sin(t) ** 2 * np.cos(t)
 
     # xyz  components of the current elements
     dlx = -np.diff(x)
@@ -830,8 +817,8 @@ def _calc_root(x, y, z):
 
 
 def get_data_slices(
-    t1=dt.datetime(2016, 3, 18, 11, 3, 0),
-    t2=dt.datetime(2016, 3, 18, 11, 40, 0),
+    t1,
+    t2,
     model="IGRF",
 ):
     """Get data and split it into slices suitable for DSECS analysis.
@@ -839,9 +826,9 @@ def get_data_slices(
     Parameters
     ----------
     t1 : _type_, optional
-        _description_, by default dt.datetime(2016, 3, 18, 11, 3, 0)
+        _description_
     t2 : _type_, optional
-        _description_, by default dt.datetime(2016, 3, 18, 11, 40, 0)
+        _description_
     model : str, optional
         _description_, by default 'IGRF'
 
@@ -1076,10 +1063,6 @@ class dsecsgrid:
         ind = np.argmin(errMat)
         self.poleLat = latP[ind]
         self.poleLon = lonP[ind]
-
-        ###skipped plotting routine here (see sub_FindPole.m), also flattened latP,lonP and errMat
-
-    # self.poleLat, self.poleLon = dsecsgrid._sub_FindPole(SwA)
 
     def create(self, SwA, SwC):
         """Initialize the grids from data.
@@ -1345,10 +1328,7 @@ def getLocalDipoleFPtrack2D(latB, lonB, rB, Ri):
     sorted = np.argsort(np.abs(latFP))
     latFP = latFP[sorted]
     lonFP = lonFP[sorted]
-    # probe which hemipshere is being processed
-    # print('hei')
-    # print(np.mean(latB))
-
+    # probe which hemisphere is being processed
     if np.mean(latB) > 0:
         # print(latFP.shape)
         # print(lonFP.shape)
@@ -1455,7 +1435,7 @@ def trim_data(SwA, SwC):
     Vy = np.gradient(SwC["magLon"]) * np.cos(np.radians(SwC["magLat"]))
     _, ind = sub_FindLongestNonZero(abs(Vy) < abs(Vx))
 
-    ### replace with indexing whole dataset
+    # replace with indexing whole dataset
     SwC = SwC.sel(Timestamp=SwC["Timestamp"][ind])
 
     return SwA, SwC
@@ -1525,13 +1505,13 @@ class dsecsdata:
         self.test = dict()
 
     def populate(self, SwA, SwC):
-        """Initilize a DSECS analaysis case from data"""
+        """Initialize a DSECS analaysis case from data"""
 
         # initialize grid
         grid = dsecsgrid()
         grid.FindPole(SwA)
 
-        # calculate additonal variables
+        # calculate additional variables
         SwA, SwC = getUnitVectors(SwA, SwC)
 
         SwA, SwC = mag_transform_dsecs(SwA, SwC, grid.poleLat, grid.poleLon)
@@ -1596,8 +1576,6 @@ class dsecsdata:
         self.matBr1D, self.matBt1D = SECS_1D_DivFree_magnetic(
             self.latB, self.grid.secs1Ddf.lat, self.rB, self.grid.Ri, 500
         )
-
-        N1d = len(self.grid.secs1Ddf.lat)
 
         y = self.Bpara  # measurement, parallel magnetic field
 
@@ -1668,7 +1646,7 @@ class dsecsdata:
 
     def fit1d_cf(self):
         """1D curl-free fit for data."""
-        #        ####split data into hemispheres
+        # split data into hemispheres
         # ind = np.nonzero(.............)
         indN = np.nonzero(self.apexlats > 0)
         indRN = np.nonzero(self.grid.out.magLat > 0)
@@ -1706,7 +1684,6 @@ class dsecsdata:
                 latJ, gridhem.lat, self.grid.Ri
             ) - SECS_1D_CurlFree_vector(latJ, -gridhem.lat, self.grid.Ri)
             tmp = np.reshape(matJt @ cf1D, self.grid.out.magLat.shape)
-            ###define indR
             self.cf1dDipMagJt[rind] = tmp[rind]
             #        #Calculate the radial current produced by the 1D CF SECS using finite differences.
             # For FAC we should scale by 1/sin(inclination).
@@ -1746,13 +1723,8 @@ class dsecsdata:
         # df1dMagBp = 0 by definition
         Bp = self.magBp - self.df2dBp - self.cf1dDipMagBp
 
-        thetaB = (90 - self.latB) / 180 * np.pi
-        phiB = self.lonB / 180 * np.pi
-
-        indN = np.nonzero(self.apexlats > 0)
-        indRN = np.nonzero(self.grid.out.magLat > 0)
-        indS = np.nonzero(self.apexlats <= 0)
-        indRS = np.nonzero(self.grid.out.magLat <= 0)
+    thetaB = (90 - self.latB) / 180 * np.pi
+    phiB = self.lonB / 180 * np.pi
 
         ### add indN and indRN to class
         for ind, rind, gridhem, remote_hem, label in zip(

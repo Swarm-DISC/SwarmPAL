@@ -1,5 +1,9 @@
+import logging
+
 import numpy as np
 from scipy.interpolate import interp1d
+
+logger = logging.getLogger(__name__)
 
 
 def sph2sph(latP, lonP, latOld, lonOld, VtOld, VpOld):
@@ -117,7 +121,7 @@ def sub_FindLongestNonZero(x):
     # Find the longest jump in zero positions
     grpidx = np.argmax(np.diff(zpos))
 
-    # indeces and values in the longest sequence
+    # indices and values in the longest sequence
     ind = np.arange(zpos[grpidx], zpos[grpidx + 1] - 1)
     y = x[ind]
 
@@ -156,22 +160,16 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
 
         sysMat = np.concatenate((secsMat, alpha * regMat))
 
-        ### test also with real input, is magVec column or row vector?#########
-        # dataVec = np.concatenate((magVec, np.zeros((regMat.shape[0],1))))
-        # print(magVec.shape)
-        # print(np.zeros(regMat.shape[0]).shape)
         dataVec = np.concatenate((magVec, np.zeros(regMat.shape[0])))
 
     # Calculate SVD
-    print(
+    logger.info(
         f"\n  Calculating SVD of a [{sysMat.shape[0]},{sysMat.shape[1]}] " "matrix ... "
     )
-    #####works for 3x3 matrix, check what input matrix is and check again####
+    # works for 3x3 matrix, check what input matrix is and check again
     svdU, svdS, svdVh = np.linalg.svd(sysMat, full_matrices=False)
-    # print(svdU)
-    svdV = svdVh
-    # svdS = np.diag(svdS)
-    print("done\n")
+    svdV = svdVh.T
+    logger.info("done\n")
 
     # Calculate the inverse matrix
     lkmS = len(svdS)
@@ -180,12 +178,11 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
     # ind = np.nonzero(svdS <= slim)
     ss[svdS <= slim] = 0
 
-    print(
+    logger.info(
         f"epsilon = {epsSVD}, singular values range from {svdS[0]} to " f"{svdS[-1]} \n"
     )
-    print(
-        f"--> {np.count_nonzero(svdS <= slim)} values smaller than {slim} deleted (of {lkmS} "
-        "values)\n\n"
+    logger.info(
+        f"--> {len(ind)} values smaller than {slim} deleted (of {lkmS} " "values)\n\n"
     )
 
     # Calculate the result vector
@@ -221,7 +218,7 @@ def sub_LonInterp(lat, lon, intLat, method, ekstra=np.nan):
 
     phi = np.radians(lon)
 
-    #### check if this is always used with extrapolation
+    # check if this is always used with extrapolation
     # interpolate sin and cos
     fC = interp1d(lat, np.cos(phi), kind=method, fill_value=ekstra, bounds_error=False)
     fS = interp1d(lat, np.sin(phi), kind=method, fill_value=ekstra, bounds_error=False)
@@ -256,10 +253,6 @@ def sub_Swarm_grids_1D(lat1, lat2, Dlat1D, ExtLat1D):
     mat1Dsecond : ndarray
         2nd gradient matrix
     """
-
-    ###### not really needed?#################################################
-    # lat1D = np.nan
-    # mat1Dsecond = np.nan
 
     # Latitudinal extent of the satellite data, only that part where there is
     # data from both satellites.
@@ -317,13 +310,6 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
         _description_
     """
 
-    ### not needed?
-    # lat2D = np.nan
-    # lon2D = np.nan
-    # angle2D = np.nan
-    # dLon2D = np.nan
-    # mat2DsecondLat = np.nan
-
     # Latitudinal extent of the satellite data, only that part where there is
     # data from both satellites.
     # print(lat1.shape)
@@ -333,7 +319,7 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
 
     # Average satellite path, and the satellite spacing in longitudinal direction.
     ind1 = np.nonzero((lat1 >= minlat) & (lat1 <= maxlat))
-    # ind2 = np.nonzero((lat2 >= minlat) & (lat2 <= maxlat)) ## not used
+    # ind2 = np.nonzero((lat2 >= minlat) & (lat2 <= maxlat))
     latA = lat1[ind1]
     lonEro = sub_LonInterp(lat2, lon2, lat1[ind1], "linear", "extrapolate") - lon1[ind1]
     lonEro[lonEro > 180] -= 360
@@ -401,7 +387,6 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
     # This corresponds to lat2D(:) according to the above construction
     apu = np.ones(Nlat)
 
-    ### Theresa: not sure about sparse matrix
     mat2DsecondLat = np.zeros(((Nlat - 2) * Nlon, Nlon * Nlat))
     apumat = np.diag(apu[1:], -1) - 2 * np.diag(apu) + np.diag(apu[1:], 1)
     # This gives 2nd deriv. for one column of lat2D
@@ -497,10 +482,7 @@ def sub_points_along_fieldline(thetaSECS, Rsecs, L, minD):
         elements), [radian]
     """
 
-    # Minimum length of integration steps (NOTE: actually the minimum average lenght)
-    # print('hupep7')
-    # print('thetaS ' + type(thetaSECS).__name__)
-    # print(thetaSECS)
+    # Minimum length of integration steps (NOTE: actually the minimum average length)
     minStep = 10  # step in km
 
     # Adjust step according to horizontal distance
@@ -538,8 +520,7 @@ def sub_points_along_fieldline(thetaSECS, Rsecs, L, minD):
 
     # Make north and south hemispheres symmetric
     tmp = tmp[:n]
-    # print(tmp)
-    t = np.hstack((tmp, np.pi / 2, np.pi - tmp[::-1]))
+    t = np.hstack([tmp, np.pi / 2, np.pi - tmp[::-1]])
 
     # Flip if start from south hemisphere
     if thetaSECS > np.pi / 2:
