@@ -1207,10 +1207,6 @@ class dsecsgrid:
 
         N1, N2 = self.secs2DcfNorth.ggLat.shape
         mask = np.ones(Rlat.shape)
-        # print(Rlat.shape)
-        # print(N1,N2)
-        # print(ind)
-        # ind = np.argwhere(mask)
 
         mask[self.cfremoteN : N1, self.cfremoteN : N2] = 0
 
@@ -1232,8 +1228,6 @@ class dsecsgrid:
             self.Ri,
         )
 
-        # print(trackALonS.shape)
-        # print(indsS['A'].shape)
         temp = np.array([np.max([np.max(trackALatS), np.max(trackCLatS)])])
         self.secs2DcfSouth.create(
             np.concatenate((temp + 1, trackALatS)),
@@ -1259,10 +1253,6 @@ class dsecsgrid:
             self.extLon2D + self.cfremoteN,
         )
         Rlon = Rlon % 360
-        # print('huuhuu')
-        # print(np.mean(np.insert(trackALonS,0,trackALonS[0])))
-        # print(np.mean(np.insert(trackCLonS,0,trackCLonS[0])))
-        # print(np.mean(Rlon))
 
         N1, N2 = self.secs2DcfSouth.ggLat.shape
         mask = np.ones(Rlat.shape)
@@ -1270,8 +1260,6 @@ class dsecsgrid:
         self.secs2DcfRemoteSouth.magLat = Rlat[mask > 0]
         self.secs2DcfRemoteSouth.magLon = Rlon[mask > 0]
         self.secs2DcfRemoteSouth.angle2D = Rangle[mask > 0]
-
-        # self.ggLat1D,_ = auto.sub_Swarm_grids_1D(lat1,lat2,)
 
 
 def getLocalDipoleFPtrack1D(latB, rB, Ri):
@@ -1723,8 +1711,13 @@ class dsecsdata:
         # df1dMagBp = 0 by definition
         Bp = self.magBp - self.df2dBp - self.cf1dDipMagBp
 
-    thetaB = (90 - self.latB) / 180 * np.pi
-    phiB = self.lonB / 180 * np.pi
+        thetaB = (90 - self.latB) / 180 * np.pi
+        phiB = self.lonB / 180 * np.pi
+
+        indN = np.nonzero(self.apexlats > 0)
+        indRN = np.nonzero(self.grid.out.magLat > 0)
+        indS = np.nonzero(self.apexlats <= 0)
+        indRS = np.nonzero(self.grid.out.magLat <= 0)
 
         ### add indN and indRN to class
         for ind, rind, gridhem, remote_hem, label in zip(
@@ -1741,7 +1734,6 @@ class dsecsdata:
             thetaB_hem = thetaB[ind]
             phiB_hem = phiB[ind]
             rB_hem = self.rB[ind]
-
             # Calculate B-matrices.
             theta2D = (90 - gridhem.magLat) / 180 * np.pi
             phi2D = gridhem.magLon / 180 * np.pi
@@ -1755,7 +1747,6 @@ class dsecsdata:
                 self.grid.Ri,
                 gridhem.angle2D,
             )
-
             ###ask Heikki if we should keep this switch
             # if result.remoteCFdip:
             # if True:
@@ -1795,20 +1786,16 @@ class dsecsdata:
             self.test[label + "_remotefit"] = (
                 np.vstack((remoteMatBr2D, remoteMatBt2D, remoteMatBp2D)) @ remoteIcf
             )
-
             # Remove effect from the measured B
-
             # print(remoteMatBr2D.shape)
             # print(remoteIcf.shape)
             Br_hem = Br_hem.squeeze() - (remoteMatBr2D @ remoteIcf).squeeze()
             Bt_hem = Bt_hem.squeeze() - (remoteMatBt2D @ remoteIcf).squeeze()
             Bp_hem = Bp_hem.squeeze() - (remoteMatBp2D @ remoteIcf).squeeze()
-
             # Fit the (local) 2D CF SECS. Use zero constraint on the 2nd latitudinal derivative.
             regmat = gridhem.diff2lat2D  # regularization
             # print('huu')
             # print(regmat.shape)
-
             # print(np.vstack((Br_hem, Bt_hem, Bp_hem)).squeeze().shape)
             Icf = auto.sub_inversion(
                 np.vstack((matBr2D, matBt2D, matBp2D)),
@@ -1847,7 +1834,6 @@ class dsecsdata:
             matJtSouth, _ = SECS_2D_CurlFree_antisym_vector(
                 thetaSouth, phiJ, theta2D, phi2D, self.grid.Ri, gridhem.angle2D
             )
-
             phiEast = phiJ + self.grid.dlatOut / 180 * np.pi
             phiWest = phiJ - self.grid.dlatOut / 180 * np.pi
             _, matJpEast = SECS_2D_CurlFree_antisym_vector(
@@ -1868,13 +1854,10 @@ class dsecsdata:
                 tmp * 1000, self.grid.out.magLat.shape
             )  # A/km^2 --> nA/m^2
             self.cf2dDipJr[rind] = tmp[rind]
-
             # Calculate the magnetic field produced by the 2D CF SECS.
-
             np.put(self.cf2dDipBr, ind, matBr2D @ Icf)
             np.put(self.cf2dDipMagBt, ind, matBt2D @ Icf)
             np.put(self.cf2dDipMagBp, ind, matBp2D @ Icf)
-
             ###keep this switch?
             # if result.remoteCFdip:
             # if True:
@@ -1907,15 +1890,12 @@ class dsecsdata:
             tmp = -(aux1 + aux2) / (self.grid.Ri * np.sin(thetaJ))
             tmp = np.reshape(tmp * 1000, self.grid.out.magLat.shape)
             self.remoteCf2dDipMagJr[rind] = tmp[rind]
-
             self.test[label + "_lats"] = self.grid.out.magLat[rind]
             self.test[label + "_rind"] = rind
-
             # Then their magnetic field
             np.put(self.remoteCf2dDipMagBr, ind, remoteMatBr2D @ remoteIcf)
             np.put(self.remoteCf2dDipMagBt, ind, remoteMatBt2D @ remoteIcf)
             np.put(self.remoteCf2dDipMagBp, ind, remoteMatBp2D @ remoteIcf)
-
         return (
             Br_hem,
             Bt_hem,
