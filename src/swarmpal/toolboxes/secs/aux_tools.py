@@ -166,29 +166,33 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
     logger.info(
         f"\n  Calculating SVD of a [{sysMat.shape[0]},{sysMat.shape[1]}] " "matrix ... "
     )
-    # works for 3x3 matrix, check what input matrix is and check again
-    svdU, svdS, svdV = np.linalg.svd(sysMat, full_matrices=False)
-    logger.info("done\n")
+    #####works for 3x3 matrix, check what input matrix is and check again####
+    svdU, svdS, svdVh = np.linalg.svd(sysMat, full_matrices=False)
+    # print(svdU)
+    svdV = svdVh.T
+    # svdS = np.diag(svdS)
+    print("done\n")
 
     # Calculate the inverse matrix
     lkmS = len(svdS)
     slim = epsSVD * svdS[0]
     ss = 1.0 / svdS
-    ind = np.nonzero(svdS <= slim)
+    # ind = np.nonzero(svdS <= slim)
     ss[svdS <= slim] = 0
-    logger.info(
+
+    print(
         f"epsilon = {epsSVD}, singular values range from {svdS[0]} to " f"{svdS[-1]} \n"
     )
-    logger.info(
-        f"--> {(svdS <=slim).sum()} values smaller than {slim} deleted (of {lkmS} "
+    print(
+        f"--> {np.count_nonzero(svdS <= slim)} values smaller than {slim} deleted (of {lkmS} "
         "values)\n\n"
     )
 
     # Calculate the result vector
-    resultVec = svdU.T @ dataVec
+    resultVec = svdU.conj().T @ dataVec
 
     ### works with test example but should check again with real data####
-    resultVec = np.diagflat(ss) @ resultVec
+    resultVec = np.diagflat(ss)[:lkmS, :lkmS] @ resultVec
 
     resultVec = svdV @ resultVec
 
@@ -481,7 +485,10 @@ def sub_points_along_fieldline(thetaSECS, Rsecs, L, minD):
         elements), [radian]
     """
 
-    # Minimum length of integration steps (NOTE: actually the minimum average length)
+    # Minimum length of integration steps (NOTE: actually the minimum average lenght)
+    # print('hupep7')
+    # print('thetaS ' + type(thetaSECS).__name__)
+    # print(thetaSECS)
     minStep = 10  # step in km
 
     # Adjust step according to horizontal distance
@@ -491,7 +498,7 @@ def sub_points_along_fieldline(thetaSECS, Rsecs, L, minD):
     # Length of the field line from one ionosphere to the other.
     x = np.pi / 2 - thetaSECS
     # print(x)
-    # print('hh')
+    print("hh")
     s = L * abs(
         np.sin(x) * np.sqrt(3 * np.sin(x) ** 2 + 1)
         + 1 / np.sqrt(3) * np.arcsinh(np.sqrt(3) * np.sin(x))
@@ -519,7 +526,8 @@ def sub_points_along_fieldline(thetaSECS, Rsecs, L, minD):
 
     # Make north and south hemispheres symmetric
     tmp = tmp[:n]
-    t = np.hstack([tmp, np.pi / 2, np.pi - tmp[::-1]])
+    # print(tmp)
+    t = np.hstack((tmp, np.pi / 2, np.pi - tmp[::-1]))
 
     # Flip if start from south hemisphere
     if thetaSECS > np.pi / 2:
