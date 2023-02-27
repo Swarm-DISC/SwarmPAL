@@ -166,12 +166,10 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
     logger.info(
         f"\n  Calculating SVD of a [{sysMat.shape[0]},{sysMat.shape[1]}] " "matrix ... "
     )
-    #####works for 3x3 matrix, check what input matrix is and check again####
+    # works for 3x3 matrix, check what input matrix is and check again
     svdU, svdS, svdVh = np.linalg.svd(sysMat, full_matrices=False)
-    # print(svdU)
-    # svdV = svdVh.T
-    # svdS = np.diag(svdS)
-    print("done\n")
+    svdV = svdVh.T
+    logger.info("done\n")
 
     # Calculate the inverse matrix
     lkmS = len(svdS)
@@ -180,10 +178,10 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
     # ind = np.nonzero(svdS <= slim)
     ss[svdS <= slim] = 0
 
-    print(
+    logger.info(
         f"epsilon = {epsSVD}, singular values range from {svdS[0]} to " f"{svdS[-1]} \n"
     )
-    print(
+    logger.info(
         f"--> {np.count_nonzero(svdS <= slim)} values smaller than {slim} deleted (of {lkmS} "
         "values)\n\n"
     )
@@ -194,7 +192,7 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
     ### works with test example but should check again with real data####
     resultVec = np.diagflat(ss)[:lkmS, :lkmS] @ resultVec
 
-    resultVec = svdVh.T @ resultVec
+    resultVec = svdV.T @ resultVec
 
     return resultVec
 
