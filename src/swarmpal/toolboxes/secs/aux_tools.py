@@ -192,7 +192,7 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
     ### works with test example but should check again with real data####
     resultVec = np.diagflat(ss)[:lkmS, :lkmS] @ resultVec
 
-    resultVec = svdV.T @ resultVec
+    resultVec = svdV @ resultVec
 
     return resultVec
 
@@ -496,7 +496,7 @@ def sub_points_along_fieldline(thetaSECS, Rsecs, L, minD):
     # Length of the field line from one ionosphere to the other.
     x = np.pi / 2 - thetaSECS
     # print(x)
-    print("hh")
+
     s = L * abs(
         np.sin(x) * np.sqrt(3 * np.sin(x) ** 2 + 1)
         + 1 / np.sqrt(3) * np.arcsinh(np.sqrt(3) * np.sin(x))
