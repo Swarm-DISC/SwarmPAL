@@ -169,7 +169,7 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
     #####works for 3x3 matrix, check what input matrix is and check again####
     svdU, svdS, svdVh = np.linalg.svd(sysMat, full_matrices=False)
     # print(svdU)
-    svdV = svdVh.T
+    # svdV = svdVh.T
     # svdS = np.diag(svdS)
     print("done\n")
 
@@ -189,12 +189,12 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
     )
 
     # Calculate the result vector
-    resultVec = svdU.conj().T @ dataVec
+    resultVec = svdU.T @ dataVec
 
     ### works with test example but should check again with real data####
     resultVec = np.diagflat(ss)[:lkmS, :lkmS] @ resultVec
 
-    resultVec = svdV @ resultVec
+    resultVec = svdVh.T @ resultVec
 
     return resultVec
 
