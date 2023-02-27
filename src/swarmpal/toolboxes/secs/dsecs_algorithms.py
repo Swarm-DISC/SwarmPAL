@@ -1957,6 +1957,7 @@ class dsecsdata:
             gridhem.angle2D,
             np.concatenate((Br_hem, Bt_hem, Bp_hem)).squeeze(),
             np.vstack((matBr2D, matBt2D, matBp2D)),
+            regmat,
         )  # no idea what we need to return from all of the above
 
     def dump(self):
