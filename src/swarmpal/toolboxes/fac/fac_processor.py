@@ -24,8 +24,7 @@ class FAC_singlesat(PalProcess):
 
     def _call(self, datatree):
         # Identify inputs for algorithm
-        datatree_path = f"{self.active_tree}/{self.config.get('dataset')}"
-        dataset = datatree[datatree_path]
+        dataset = datatree[self.config.get("dataset")]
         time = self._get_time(dataset)
         positions = self._get_positions(dataset)
         B_res = self._get_B_res(dataset)
@@ -37,8 +36,7 @@ class FAC_singlesat(PalProcess):
         time_out = fac_results["time"]
         fac_out = fac_results["fac"]
         # Insert a new output dataset with these results
-        datatree_path_output = f"{self.active_tree}/output"
-        datatree[datatree_path_output] = DataTree(
+        datatree["output"] = DataTree(
             data=Dataset(
                 data_vars={
                     "Timestamp": ("Timestamp", time_out),
@@ -46,7 +44,7 @@ class FAC_singlesat(PalProcess):
                 }
             )
         )
-        datatree[datatree_path_output]["FAC"].attrs = {"units": "uA/m2"}
+        datatree["output"]["FAC"].attrs = {"units": "uA/m2"}
         return datatree
 
     def _validate(self):

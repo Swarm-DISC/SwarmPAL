@@ -29,8 +29,8 @@ class DSECS_Process(PalProcess):
         # Identify inputs for algorithm
         _alpha = self.config.get("dataset_alpha", "alpha")
         _charlie = self.config.get("dataset_charlie", "charlie")
-        ds_alpha = datatree[f"{self.active_tree}/{_alpha}"].ds
-        ds_charlie = datatree[f"{self.active_tree}/{_charlie}"].ds
+        ds_alpha = datatree[_alpha].ds
+        ds_charlie = datatree[_charlie].ds
         # Append ApexLatitude and ApexLongitude
         ds_alpha = self._append_apex_coords(ds_alpha)
         ds_charlie = self._append_apex_coords(ds_charlie)
@@ -44,8 +44,7 @@ class DSECS_Process(PalProcess):
             res, data, mapping = case.fit1D_df()
             break
         # Store outputs into the datatree
-        datatree_path_output = f"{self.active_tree}/output"
-        datatree[datatree_path_output] = DataTree(
+        datatree["output"] = DataTree(
             data=Dataset(
                 data_vars={
                     "Data": ("index", data),

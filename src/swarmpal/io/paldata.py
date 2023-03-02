@@ -12,9 +12,10 @@ from re import match as regex_match
 
 from datatree import DataTree, register_datatree_accessor
 from pandas import to_datetime as to_pandas_datetime
-from xarray import Dataset
+from xarray import DataArray, Dataset
 
 from swarmpal.io.datafetchers import DataFetcherBase, get_fetcher
+from swarmpal.utils.exceptions import PalError
 
 logger = logging.getLogger(__name__)
 
@@ -322,21 +323,50 @@ class PalDataTreeAccessor:
     @property
     def pal_meta(self) -> dict:
         pal_metadata_set = {}
-        for datatree in self._datatree.descendants:
+        for datatree in (self._datatree, *self._datatree.descendants):
             pal_meta = datatree.attrs.get("PAL_meta", "{}")
-            pal_meta = json.loads(pal_meta)
+            pal_meta = PalMeta.deserialise(pal_meta)
             treepath = datatree.relative_to(self._datatree)
             pal_metadata_set[treepath] = pal_meta
         return pal_metadata_set
 
     @property
-    def magnetic_model_varnames(self) -> list[str]:
+    def magnetic_model_names(self) -> list[str]:
+        """List of the model names used in the dataset"""
         magnetic_model_names = set()
         for _, pal_meta in self.pal_meta.items():
             models = pal_meta.get("magnetic_models", {})
             for model_name, _ in models.items():
                 magnetic_model_names.add(model_name)
-        return [f"B_NEC_{x}" for x in magnetic_model_names]
+        return list(magnetic_model_names)
+
+    @property
+    def magnetic_model_name(self) -> str:
+        """Model name if one and only one has been set"""
+        models = self.magnetic_model_names
+        if len(models) == 0:
+            raise PalError("No models identified")
+        if len(models) > 1:
+            raise PalError("More than one model available")
+        return models[0]
+
+    def magnetic_residual(self, model: str = "") -> DataArray:
+        """Magnetic data-model residual in NEC frame"""
+        if not self._datatree.is_leaf:
+            raise PalError("This is not a leaf node")
+        if not model:
+            model = self.magnetic_model_name
+        try:
+            B_NEC = self._datatree["B_NEC"]
+            B_NEC_mod = self._datatree[f"B_NEC_{model}"]
+        except KeyError:
+            raise PalError(f"One of B_NEC or B_NEC_{model} is not available")
+        residual = B_NEC - B_NEC_mod
+        residual.attrs = {
+            "units": "nT",
+            "description": "Magnetic field vector data-model residual, NEC frame",
+        }
+        return residual
 
 
 def create_paldata(**paldataitems: PalDataItem):
@@ -374,9 +404,13 @@ def create_paldata(**paldataitems: PalDataItem):
 class PalProcess(ABC):
     """Abstract class to define processes to act on datatrees"""
 
-    def __init__(self, active_tree: str, config: dict):
+    def __init__(self, config: dict, active_tree: str = "/", inplace: bool = True):
         self._active_tree = active_tree
         self._config = config
+        if not inplace:
+            raise NotImplementedError(
+                "Haven't figured this out yet - is it possible to do without a deep copy?"
+            )
 
     @property
     @abstractmethod
@@ -394,17 +428,23 @@ class PalProcess(ABC):
         return self._config
 
     def __call__(self, datatree) -> DataTree:
+        """Run the process, defined in _call, to update the datatree"""
+        # Select the active branch to work on and detach it
+        subtree = datatree[self.active_tree].copy()[self.active_tree]
+        datatree[self.active_tree].orphan()
+        subtree.orphan()
         # Check metadata to see if this has already been run
         procname = self.process_name
-        pal_meta = datatree[self.active_tree].attrs.get("PAL_meta", "{}")
-        pal_meta = PalMeta.deserialise(pal_meta)
+        pal_meta = subtree.swarmpal.pal_meta
         if procname in pal_meta.keys():
             logger.warn(f"Rerunning {procname}: May overwrite existing data")
         # Apply process to create updated datatree
-        datatree = self._call(datatree)
+        subtree = self._call(subtree)
         # Update metadata with details of the applied process
         pal_meta[procname] = self.config
-        datatree[self.active_tree].attrs["PAL_meta"] = PalMeta.serialise(pal_meta)
+        subtree.attrs["PAL_meta"] = PalMeta.serialise(pal_meta)
+        # Update the full tree with the modified subtree
+        subtree.parent = datatree
         return datatree
 
     @abstractmethod
