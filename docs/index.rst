@@ -17,12 +17,13 @@ This project is in the early planning stage.
 
    toolboxes/fac/using_fac
    toolboxes/secs/using_secs
-   toolboxes/tfa/using_tfa
+   toolboxes/tfa/intro_tfa
 
 .. toctree::
    :maxdepth: 2
-   :caption: TFA Toolbox
+   :caption: TFA Toolbox (old form)
 
+   toolboxes/tfa/using_tfa
    toolboxes/tfa/using_tfa_1
    toolboxes/tfa/using_tfa_2
    toolboxes/tfa/using_tfa_3
