@@ -44,8 +44,10 @@ class PalDataItem:
     >>> item = PalDataItem.from_vires(**params)
     >>> # "Initialise" - triggers the expensive part, fetching the data
     >>> item.initialise()
-    >>> # Data is available within the .xarray attribute
+    >>> # Data is available as an xarray.Dataset
     >>> item.xarray
+    >>> # or as a DataTree
+    >>> item.datatree
     """
 
     def __init__(self, fetcher: DataFetcherBase) -> None:
@@ -53,8 +55,17 @@ class PalDataItem:
         self._fetcher = fetcher
 
     @property
+    def dataset_name(self) -> str:
+        """Name of the dataset, used as the datatree label"""
+        return self._dataset_name
+
+    @dataset_name.setter
+    def dataset_name(self, dataset_name: str) -> None:
+        self._dataset_name = dataset_name
+
+    @property
     def xarray(self) -> Dataset | None:
-        """Points to the xarray.Dataset contained within this object"""
+        """xarray.Dataset containing the data, generated if not already present"""
         if self._xarray is None:
             self.initialise()
         return self._xarray
@@ -62,6 +73,11 @@ class PalDataItem:
     @xarray.setter
     def xarray(self, xarray_dataset: Dataset | None) -> None:
         self._xarray = xarray_dataset
+
+    @property
+    def datatree(self) -> DataTree:
+        """A datatree containing the dataset labelled with the dataset name"""
+        return DataTree(data=self.xarray, name=self.dataset_name)
 
     @property
     def analysis_window(self) -> tuple[datetime]:
@@ -181,6 +197,7 @@ class PalDataItem:
         fetcher = get_fetcher("vires")(**params)
         pdi = PalDataItem(fetcher)
         pdi.analysis_window = analysis_window
+        pdi.dataset_name = params.get("collection")
         return pdi
 
     @staticmethod
@@ -193,6 +210,7 @@ class PalDataItem:
         fetcher = get_fetcher("hapi")(**params)
         pdi = PalDataItem(fetcher)
         pdi.analysis_window = analysis_window
+        pdi.dataset_name = params.get("dataset")
         return pdi
 
     @staticmethod
@@ -369,8 +387,10 @@ class PalDataTreeAccessor:
         return residual
 
 
-def create_paldata(**paldataitems: PalDataItem):
-    """Generates a Datatree from a number of PalDataItem's supplied as kwargs
+def create_paldata(
+    *paldataitems: PalDataItem, **paldataitems_kw: PalDataItem
+) -> DataTree:
+    """Generates a Datatree from a number of PalDataItems
 
     Returns
     -------
@@ -381,6 +401,7 @@ def create_paldata(**paldataitems: PalDataItem):
     --------
     >>> from swarmpal.io import create_paldata, PalDataItem
     >>>
+    >>> # Parameters to control a particular data request
     >>> data_params = dict(
     >>>     collection="SW_OPER_MAGA_LR_1B",
     >>>     measurements=["B_NEC"],
@@ -390,15 +411,28 @@ def create_paldata(**paldataitems: PalDataItem):
     >>>     server_url="https://vires.services/ows",
     >>>     options=dict(asynchronous=False, show_progress=False),
     >>> )
+    >>> # Create the datatree from a list of items
     >>> data = create_paldata(
-    >>>     "sample/alpha"=PalDataItem.from_vires(**data_params)
+    >>>     PalDataItem.from_vires(**data_params)
+    >>> )
+    >>> # Create the datatree from labelled items
+    >>> data = create_paldata(
+    >>>     one=PalDataItem.from_vires(**data_params),
+    >>>     two=PalDataItem.from_vires(**data_params),
     >>> )
     """
-    datatree = DataTree(name="paldata")
-    for name, item in paldataitems.items():
-        # Use paldataitems to populate the DataTree; triggers download
-        datatree[f"{name}"] = DataTree(item.xarray)
-    return datatree
+    # Assign each PalDataItem.datatree as a child in the tree
+    fulltree = DataTree(name="paldata")
+    names = [pdi.dataset_name for pdi in paldataitems]
+    if len(set(names)) != len(names):
+        raise PalError("Duplicate dataset names found; use kwargs instead")
+    for item in paldataitems:
+        subtree = item.datatree
+        subtree.parent = fulltree
+    # Assign each PalDataItem.datatree in user-specified location
+    for name, item in paldataitems_kw.items():
+        fulltree[f"{name}"] = item.datatree
+    return fulltree
 
 
 class PalProcess(ABC):
@@ -430,21 +464,25 @@ class PalProcess(ABC):
     def __call__(self, datatree) -> DataTree:
         """Run the process, defined in _call, to update the datatree"""
         # Select the active branch to work on and detach it
-        subtree = datatree[self.active_tree].copy()[self.active_tree]
-        datatree[self.active_tree].orphan()
-        subtree.orphan()
+        if self.active_tree != "/":
+            subtree = datatree[self.active_tree].copy()[self.active_tree]
+            datatree[self.active_tree].orphan()
+            subtree.orphan()
+        else:
+            subtree = datatree
         # Check metadata to see if this has already been run
         procname = self.process_name
-        pal_meta = subtree.swarmpal.pal_meta
-        if procname in pal_meta.keys():
+        subtree_root_pal_meta = subtree.swarmpal.pal_meta["."]
+        if procname in subtree_root_pal_meta.keys():
             logger.warn(f"Rerunning {procname}: May overwrite existing data")
         # Apply process to create updated datatree
         subtree = self._call(subtree)
         # Update metadata with details of the applied process
-        pal_meta[procname] = self.config
-        subtree.attrs["PAL_meta"] = PalMeta.serialise(pal_meta)
+        subtree_root_pal_meta[procname] = self.config
+        subtree.attrs["PAL_meta"] = PalMeta.serialise(subtree_root_pal_meta)
         # Update the full tree with the modified subtree
-        subtree.parent = datatree
+        if self.active_tree != "/":
+            subtree.parent = datatree
         return datatree
 
     @abstractmethod

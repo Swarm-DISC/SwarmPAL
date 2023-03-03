@@ -24,7 +24,8 @@ class FAC_singlesat(PalProcess):
 
     def _call(self, datatree):
         # Identify inputs for algorithm
-        dataset = datatree[self.config.get("dataset")]
+        subtree = datatree[self.config.get("dataset")]
+        dataset = subtree.ds
         time = self._get_time(dataset)
         positions = self._get_positions(dataset)
         B_res = self._get_B_res(dataset)
@@ -36,15 +37,14 @@ class FAC_singlesat(PalProcess):
         time_out = fac_results["time"]
         fac_out = fac_results["fac"]
         # Insert a new output dataset with these results
-        datatree["output"] = DataTree(
-            data=Dataset(
-                data_vars={
-                    "Timestamp": ("Timestamp", time_out),
-                    "FAC": ("Timestamp", fac_out),
-                }
-            )
+        ds_out = Dataset(
+            data_vars={
+                "Timestamp": ("Timestamp", time_out),
+                "FAC": ("Timestamp", fac_out),
+            }
         )
-        datatree["output"]["FAC"].attrs = {"units": "uA/m2"}
+        ds_out["FAC"].attrs = {"units": "uA/m2"}
+        subtree["output"] = DataTree(data=ds_out)
         return datatree
 
     def _validate(self):
@@ -78,10 +78,9 @@ class PalFacDataTreeAccessor:
     def __init__(self, datatree) -> None:
         self._datatree = datatree
 
-    def quicklook(self):
+    def quicklook(self, active_tree="."):
         fig, axes = plt.subplots(nrows=2, sharex=True)
         # TODO: refactor to be able to identify active tree
-        active_tree = "sample"
         process_config = self._datatree.swarmpal.pal_meta[active_tree]["FAC_singlesat"]
         measurement_varname = process_config.get("measurement_varname", "B_NEC")
         model_varname = process_config.get("model_varname", "B_NEC_Model")
@@ -91,7 +90,7 @@ class PalFacDataTreeAccessor:
             - self._datatree[f"{active_tree}/{dataset}"][model_varname]
         )
         residual.diff(dim="Timestamp").plot.line(ax=axes[0], hue="NEC")
-        self._datatree[f"{active_tree}/output"]["FAC"].plot.line(ax=axes[1])
+        self._datatree[f"{active_tree}/{dataset}/output"]["FAC"].plot.line(ax=axes[1])
         axes[0].set_xlabel("")
         axes[0].set_ylabel(r"d/dt($\Delta$B)")
         axes[0].grid()
