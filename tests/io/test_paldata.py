@@ -2,10 +2,11 @@ from datetime import datetime, timedelta
 from os.path import join as join_path
 
 import pytest
+from datatree import DataTree
 from pandas import to_datetime as to_pandas_datetime
 from xarray import Dataset, open_dataset
 
-from swarmpal.io.paldata import PalDataItem
+from swarmpal.io.paldata import PalDataItem, create_paldata
 
 
 @pytest.mark.remote
@@ -25,6 +26,7 @@ def test_paldataitem_vires():
     item = PalDataItem.from_vires(**vires_params)
     item.initialise()
     assert isinstance(item.xarray, Dataset)
+    assert isinstance(item.datatree, DataTree)
     return item.xarray
 
 
@@ -53,6 +55,7 @@ def test_paldataitem_hapi():
     item = PalDataItem.from_hapi(**hapi_params)
     item.initialise()
     assert isinstance(item.xarray, Dataset)
+    assert isinstance(item.datatree, DataTree)
 
 
 def test_paldataitem_file(xarray_data_file):
@@ -114,3 +117,65 @@ def test_time_pad_hapi():
     # # Check that analysis window matches the given start, end times
     # assert pdi.xarray.attrs["PAL_meta"]["analysis_window"][0] == start_time.isoformat()
     # assert pdi.xarray.attrs["PAL_meta"]["analysis_window"][1] == end_time.isoformat()
+
+
+@pytest.mark.remote
+@pytest.fixture
+def paldata_item_MAGA():
+    data_params = dict(
+        collection="SW_OPER_MAGA_LR_1B",
+        measurements=["B_NEC"],
+        models=["IGRF"],
+        start_time="2016-01-01T00:00:00",
+        end_time="2016-01-01T00:01:00",
+        server_url="https://vires.services/ows",
+        options=dict(asynchronous=False, show_progress=False),
+    )
+    pdi = PalDataItem.from_vires(**data_params)
+    pdi.initialise()
+    return pdi
+
+
+@pytest.mark.remote
+@pytest.fixture
+def paldata_item_MAGB():
+    data_params = dict(
+        collection="SW_OPER_MAGB_LR_1B",
+        measurements=["B_NEC"],
+        models=["IGRF"],
+        start_time="2016-01-01T00:00:00",
+        end_time="2016-01-01T00:01:00",
+        server_url="https://vires.services/ows",
+        options=dict(asynchronous=False, show_progress=False),
+    )
+    pdi = PalDataItem.from_vires(**data_params)
+    pdi.initialise()
+    return pdi
+
+
+@pytest.mark.remote
+def test_create_paldata(paldata_item_MAGA, paldata_item_MAGB):
+    # Test basic paldata
+    data = create_paldata(paldata_item_MAGA)
+    assert data.name == "paldata"
+    assert "SW_OPER_MAGA_LR_1B" in data.children
+    assert data.swarmpal.pal_meta["SW_OPER_MAGA_LR_1B"]
+    # Test paldata with two entries
+    data = create_paldata(paldata_item_MAGA, paldata_item_MAGB)
+    assert data.name == "paldata"
+    assert "SW_OPER_MAGA_LR_1B" in data.children
+    assert "SW_OPER_MAGB_LR_1B" in data.children
+    assert data.swarmpal.pal_meta["SW_OPER_MAGA_LR_1B"]
+    assert data.swarmpal.pal_meta["SW_OPER_MAGB_LR_1B"]
+    # Test paldata with manually defined entries
+    data = create_paldata(
+        **{
+            "path1/alpha": paldata_item_MAGA,
+            "path2/bravo": paldata_item_MAGB,
+        }
+    )
+    assert data.name == "paldata"
+    assert data["path1/alpha"]
+    assert data["path2/bravo"]
+    assert data.swarmpal.pal_meta["path1/alpha"]
+    assert data.swarmpal.pal_meta["path2/bravo"]
