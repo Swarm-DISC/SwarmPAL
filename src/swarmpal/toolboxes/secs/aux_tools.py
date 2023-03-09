@@ -2,6 +2,7 @@ import logging
 
 import numpy as np
 from scipy.interpolate import interp1d
+from scipy.linalg import toeplitz
 
 logger = logging.getLogger(__name__)
 
@@ -386,18 +387,31 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
     # Here we assume that poles are listed along latitude at each longitude.
     # i.e. [(lat1,lon1) (lat2,lon1) ... (latN,lon1) (lat1,lon2) ...]
     # This corresponds to lat2D(:) according to the above construction
-    apu = np.ones(Nlat)
+    # apu = np.ones(Nlat)
 
-    mat2DsecondLat = np.zeros(((Nlat - 2) * Nlon, Nlon * Nlat))
-    apumat = np.diag(apu[1:], -1) - 2 * np.diag(apu) + np.diag(apu[1:], 1)
+    # mat2DsecondLat = np.zeros(((Nlat - 2) * Nlon, Nlon * Nlat))
+    # apumat = np.diag(apu[1:], -1) - 2 * np.diag(apu) + np.diag(apu[1:], 1)
     # This gives 2nd deriv. for one column of lat2D
-    apumat = apumat[1:-1, :] / Dlat2D**2
+    # apumat = apumat[1:-1, :] / Dlat2D**2
 
-    for n in range(Nlon):
-        i1 = np.arange(Nlat - 2) + (n - 1) * (Nlat - 2)
-        i2 = np.arange(Nlat) + (n - 1) * Nlat
-        i1, i2 = np.ix_(i1, i2)
-        mat2DsecondLat[i1, i2] = apumat
+    # for n in range(Nlon):
+    #    i1 = np.arange(Nlat - 2) + (n - 1) * (Nlat - 2)
+    #    i2 = np.arange(Nlat) + (n - 1) * Nlat
+    #    i1, i2 = np.ix_(i1, i2)
+    #    mat2DsecondLat[i1, i2] = apumat
+
+    # need C ordering frop numpy
+    c1 = np.zeros(((Nlat - 2) * Nlon,))
+    c1[0] = 1
+    # c1[Nlon]=-2
+    # c1[2*Nlon]=1
+
+    r1 = np.zeros((Nlat * Nlon,))
+    r1[0] = 1
+    r1[Nlon] = -2
+    r1[2 * Nlon] = 1
+
+    mat2DsecondLat = toeplitz(c=c1, r=r1) / Dlat2D**2
 
     return lat2D, lon2D, angle2D, dLon2D, mat2DsecondLat
 

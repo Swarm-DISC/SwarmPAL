@@ -636,7 +636,8 @@ def SECS_2D_CurlFree_antisym_magnetic(
         thetaB, phiB, athetaSECS, phiSECS, aux, rsecs
     )
     # abt = -abt
-
+    print(bp)
+    print(bt)
     aux = aux / rb
     a2 = -bt + abt
     matBtheta = (a2.T * aux).T
