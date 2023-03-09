@@ -15,8 +15,8 @@ This project is in the early planning stage.
    :maxdepth: 2
    :caption: Toolbox Introductions
 
-   toolboxes/fac/using_fac
-   toolboxes/secs/using_secs
+   toolboxes/fac/intro_fac
+   toolboxes/secs/intro_secs
    toolboxes/tfa/intro_tfa
 
 .. toctree::

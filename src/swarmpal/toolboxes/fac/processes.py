@@ -4,7 +4,7 @@ from numpy import stack
 from xarray import Dataset
 
 from swarmpal.io import PalProcess
-from swarmpal.toolboxes.fac import fac_single_sat_algo
+from swarmpal.toolboxes.fac.fac_algorithms import fac_single_sat_algo
 
 
 class FAC_singlesat(PalProcess):
