@@ -9,8 +9,8 @@ version: 2
 sphinx:
   configuration: docs/conf.py
 
-# Include PDF and ePub
-formats: all
+# Don't build other formats because it is slow to execute notebooks again
+formats: []
 
 build:
   os: ubuntu-20.04

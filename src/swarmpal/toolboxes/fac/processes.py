@@ -6,6 +6,11 @@ from xarray import Dataset
 from swarmpal.io import PalProcess
 from swarmpal.toolboxes.fac.fac_algorithms import fac_single_sat_algo
 
+__all__ = (
+    "FAC_singlesat",
+    "PalFacDataTreeAccessor",
+)
+
 
 class FAC_singlesat(PalProcess):
     """Provides the process for the classic single-satellite FAC algorithm
