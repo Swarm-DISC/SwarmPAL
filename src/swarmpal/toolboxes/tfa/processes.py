@@ -41,11 +41,36 @@ class Preprocess(PalProcess):
     def process_name(self):
         return "Preprocess"
 
+    def set_config(
+        self,
+        dataset: str = "",
+        active_variable: str = "",
+        remove_model: bool = False,
+        model: str = "",
+        convert_to_mfa: bool = False,
+        clean_by_flags: bool = False,
+        clean_varname: str = "",
+        clean_flagname: str = "",
+        clean_maxval: int | None = None,
+    ) -> None:
+        self.config = dict(
+            dataset=dataset,
+            active_variable=active_variable,
+            remove_model=remove_model,
+            model=model,
+            convert_to_mfa=convert_to_mfa,
+            clean_by_flags=clean_by_flags,
+            clean_varname=clean_varname,
+            clean_flagname=clean_flagname,
+            clean_maxval=clean_maxval,
+        )
+
     @property
     def active_variable(self):
         return self.config.get("active_variable", "")
 
     def _call(self, datatree: DataTree) -> DataTree:
+        self._validate_inputs()
         # Select the datatree to work on
         self.subtree = datatree[self.config.get("dataset")]
         # Prepare data depending on the content
@@ -60,6 +85,13 @@ class Preprocess(PalProcess):
         self.subtree = self.subtree.assign(ds.copy())
         self.subtree.parent = datatree
         return datatree
+
+    def _validate_inputs(self):
+        """Some checks that the inputs and config are valid"""
+        dataset = self.config.get("dataset")
+        active_variable = self.config.get("active_variable")
+        if not all((dataset, active_variable)):
+            raise PalError("dataset and/or active_variable not set")
 
     def _prep_magnetic_data(self, ds: Dataset) -> Dataset:
         """Subtract model and/or rotate to MFA"""

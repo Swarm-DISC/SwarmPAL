@@ -438,9 +438,12 @@ def create_paldata(
 class PalProcess(ABC):
     """Abstract class to define processes to act on datatrees"""
 
-    def __init__(self, config: dict, active_tree: str = "/", inplace: bool = True):
+    def __init__(
+        self, config: dict | None = None, active_tree: str = "/", inplace: bool = True
+    ):
         self._active_tree = active_tree
-        self._config = config
+        config = config if config else {}
+        self.set_config(**config)
         if not inplace:
             raise NotImplementedError(
                 "Haven't figured this out yet - is it possible to do without a deep copy?"
@@ -451,6 +454,10 @@ class PalProcess(ABC):
     def process_name(self) -> str:
         return "PalProcess"
 
+    @abstractmethod
+    def set_config(self, **kwargs) -> None:
+        self.config = dict(**kwargs)
+
     @property
     def active_tree(self) -> str:
         """Defines which branch of the datatree will be used"""
@@ -460,6 +467,10 @@ class PalProcess(ABC):
     def config(self) -> dict:
         """Dictionary that configures the process behaviour"""
         return self._config
+
+    @config.setter
+    def config(self, config: dict) -> None:
+        self._config = config
 
     def __call__(self, datatree) -> DataTree:
         """Run the process, defined in _call, to update the datatree"""

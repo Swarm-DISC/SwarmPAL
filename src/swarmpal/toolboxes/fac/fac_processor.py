@@ -22,6 +22,18 @@ class FAC_singlesat(PalProcess):
     def process_name(self):
         return "FAC_singlesat"
 
+    def set_config(
+        self,
+        dataset: str = "SW_OPER_MAGA_LR_1B",
+        model_varname: str = "B_NEC_CHAOS",
+        measurement_varname: str = "B_NEC",
+    ) -> None:
+        self.config = dict(
+            dataset=dataset,
+            model_varname=model_varname,
+            measurement_varname=measurement_varname,
+        )
+
     def _call(self, datatree):
         # Identify inputs for algorithm
         subtree = datatree[self.config.get("dataset")]

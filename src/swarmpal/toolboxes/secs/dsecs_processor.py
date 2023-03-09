@@ -25,10 +25,20 @@ class DSECS_Process(PalProcess):
     def process_name(self):
         return "DSECS_Process"
 
+    def set_config(
+        self,
+        dataset_alpha: str = "SW_OPER_MAGA_LR_1B",
+        dataset_charlie: str = "SW_OPER_MAGC_LR_1B",
+    ):
+        self._config = dict(
+            dataset_alpha=dataset_alpha,
+            dataset_charlie=dataset_charlie,
+        )
+
     def _call(self, datatree):
         # Identify inputs for algorithm
-        _alpha = self.config.get("dataset_alpha", "alpha")
-        _charlie = self.config.get("dataset_charlie", "charlie")
+        _alpha = self.config.get("dataset_alpha")
+        _charlie = self.config.get("dataset_charlie")
         ds_alpha = datatree[_alpha].ds
         ds_charlie = datatree[_charlie].ds
         # Append ApexLatitude and ApexLongitude

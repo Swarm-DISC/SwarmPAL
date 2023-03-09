@@ -33,6 +33,9 @@ def test_palprocess(paldata_MAGA):
         def process_name(self):
             return "MyProcess"
 
+        def set_config(self, **kwargs) -> None:
+            return super().set_config(**kwargs)
+
         def _call(self, datatree):
             # Identify inputs for algorithm
             subtree = datatree[f"{self.config.get('dataset')}"]
