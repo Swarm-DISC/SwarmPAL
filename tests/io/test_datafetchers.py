@@ -1,7 +1,7 @@
 import pytest
 from xarray import Dataset
 
-from swarmpal.io.datafetchers import HapiDataFetcher, ViresDataFetcher, get_fetcher
+from swarmpal.io._datafetchers import HapiDataFetcher, ViresDataFetcher, get_fetcher
 
 
 def test_get_fetcher():

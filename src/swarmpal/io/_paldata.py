@@ -14,7 +14,7 @@ from datatree import DataTree, register_datatree_accessor
 from pandas import to_datetime as to_pandas_datetime
 from xarray import DataArray, Dataset
 
-from swarmpal.io.datafetchers import DataFetcherBase, get_fetcher
+from swarmpal.io._datafetchers import DataFetcherBase, get_fetcher
 from swarmpal.utils.exceptions import PalError
 
 logger = logging.getLogger(__name__)
@@ -488,29 +488,3 @@ class PalProcess(ABC):
     @abstractmethod
     def _call(self, datatree) -> DataTree:
         ...
-
-
-if __name__ == "__main__":
-    # Prepare parameters for fetching data
-    params = dict(
-        collection="SW_OPER_MAGA_LR_1B",
-        measurements=["F", "B_NEC"],
-        start_time="2016-01-01T00:00:00",
-        end_time="2016-01-02T00:00:00",
-    )
-    hapi_params = dict(
-        **params,
-        server_url="https://vires.services/hapi",
-    )
-    vires_params = dict(
-        **params,
-        server_url="https://vires.services/ows",
-        options=dict(asynchronous=False, show_progress=False),
-        # models=["IGRF"]
-    )
-    # Create PalData from two inputs, one from vires, one from hapi
-    mypal1 = PalData()
-    mypal1.set_inputs(
-        vires_source=PalDataItem.from_vires(**vires_params),
-        hapi_source=PalDataItem.from_hapi(**hapi_params),
-    )

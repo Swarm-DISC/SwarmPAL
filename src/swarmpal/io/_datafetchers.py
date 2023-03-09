@@ -265,24 +265,3 @@ def get_fetcher(source) -> DataFetcherBase:
         return fetchers[source]
     except KeyError:
         raise KeyError(f"Data source '{source}' not found")
-
-
-if __name__ == "__main__":
-    params = dict(
-        collection="SW_OPER_MAGA_LR_1B",
-        measurements=["F", "B_NEC"],
-        start_time="2016-01-01T00:00:00",
-        end_time="2016-01-02T00:00:10",
-    )
-    hapi_params = dict(
-        **params,
-        server_url="https://vires.services/hapi",
-    )
-    vires_params = dict(
-        **params,
-        server_url="https://vires.services/ows",
-        options=dict(asynchronous=False, show_progress=False),
-        models=["IGRF"],
-    )
-    vires_data = get_fetcher("vires")(**vires_params).fetch_data()
-    hapi_data = get_fetcher("hapi")(**hapi_params).fetch_data()

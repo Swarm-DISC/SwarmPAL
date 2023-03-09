@@ -2,7 +2,7 @@ import pytest
 from datatree import DataTree
 from xarray import Dataset
 
-from swarmpal.io.paldata import PalDataItem, PalProcess, create_paldata
+from swarmpal.io._paldata import PalDataItem, PalProcess, create_paldata
 
 
 @pytest.mark.remote

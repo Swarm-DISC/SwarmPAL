@@ -6,7 +6,7 @@ from datatree import DataTree
 from pandas import to_datetime as to_pandas_datetime
 from xarray import Dataset, open_dataset
 
-from swarmpal.io.paldata import PalDataItem, create_paldata
+from swarmpal.io._paldata import PalDataItem, create_paldata
 
 
 @pytest.mark.remote
