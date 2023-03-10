@@ -5,6 +5,7 @@ Adapted from MatLab code by Heikki Vanhamäki.
 """
 
 import numpy as np
+import xarray as xr
 
 import swarmpal.toolboxes.secs.aux_tools as auto
 from swarmpal.toolboxes.secs import SecsInputs
@@ -13,6 +14,39 @@ from swarmpal.toolboxes.secs.aux_tools import (
     sub_FindLongestNonZero,
     sub_Swarm_grids,
 )
+
+
+def _DSECS_process(SwAin, SwCin):
+    """_summary_
+
+    Parameters
+    ----------
+    SwAin : SecsInput
+        Input data for Swarm Alpha
+    SwCin : SecsInput
+        Input data for Swarm Charlie
+
+    Returns
+    -------
+    List of dicts
+        Each entry contains the original data and the result of the analysis.
+    """
+
+    SwA_list = auto.get_eq(SwAin)
+    SwC_list = auto.get_eq(SwCin)
+
+    out = []
+
+    for SwA, SwC in zip(SwA_list, SwC_list):
+        case = dsecsdata()
+        case.populate(SwA, SwC)
+        case.analyze()
+        _, res = case.dump()
+        resdict = res.to_dict()
+        loopres = {"original-data": {SwA, SwC}, "result": resdict}
+        out.append(loopres)
+
+    return out
 
 
 def _legPol_n1(n, x, ind=False):
@@ -636,8 +670,6 @@ def SECS_2D_CurlFree_antisym_magnetic(
         thetaB, phiB, athetaSECS, phiSECS, aux, rsecs
     )
     # abt = -abt
-    print(bp)
-    print(bt)
     aux = aux / rb
     a2 = -bt + abt
     matBtheta = (a2.T * aux).T
@@ -812,21 +844,19 @@ def get_data_slices(
     t2,
     model="IGRF",
 ):
-    """Get data and split it into slices suitable for DSECS analysis.
-
+    """Fetches Swarm data and splits it into slices suitable for DSECS analysis.
     Parameters
     ----------
-    t1 : _type_, optional
-        _description_
-    t2 : _type_, optional
-        _description_
+    t1 : datetime
+        Start date
+    t2 : datetime
+        End date
     model : str, optional
-        _description_, by default 'IGRF'
-
+        Magnetic field model, by default 'IGRF'
     Returns
     -------
-    _type_
-        _description_
+    SwA, SwC : list of xarray
+        List of Swarm A and C data split into slices for DSECS analysis.
     """
 
     inputs = SecsInputs(
@@ -845,7 +875,16 @@ def get_data_slices(
 
 
 def getUnitVectors(SwA, SwC):
-    """Get the magnetic unit vectors."""
+    """Calculates the magnetic unit vectors.
+    Parameters
+    ----------
+    SwA, SwC : xarray
+        Swarm A and C datasets.
+    Returns
+    -------
+    SwA, SwC : xarray
+        Swarm A and C datasets including magnetic unit vectors 'ggUvT', 'ggUvP' and 'UvR'.
+    """
 
     # Geographical components of unit vector in the main field direction
     # from sub_ReadMagDataLR, check again model and signs
@@ -874,6 +913,14 @@ class grid2D:
     """Class for 2D DSECS grids"""
 
     def __init__(self, origin="geo"):
+        """Initializes the grid.
+        Parameters
+        ----------
+        origin : str
+            parameter controlling if the grif is created in geogrpahic or magnetic coordinates.
+            'geo' or 'mag'.
+
+        """
         self.ggLat = np.array([])
         self.ggLon = np.array([])
         self.magLat = np.array([])
@@ -886,26 +933,19 @@ class grid2D:
     def create(
         self, lat1, lon1, lat2, lon2, dlat, lonRat, extLat, extLon, poleLat, poleLon
     ):
-        """Initialize from data
-
+        """Initializes the 2D grid from Swarm data.
         Parameters
         ----------
-        lat1 : _type_
-            _description_
-        lon1 : _type_
-            _description_
-        lat2 : _type_
-            _description_
-        lon2 : _type_
-            _description_
-        dlat : _type_
-            _description_
-        lonRat : _type_
-            _description_
-        extLat : _type_
-            _description_
-        extLon : _type_
-            _description_
+        lat1, lat2 : ndarray
+            Swarm A and C latitudes, [degree].
+        lon1, lon2 : ndarray
+            Swarm A and C longitudes, [degree].
+        dlat : float
+            2D grid spacing in latitudinal direction, [degree].
+        lonRat : int or float
+             Ratio between the satellite separation and longitudinal spacing of the 2D grid.
+        extLat, extLon : int
+            Number of points to extend the 2D grid outside data area in latitudinal and longitudinal directions.
         """
 
         Lat, Lon, self.angle2D, self.diff2lon2D, self.diff2lat2D = sub_Swarm_grids(
@@ -941,28 +981,15 @@ class grid1D:
         self.diff2 = np.array([])
 
     def create(self, lat1, lat2, dlat, extLat):
-        """Initialize from data.
-
+        """Initializes the 1D grid from Swarm data.
         Parameters
         ----------
-        lat1 : _type_
-            _description_
-        lat2 : _type_
-            _description_
-        dlat : _type_
-            _description_
-        extLat : _type_
-            _description_
-
-        Returns
-        -------
-        _type_
-            _description_
-
-        Raises
-        ------
-        ValueError
-            _description_
+        lat1, lat2 : ndarray
+            Swarm A and C latitudes ,[degree].
+        dlat : int or float
+             1D grid spacing in latitudinal direction, [degree].
+        extLat : int
+            Number of points to extend the 1D grid outside data area in latitudinal direction.
         """
 
         self.lat, self.diff2 = auto.sub_Swarm_grids_1D(lat1, lat2, dlat, extLat)
@@ -972,6 +999,7 @@ class dsecsgrid:
     """Class for all the grids needed in DSECS analysis"""
 
     def __init__(self):
+        """Initialiaze all the necessary parameters."""
         self.out = grid2D(origin="geo")
         self.secs2Ddf = grid2D(origin="mag")
         self.secs1Ddf = grid1D()
@@ -998,7 +1026,12 @@ class dsecsgrid:
         self.cfremoteN = 3
 
     def FindPole(self, SwA):
-        """Find the best pole location for the analysis"""
+        """Finds the best location for a local magnetic dipole pole based on Swarm measurements.
+        Parameters
+        ----------
+        SwA : xarray
+            Swarm A dataset.
+        """
         # define search grid
         dlat = 0.5  # latitude step [degree]
         minlat = 60  # latitude range
@@ -1056,25 +1089,11 @@ class dsecsgrid:
         self.poleLon = lonP[ind]
 
     def create(self, SwA, SwC):
-        """Initialize the grids from data.
-
-
+        """Initializes the 1D and 2D grids from Swarm data.
         Parameters
         ----------
-        SwA : _type_
-            _description_
-        SwC : _type_
-            _description_
-
-        Returns
-        -------
-        _type_
-            _description_
-
-        Raises
-        ------
-        ValueError
-            _description_
+        SwA, SwC : xarray
+            Swarm A and C datasets.
         """
 
         # Make grid around [-X,X] latitudes
@@ -1253,24 +1272,19 @@ class dsecsgrid:
 
 
 def getLocalDipoleFPtrack1D(latB, rB, Ri):
-    """Get the local dipole footpoints for the CF grid creation.
-
+    """Finds the local dipole footpoints for the 1D curl-free grid creation.
     Parameters
     ----------
-    SwA : _type_
-        _description_
-    SwC : _type_
-        _description_
-
+    latB : ndarrar
+        Magnetic latitude of the satellite, [degree].
+    rB : ndarray
+        Geocentric radius of the satellite, [km].
+    Ri : int or float
+        Assumed radius of the spherical shell where the currents flow, [km].
     Returns
     -------
-    _type_
-        _description_
-
-    Raises
-    ------
-    ValueError
-        _description_
+    track : ndarray
+        Latitude of the local dipole footpoints of the satellite, [degree].
     """
 
     # Use the LOCAL DIPOLE footpoints in grid construction
@@ -1287,6 +1301,22 @@ def getLocalDipoleFPtrack1D(latB, rB, Ri):
 
 
 def getLocalDipoleFPtrack2D(latB, lonB, rB, Ri):
+    """Finds the local dipole footpoints for the 2D curl-free grid creation.
+    Parameters
+    ----------
+    latB : ndarray
+        Magnetic latitude of the satellite, [degree].
+    lonB : ndarray
+        Magnetic longitude of the satellite, [degree].
+    rB : ndarray
+        Geocentric radius of the satellite, [km].
+    Ri : int or float
+        Assumed radius of the spherical shell where the currents flow, [km].
+    Returns
+    -------
+    latFP, lonFP : ndarray
+        Latidue and longitude of the local dipole footpoints of the satellite, [degree].
+    """
 
     latB = np.squeeze(latB)
     lonB = np.squeeze(lonB)
@@ -1321,18 +1351,17 @@ def getLocalDipoleFPtrack2D(latB, lonB, rB, Ri):
 
 
 def mag_transform_dsecs(SwA, SwC, pole_lat, pole_lon):
-    """Rotate the data to magnetic coordinate systems.
-
+    """Rotates the data to a magnetic coordinate systems.
     Parameters
     ----------
-    SwA : _type_
-        _description_
-    SwC : _type_
-        _description_
-    pole_lat : _type_
-        _description_
-    pole_lon : _type_
-        _description_
+    SwA, SwC : xarray
+        Swarm A and C datasets.
+    pole_lat, pole_lon : float
+        Latitude and longitude of the new pole in the old coordinates, [degree].
+    Returns
+    -------
+    SwA, SwC : xarray
+        Swarm A and C datsets including data rotated to the magnetic coordinate system.
     """
 
     _, _, auvt, auvp = sph2sph(
@@ -1397,7 +1426,16 @@ def mag_transform_dsecs(SwA, SwC, pole_lat, pole_lon):
 
 
 def trim_data(SwA, SwC):
-    """Find periods with suitable spaceraft velocity for analysis."""
+    """Finds a period with suitable spaceraft velocity for analysis.
+    Parameters
+    ----------
+    SwA, SwC : xarray
+        Swarm A and C datasets.
+    Returns
+    -------
+    SwA, SwC : xarray
+        Swarm A and C datasets trimmed to the suitable period.
+    """
 
     Vx = np.gradient(SwA["magLat"])  # northward velocity [deg/step]
     Vy = np.gradient(SwA["magLon"]) * np.cos(
@@ -1420,6 +1458,7 @@ class dsecsdata:
     """Class for DSECS variables and fitting procedures"""
 
     def __init__(self):
+        """Initalize all the necessary variables."""
         self.lonB = np.array([])
         self.latB = np.array([])
         self.rB = np.array([])
@@ -1480,7 +1519,12 @@ class dsecsdata:
         self.test = dict()
 
     def populate(self, SwA, SwC):
-        """Initialize a DSECS analaysis case from data"""
+        """Initilizes a DSECS analaysis case from Swarm data.
+        Parameters
+        ----------
+        SwA, SwC : xarray
+            Swarm A and C datasets.
+        """
 
         # initialize grid
         grid = dsecsgrid()
@@ -1540,13 +1584,7 @@ class dsecsdata:
         self.test = dict()
 
     def fit1D_df(self):
-        """1D divergence-free fit for data.
-
-        Returns
-        -------
-        _type_
-            _description_
-        """
+        """1D divergence-free fitting."""
 
         self.matBr1D, self.matBt1D = SECS_1D_DivFree_magnetic(
             self.latB, self.grid.secs1Ddf.lat, self.rB, self.grid.Ri, 500
@@ -1573,7 +1611,8 @@ class dsecsdata:
         return x, y, self.matBpara1D
 
     def fit2D_df(self):
-        """2D divergence-free fit for data."""
+        """2D divergence-free fitting."""
+
         # Calculate B-matrices and form the field-aligned matrix
         thetaB = (90 - self.latB) / 180 * np.pi
         phiB = self.lonB / 180 * np.pi
@@ -1619,8 +1658,16 @@ class dsecsdata:
 
         return self.df2D, Bpara2D, self.matBpara2D, self.df2dBr
 
-    def fit1d_cf(self):
-        """1D curl-free fit for data."""
+    def analyze(self):
+        """_summary_"""
+
+        self.fit1D_df()
+        self.fit2D_df()
+        self.fit1D_cf()
+        self.fit2D_cf()
+
+    def fit1D_cf(self):
+        """1D curl-free fitting."""
         # split data into hemispheres
         # ind = np.nonzero(.............)
         indN = np.nonzero(self.apexlats > 0)
@@ -1688,8 +1735,8 @@ class dsecsdata:
             self.cf1dDipMagBp[ind] = matBp @ cf1D
         return cf1D, Bp, matBp, Bphem
 
-    def fit2d_cf(self):
-        """2D curl-free fit for data."""
+    def fit2D_cf(self):
+        """2D curl-free fitting."""
         ### grid generation (also remote grid) missing
         # Fit is done to all components of the magnetic disturbance.
         # Remove field explained by the 1D & 2D DF SECS and 1D CF SECS (dipolar)
@@ -1906,6 +1953,12 @@ class dsecsdata:
         )  # no idea what we need to return from all of the above
 
     def dump(self):
+        """Dump the currents to xarrays.
+        Returns
+        -------
+        dsmag : xarray of the results in the magnetic coordinate system.
+        dsgeo : xarray of the results in geographic coordiante system.
+        """
 
         MagJtheta = (
             self.cf1dDipMagJt
@@ -1939,6 +1992,7 @@ class dsecsdata:
             ),
             attrs=dict(description="DSECS result mag"),
         )
+
         dsgeo = xr.Dataset(
             data_vars=dict(
                 Jphi=(["x", "y"], geoJphi),

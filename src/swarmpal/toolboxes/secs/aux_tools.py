@@ -199,23 +199,20 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
 
 
 def sub_LonInterp(lat, lon, intLat, method, ekstra=np.nan):
-    """Robust interpolation of longitude by interpolating the sin and cos
-    of the angle. This way a 360 deg jump does not matter.
-
+    """Robust interpolation of longitude by interpolating the sine and cosine
+    of the angle. This way a 360 degree jump does not matter.
     Parameters
     ----------
-    lat, lon : array
-        original coordinates [degree]
-    intLat : array
-        Latitudes where lon is interpolated to [degree]
+    lat, lon : ndarray
+        Original coordinates, [degree].
+    intLat : ndarray
+        Latitudes where original longitudes are interpolated to, [degree].
     method : str
-        interpolation method
-
+        Interpolation method. Same as for scipy.interpolate.interp1d.
     Returns
     -------
-    intLon : array
-        Interpolated longitudes at latitudes intLat [degree],
-        NOTE: -180 <= intlon <= 180
+    intLon : ndarray
+        Interpolated longitudes at latitudes intLat, [degree]. -180 <= intlon <= 180.
     """
 
     phi = np.radians(lon)
@@ -236,24 +233,22 @@ def sub_LonInterp(lat, lon, intLat, method, ekstra=np.nan):
 
 
 def sub_Swarm_grids_1D(lat1, lat2, Dlat1D, ExtLat1D):
-    """Make 1D grid around the 2 Swarm satellite paths.
-
+    """Creates 1D grid around the two Swarm satellite paths.
     Parameters
     ----------
-    lat1, lat2 : array
-        Geographic latitudes of the satellites' paths, [degree]
+    lat1, lat2 : ndarray
+        Geographic latitudes of the satellites' paths, [degree].
     Dlat1D : int or float
-        1D grid spacing in latitudinal direction, [degree]
-    ExtLat1D : int or float
-        Number of points to extend the 1D grid outside data area in latitudinal
-        direction
-
+        1D grid spacing in latitudinal direction, [degree].
+    ExtLat1D : int
+        Number of points to extend the 1D grid outside the data area in latitudinal
+        direction.
     Returns
     -------
-    lat1D : array
-        Geographic latitudes of the 1D grid
+    lat1D : ndarray
+        Geographic latitudes of the 1D grid, [degree].
     mat1Dsecond : ndarray
-        2nd gradient matrix
+        Second gradient matrix.
     """
 
     # Latitudinal extent of the satellite data, only that part where there is
@@ -280,36 +275,31 @@ def sub_Swarm_grids_1D(lat1, lat2, Dlat1D, ExtLat1D):
 
 
 def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D):
-    """Make 2D grids around the 2 Swarm satellite paths.
-
+    """Creates 2D grids around the two Swarm satellite paths.
     Parameters
     ----------
-    lat1, lat2 : array
-        Geographic latitudes of the satellites's paths, [degree]
-    lon1, lon2 : array
-        Geographic longitudes of the satellites's paths, [degree]
+    lat1, lat2 : ndarray
+        Geographic latitudes of the satellites' paths, [degree].
+    lon1, lon2 : ndarray
+        Geographic longitudes of the satellites' paths, [degree].
     Dlat2D : float
-        2D grid spacing in latitudinal direction, [degree]
+        2D grid spacing in latitudinal direction, [degree].
     LonRatio : float
-        Ratio between the the satellite separation and longitudinal spacing of
-        the 2D grid, lonRatio=mean(lon1,lon2)/dlon at each latitude separately
+        Ratio between the satellite separation and longitudinal spacing of
+        the 2D grid.
     ExtLat2D, ExtLon2D : int
-        Number of points to extend the 2D grid outside data area in latitudinal
-        and longitudinal directions
+        Number of points to extend the 2D grid outside the data area in latitudinal
+        and longitudinal directions.
 
     Returns
     -------
     lat2D, lon2D : ndarray
-        Geographic latitudes and longitudes of the 2D grid
+        Geographic latitudes and longitudes of the 2D grid, [degree].
     angle2D : ndarray
-         Half-angle of such a spherical cap that has same area as the 2D grid
-         cell [radian]
-    dLon2D : ndarray
-        _description_
+         Half-angle of such a spherical cap that has the same area as the 2D grid
+         cell, [radian].
     mat2DsecondLat : ndarray
-        2D second gradient matrix in latitude
-    _type_
-        _description_
+        Second gradient matrix in latitude.
     """
 
     # Latitudinal extent of the satellite data, only that part where there is
@@ -417,19 +407,18 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
 
 
 def get_eq(ds, QD_filter_max=60):
-    """Splits data into a list of pieces suitable for DSECS analysis latitude.
-
+    """Splits data into a list of pieces suitable for DSECS analysis based on latitude.
     Parameters
     ----------
-    ds : _type_
-        _description_
+    ds : xarray
+        Input dataset.
     QD_filter_max : int, optional
-        _description_, by default 60
+        Maximum Quasi-dipole latitude. All data above this limit is ignored. Default: 60
 
     Returns
     -------
-    _type_
-        _description_
+    out : list of xarray
+        List of data segments split for DSECS analysis.
     """
     # mask= (np.abs(ds.QDLat) > QD_filter_max) | (np.abs(ds.QDLat) < QD_filter_min)
     mask = np.abs(ds.QDLat) > QD_filter_max
@@ -460,17 +449,16 @@ def get_eq(ds, QD_filter_max=60):
 
 def _normalizev(v):
     """Creates an unit vector.
-
     Parameters
     ----------
-    v : _type_
-        _description_
-
+    v : ndarray
+        Input array.
     Returns
     -------
-    _type_
-        _description_
+    ndarray
+        Normalized unit vector.
     """
+
     return (v.T / np.linalg.norm(v, axis=1)).T
 
 
