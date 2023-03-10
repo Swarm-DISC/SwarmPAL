@@ -4,6 +4,7 @@ Adapted from MatLab code by Heikki Vanhamäki.
 
 """
 
+import logging
 import numpy as np
 import xarray as xr
 
@@ -15,21 +16,24 @@ from swarmpal.toolboxes.secs.aux_tools import (
     sub_Swarm_grids,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def _DSECS_process(SwAin, SwCin):
     """_summary_
 
     Parameters
     ----------
-    SwAin : SecsInput
+    SwAin : xarray from SecsInput
         Input data for Swarm Alpha
-    SwCin : SecsInput
+    SwCin : xarray from SecsInput
         Input data for Swarm Charlie
 
     Returns
     -------
     List of dicts
         Each entry contains the original data and the result of the analysis.
+        Results contain coordinates and current densities.
     """
 
     SwA_list = auto.get_eq(SwAin)
@@ -40,10 +44,13 @@ def _DSECS_process(SwAin, SwCin):
     for SwA, SwC in zip(SwA_list, SwC_list):
         case = dsecsdata()
         case.populate(SwA, SwC)
-        case.analyze()
-        _, res = case.dump()
-        resdict = res.to_dict()
-        loopres = {"original-data": {SwA, SwC}, "result": resdict}
+        if case.flag == 0:
+            case.analyze()
+            _, res = case.dump()
+            resdict = res.to_dict()
+        else:
+            resdict = {}
+        loopres = {"original-data": (SwA, SwC), "result": resdict}
         out.append(loopres)
 
     return out
@@ -865,13 +872,13 @@ def get_data_slices(
         model=model,
     )
 
-    SwA = auto.get_eq(inputs.s1.xarray)
+    # SwA = auto.get_eq(inputs.s1.xarray)
 
-    SwC = auto.get_eq(inputs.s2.xarray)
+    # SwC = auto.get_eq(inputs.s2.xarray)
 
     # SwA,SwC = getUnitVectors(SwA,SwC)
 
-    return SwA, SwC
+    return inputs.s1.xarray, inputs.s2.xarray
 
 
 def getUnitVectors(SwA, SwC):
@@ -1024,6 +1031,7 @@ class dsecsgrid:
         self.extLat2D = 5
         self.extLon2D = 7
         self.cfremoteN = 3
+        self.flag = 0
 
     def FindPole(self, SwA):
         """Finds the best location for a local magnetic dipole pole based on Swarm measurements.
@@ -1099,6 +1107,10 @@ class dsecsgrid:
         # Make grid around [-X,X] latitudes
         limitOutputLat = self.outputlimitlat
         ind = np.nonzero(abs(SwA["Latitude"].data) <= limitOutputLat)
+        if len(ind[0]) == 0:
+            logger.warn("No data within analysis area.")
+            self.flag = 1
+            return
         lat1 = SwA["Latitude"].data[ind]
         lon1 = SwA["Longitude"].data[ind]
         ind = np.nonzero(abs(SwC["Latitude"].data) <= limitOutputLat)
@@ -1140,6 +1152,16 @@ class dsecsgrid:
         for dat, sat in zip([SwA, SwC], ["A", "C"]):
             indsN[sat] = np.nonzero(dat["ApexLatitude"].data > 0)
             indsS[sat] = np.nonzero(dat["ApexLatitude"].data <= 0)
+
+        if (
+            len(indsN["A"]) == 0
+            or len(indsN["C"]) == 0
+            or len(indsS["A"]) == 0
+            or len(indsS["C"]) == 0
+        ):
+            logger.warn("No data from both hemispheres.")
+            self.flag = 1
+            return
 
         self.indsN = indsN
         self.insdS = indsS
@@ -1517,6 +1539,7 @@ class dsecsdata:
         self.remoteCf2dDipMagJt = np.ndarray([])
         self.remoteCf2dDipMagJr = np.ndarray([])
         self.test = dict()
+        self.flag = 0
 
     def populate(self, SwA, SwC):
         """Initilizes a DSECS analaysis case from Swarm data.
@@ -1541,6 +1564,11 @@ class dsecsdata:
         # create grid
 
         grid.create(SwA, SwC)
+
+        if grid.flag != 0:
+            logger.warn("Could not create grid. No analysis performed.")
+            self.flag = 1
+            return
 
         self.latB = np.concatenate((SwA["magLat"], SwC["magLat"]))
         self.lonB = np.concatenate((SwA["magLon"], SwC["magLon"]))
