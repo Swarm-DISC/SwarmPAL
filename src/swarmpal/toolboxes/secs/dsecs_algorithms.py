@@ -19,7 +19,7 @@ from swarmpal.toolboxes.secs.aux_tools import (
 logger = logging.getLogger(__name__)
 
 
-def _DSECS_process(SwAin, SwCin):
+def _DSECS_steps(SwAin, SwCin):
     """_summary_
 
     Parameters
