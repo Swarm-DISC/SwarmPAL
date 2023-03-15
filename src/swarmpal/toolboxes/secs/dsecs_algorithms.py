@@ -36,24 +36,28 @@ def _DSECS_process(SwAin, SwCin):
         Results contain coordinates and current densities.
     """
 
-    SwA_list = auto.get_eq(SwAin)
-    SwC_list = auto.get_eq(SwCin)
+    SwA_list, mask = auto.get_eq(SwAin)
+    SwC_list, _ = auto.get_eq(SwCin, mask=mask)
 
     out = []
 
-    for SwA, SwC in zip(SwA_list, SwC_list):
-        case = dsecsdata()
-        case.populate(SwA, SwC)
-        if case.flag == 0:
-            case.analyze()
-            _, res = case.dump()
-            resdict = res.to_dict()
-        else:
-            resdict = {}
-        loopres = {"original-data": (SwA, SwC), "result": resdict}
-        out.append(loopres)
+    try:
 
-    return out
+        for SwA, SwC in zip(SwA_list, SwC_list):
+            case = dsecsdata()
+            case.populate(SwA, SwC)
+            if case.flag == 0:
+                case.analyze()
+                _, res = case.dump()
+                resdict = res.to_dict()
+            else:
+                resdict = {}
+            loopres = {"original-data": (SwA, SwC), "result": resdict, "case": case}
+            out.append(loopres)
+    except:
+        print("huu")
+
+    return out, SwA_list, SwC_list, mask
 
 
 def _legPol_n1(n, x, ind=False):
@@ -83,7 +87,7 @@ def _legPol_n1(n, x, ind=False):
             Pa[:, j] = (
                 2 * x * Pa[:, j - 1]
                 - Pa[:, j - 2]
-                + (x * Pa[:, j - 1] - Pa[:, j - 2]) / (j - 1)
+                + (x * Pa[:, j - 1] - Pa[:, j - 2]) / (j)
             )
     if ind or n == 1:
         return -1 * Pa[:, n]
@@ -258,9 +262,9 @@ def SECS_1D_DivFree_magnetic(latB, latSECS, rb, rsecs, M):
     t_aux = np.zeros((len(latB), M))
     t_aux[:, 0] = 0.2 * np.pi / rb * t * np.where(rb <= rsecs, 1, -rsecs / rb)
     above = rb > rsecs
-    for i in range(1, M):
-        t_aux[:, i] = t * t_aux[:, i - 1]
-        t_aux[:, i - 1] = t_aux[:, i - i] / (i + above)
+    for i in range(0, M - 1):
+        t_aux[:, i + 1] = t * t_aux[:, i]
+        t_aux[:, i] = t_aux[:, i] / (i + 1 + above)
     t_aux[:, M - 1] = t_aux[:, M - 1] / (M + above)
     # Associated Legendre polynomials of cos(thetaB) for m=1...M
     PtBa = _legPol_n1(M, np.cos(thetaB), False)
@@ -1562,7 +1566,8 @@ class dsecsdata:
         SwA, SwC = trim_data(SwA, SwC)
 
         # create grid
-
+        self.test["swa"] = SwA
+        self.test["swc"] = SwC
         grid.create(SwA, SwC)
 
         if grid.flag != 0:
@@ -1609,7 +1614,6 @@ class dsecsdata:
         self.remoteCf2dDipMagJp = 0 * np.empty_like(outproto)
         self.remoteCf2dDipMagJt = 0 * np.empty_like(outproto)
         self.remoteCf2dDipMagJr = 0 * np.empty_like(outproto)
-        self.test = dict()
 
     def fit1D_df(self):
         """1D divergence-free fitting."""

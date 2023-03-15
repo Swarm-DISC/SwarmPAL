@@ -406,7 +406,7 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
     return lat2D, lon2D, angle2D, dLon2D, mat2DsecondLat
 
 
-def get_eq(ds, QD_filter_max=60):
+def get_eq(ds, QD_filter_max=60, mask=[]):
     """Splits data into a list of pieces suitable for DSECS analysis based on latitude.
     Parameters
     ----------
@@ -421,7 +421,9 @@ def get_eq(ds, QD_filter_max=60):
         List of data segments split for DSECS analysis.
     """
     # mask= (np.abs(ds.QDLat) > QD_filter_max) | (np.abs(ds.QDLat) < QD_filter_min)
-    mask = np.abs(ds.QDLat) > QD_filter_max
+    if len(mask) == 0:
+        mask = np.abs(ds.QDLat) > QD_filter_max
+        mask[np.abs(ds.Latitude) > 60] = 1
 
     # ovals=np.ma.flatnotmasked_contiguous(np.ma.masked_array(mask,mask=mask))
     # return ovals,ds
@@ -444,7 +446,7 @@ def get_eq(ds, QD_filter_max=60):
             }
         )
         out[-1] = out[-1].assign(B_NEC_res=out[-1]["B_NEC"] - out[-1]["B_NEC_Model"])
-    return out
+    return out, mask
 
 
 def _normalizev(v):
