@@ -404,14 +404,16 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
     return lat2D, lon2D, angle2D, dLon2D, mat2DsecondLat
 
 
-def get_eq(ds, QD_filter_max=60, ovals=[]):
+def get_eq(ds, lat_filter_max=60, ovals=[]):
     """Splits data into a list of pieces suitable for DSECS analysis based on latitude.
     Parameters
     ----------
     ds : xarray
         Input dataset.
-    QD_filter_max : int, optional
-        Maximum Quasi-dipole latitude. All data above this limit is ignored. Default: 60
+    lat_filter_max : int, optional
+        Maximum geographic latitude (absolute value). All data above this limit is ignored. Default: 60
+    ovals : list
+        list of pre-calculated numpy slices with which to split the data.
 
     Returns
     -------
@@ -420,8 +422,8 @@ def get_eq(ds, QD_filter_max=60, ovals=[]):
     """
     # mask= (np.abs(ds.QDLat) > QD_filter_max) | (np.abs(ds.QDLat) < QD_filter_min)
     if len(ovals) == 0:
-        mask = np.abs(ds.QDLat) > QD_filter_max
-        mask[np.abs(ds.Latitude) > 60] = 1
+        mask = np.abs(ds.Latitude) > lat_filter_max
+        # mask[np.abs(ds.Latitude) > 60] = 1
         ovals = np.ma.flatnotmasked_contiguous(np.ma.masked_array(mask, mask=mask))
 
     # ovals=np.ma.flatnotmasked_contiguous(np.ma.masked_array(mask,mask=mask))

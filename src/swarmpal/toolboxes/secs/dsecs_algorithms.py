@@ -37,7 +37,6 @@ def _DSECS_steps(SwAin, SwCin):
     """
 
     SwA_list, ovals = auto.get_eq(SwAin)
-    ovals[1] = np.s_[1156 - 8 : 2851 - 8]
     SwC_list, _ = auto.get_eq(SwCin, ovals=ovals)
 
     out = []
@@ -1037,6 +1036,7 @@ class dsecsgrid:
         self.extLon2D = 7
         self.cfremoteN = 3
         self.flag = 0
+        self.test = dict()
 
     def FindPole(self, SwA):
         """Finds the best location for a local magnetic dipole pole based on Swarm measurements.
@@ -1198,6 +1198,7 @@ class dsecsgrid:
         # self.secs2DcfNorth.create()
         # self.secs2DcfNorth.create()
         # 2D
+
         # North first
         trackALatN, trackALonN = getLocalDipoleFPtrack2D(
             SwA["magLat"].data[indsN["A"]],
@@ -1242,7 +1243,9 @@ class dsecsgrid:
         N1, N2 = self.secs2DcfNorth.ggLat.shape
         mask = np.ones(Rlat.shape)
 
-        mask[self.cfremoteN : N1, self.cfremoteN : N2] = 0
+        mask[
+            self.cfremoteN : self.cfremoteN + N1, self.cfremoteN : self.cfremoteN + N2
+        ] = 0
 
         self.secs2DcfRemoteNorth.magLat = Rlat[mask > 0]
         self.secs2DcfRemoteNorth.magLon = Rlon[mask > 0]
@@ -1290,7 +1293,9 @@ class dsecsgrid:
 
         N1, N2 = self.secs2DcfSouth.ggLat.shape
         mask = np.ones(Rlat.shape)
-        mask[self.cfremoteN : N1, self.cfremoteN : N2] = 0
+        mask[
+            self.cfremoteN : self.cfremoteN + N1, self.cfremoteN : self.cfremoteN + N2
+        ] = 0
         self.secs2DcfRemoteSouth.magLat = Rlat[mask > 0]
         self.secs2DcfRemoteSouth.magLon = Rlon[mask > 0]
         self.secs2DcfRemoteSouth.angle2D = Rangle[mask > 0]
@@ -1514,8 +1519,8 @@ class dsecsdata:
         self.df2dBt = np.ndarray([])
         self.df1dBt = np.ndarray([])
         self.df1dBr = np.ndarray([])
-        self.matBr1D = np.ndarray([])
-        self.matBt1D = np.ndarray([])
+        self.matBr1Ddf = np.ndarray([])
+        self.matBt1Ddf = np.ndarray([])
         self.df1DJp = np.ndarray([])
         self.matBpara1D = np.ndarray([])
         self.matBpara2D = np.ndarray([])
@@ -1621,14 +1626,14 @@ class dsecsdata:
     def fit1D_df(self):
         """1D divergence-free fitting."""
 
-        self.matBr1D, self.matBt1D = SECS_1D_DivFree_magnetic(
+        self.matBr1Ddf, self.matBt1Ddf = SECS_1D_DivFree_magnetic(
             self.latB, self.grid.secs1Ddf.lat, self.rB, self.grid.Ri, 500
         )
 
         y = self.Bpara  # measurement, parallel magnetic field
 
-        self.matBpara1D = (self.matBr1D.T * self.uvR).T + (
-            self.matBt1D.T * self.uvT
+        self.matBpara1D = (self.matBr1Ddf.T * self.uvR).T + (
+            self.matBt1Ddf.T * self.uvT
         ).T  #
 
         regmat = self.grid.secs1Ddf.diff2  # regularization
@@ -1639,8 +1644,8 @@ class dsecsdata:
             self.grid.out.magLat, self.grid.secs1Ddf.lat, self.grid.Ri
         )
         self.df1DJp = np.reshape(matJp @ x, self.grid.out.ggLat.shape)
-        self.df1dBr = self.matBr1D @ x
-        self.df1dBt = self.matBt1D @ x
+        self.df1dBr = self.matBr1Ddf @ x
+        self.df1dBt = self.matBt1Ddf @ x
         self.df1D = x
 
         return x, y, self.matBpara1D
@@ -1688,6 +1693,9 @@ class dsecsdata:
         self.df2dBr = matBr2D @ self.df2D
         self.df2dBp = matBp2Ddf @ self.df2D
         self.df2dBt = matBt2D @ self.df2D
+        self.matBr2Ddf = matBr2D
+        self.matBp2Ddf = matBp2Ddf
+        self.matBt2Ddf = matBt2D
         # self.df2dBp np.ndarray([]) = self.matBp2Ddf @ self.df2D
         self.df2dBpara = self.matBpara2D @ self.df2D
 
@@ -1825,6 +1833,7 @@ class dsecsdata:
             ### split remote grid into north and south
             remoteTheta = (90 - remote_hem.magLat) / 180 * np.pi
             remotePhi = remote_hem.magLon / 180 * np.pi
+
             (
                 remoteMatBr2D,
                 remoteMatBt2D,
@@ -1890,6 +1899,9 @@ class dsecsdata:
             self.test[label + "_matJp"] = matJp
             self.test[label + "_matJt"] = matJt
             self.test[label + "_matX"] = np.vstack((matBr2D, matBt2D, matBp2D))
+            self.test[label + "_remotematX"] = np.vstack(
+                (remoteMatBr2D, remoteMatBt2D, remoteMatBp2D)
+            )
             self.test[label + "_difflat"] = regmat
             self.test[label + "dats"] = [thetaB_hem, phiB_hem, theta2D, phi2D]
             # Calculate the radial current produced by the 2D CF SECS using finite differences.
