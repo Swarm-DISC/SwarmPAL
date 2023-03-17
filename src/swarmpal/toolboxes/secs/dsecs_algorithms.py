@@ -36,8 +36,9 @@ def _DSECS_steps(SwAin, SwCin):
         Results contain coordinates and current densities.
     """
 
-    SwA_list, mask = auto.get_eq(SwAin)
-    SwC_list, _ = auto.get_eq(SwCin, mask=mask)
+    SwA_list, ovals = auto.get_eq(SwAin)
+    ovals[1] = np.s_[1156 - 8 : 2851 - 8]
+    SwC_list, _ = auto.get_eq(SwCin, ovals=ovals)
 
     out = []
 
@@ -54,10 +55,10 @@ def _DSECS_steps(SwAin, SwCin):
                 resdict = {}
             loopres = {"original-data": (SwA, SwC), "result": resdict, "case": case}
             out.append(loopres)
-    except:
-        print("huu")
+    except Exception as e:
+        print(e)
 
-    return out, SwA_list, SwC_list, mask
+    return out, SwA_list, SwC_list, ovals
 
 
 def _legPol_n1(n, x, ind=False):
@@ -1544,6 +1545,7 @@ class dsecsdata:
         self.remoteCf2dDipMagJr = np.ndarray([])
         self.test = dict()
         self.flag = 0
+        self.QDlats = np.ndarray([])
 
     def populate(self, SwA, SwC):
         """Initilizes a DSECS analaysis case from Swarm data.
@@ -1578,6 +1580,7 @@ class dsecsdata:
         self.latB = np.concatenate((SwA["magLat"], SwC["magLat"]))
         self.lonB = np.concatenate((SwA["magLon"], SwC["magLon"]))
         self.apexlats = np.concatenate((SwA["ApexLatitude"], SwC["ApexLatitude"]))
+        self.QDlats = np.concatenate((SwA["QDLat"], SwC["QDLat"]))
         self.rB = np.concatenate((SwA["Radius"], SwC["Radius"])) * 1e-3
         B = np.concatenate((SwA["B_NEC_res"], SwC["B_NEC_res"]))
         self.Bt = -B[:, 0]

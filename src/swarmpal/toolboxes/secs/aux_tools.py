@@ -258,9 +258,7 @@ def sub_Swarm_grids_1D(lat1, lat2, Dlat1D, ExtLat1D):
 
     # Create 1D grid.
     # Limit grid to latitudes -89 < lat2Dsecs < 89.
-    lat1D = np.arange(
-        minlat - ExtLat1D * Dlat1D, maxlat + (ExtLat1D + 1) * Dlat1D, Dlat1D
-    )
+    lat1D = np.arange(minlat - ExtLat1D * Dlat1D, maxlat + (ExtLat1D) * Dlat1D, Dlat1D)
     ind = np.nonzero((lat1D > -89) & (lat1D < 89))
     lat1D = lat1D[ind]
 
@@ -321,7 +319,7 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
     # Latitudes of the 2D grid.
     # Limit grids to latitudes -89 < lat2Dsecs < 89.
     apulat = np.arange(
-        (minlat - ExtLat2D * Dlat2D), (maxlat + (ExtLat2D + 1) * Dlat2D), Dlat2D
+        (minlat - ExtLat2D * Dlat2D), (maxlat + (ExtLat2D) * Dlat2D), Dlat2D
     )
     ind = np.nonzero((apulat > -89) & (apulat < 89))
     apulat = apulat[ind]
@@ -406,7 +404,7 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
     return lat2D, lon2D, angle2D, dLon2D, mat2DsecondLat
 
 
-def get_eq(ds, QD_filter_max=60, mask=[]):
+def get_eq(ds, QD_filter_max=60, ovals=[]):
     """Splits data into a list of pieces suitable for DSECS analysis based on latitude.
     Parameters
     ----------
@@ -421,16 +419,18 @@ def get_eq(ds, QD_filter_max=60, mask=[]):
         List of data segments split for DSECS analysis.
     """
     # mask= (np.abs(ds.QDLat) > QD_filter_max) | (np.abs(ds.QDLat) < QD_filter_min)
-    if len(mask) == 0:
+    if len(ovals) == 0:
         mask = np.abs(ds.QDLat) > QD_filter_max
         mask[np.abs(ds.Latitude) > 60] = 1
+        ovals = np.ma.flatnotmasked_contiguous(np.ma.masked_array(mask, mask=mask))
 
     # ovals=np.ma.flatnotmasked_contiguous(np.ma.masked_array(mask,mask=mask))
     # return ovals,ds
-    ovals = np.ma.flatnotmasked_contiguous(np.ma.masked_array(mask, mask=mask))
+
     # return ovals,ds
     out = []
     for d in ovals:
+
         out.append(ds.isel(Timestamp=d))
         out[-1] = out[-1].assign(unit_B_NEC_Model=_normalizev(out[-1]["B_NEC_Model"]))
         out[-1] = out[-1].assign(
@@ -446,7 +446,7 @@ def get_eq(ds, QD_filter_max=60, mask=[]):
             }
         )
         out[-1] = out[-1].assign(B_NEC_res=out[-1]["B_NEC"] - out[-1]["B_NEC_Model"])
-    return out, mask
+    return out, ovals
 
 
 def _normalizev(v):
