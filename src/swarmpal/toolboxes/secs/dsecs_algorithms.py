@@ -4,8 +4,11 @@ Adapted from MatLab code by Heikki Vanhamäki.
 
 """
 
+
 import logging
+import apexpy
 import numpy as np
+import pandas
 import xarray as xr
 
 import swarmpal.toolboxes.secs.aux_tools as auto
@@ -20,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 def _DSECS_steps(SwAin, SwCin):
-    """_summary_
+    """DSECS analysis for Vires xarray input.
 
     Parameters
     ----------
@@ -1486,6 +1489,32 @@ def trim_data(SwA, SwC):
     return SwA, SwC
 
 
+def get_exlusion_zone(SwA, SwC):
+
+    apexcrossing_a = np.where(
+        np.sign(SwA.ApexLatitude)[:-1].data != np.sign(SwA.ApexLatitude)[1:].data
+    )[0][0]
+    apexcrossing_c = np.where(
+        np.sign(SwC.ApexLatitude)[:-1].data != np.sign(SwC.ApexLatitude)[1:].data
+    )[0][0]
+    # get footpoints
+    date = pandas.to_datetime(SwA.Timestamp).mean().to_pydatetime()
+    apex_out = apexpy.Apex(date=date)
+    alat, alon = apex_out.convert(
+        SwA.ApexLatitude, SwA.ApexLongitude, "apex", "geo", height=130
+    )
+    clat, clon = apex_out.convert(
+        SwC.ApexLatitude, SwC.ApexLongitude, "apex", "geo", height=130
+    )
+
+    valsA = alat[apexcrossing_a : apexcrossing_a + 2]
+    valsC = clat[apexcrossing_c : apexcrossing_c + 2]
+    minval = np.max([valsA[valsA < 0], valsC[valsC < 0]])
+    maxval = np.min([valsA[valsA > 0], valsC[valsC > 0]])
+
+    return maxval, minval
+
+
 class dsecsdata:
     """Class for DSECS variables and fitting procedures"""
 
@@ -1551,6 +1580,10 @@ class dsecsdata:
         self.test = dict()
         self.flag = 0
         self.QDlats = np.ndarray([])
+        self.apexcrossingA = float = 0
+        self.apexcrossingC = float = 0
+        self.exclusionmax = 0
+        self.exclusionmin = 0
 
     def populate(self, SwA, SwC):
         """Initilizes a DSECS analaysis case from Swarm data.
@@ -1622,6 +1655,8 @@ class dsecsdata:
         self.remoteCf2dDipMagJp = 0 * np.empty_like(outproto)
         self.remoteCf2dDipMagJt = 0 * np.empty_like(outproto)
         self.remoteCf2dDipMagJr = 0 * np.empty_like(outproto)
+
+        self.exclusionmax, self.exclusionmin = get_exlusion_zone(SwA, SwC)
 
     def fit1D_df(self):
         """1D divergence-free fitting."""
@@ -2007,50 +2042,115 @@ class dsecsdata:
         dsgeo : xarray of the results in geographic coordiante system.
         """
 
-        MagJtheta = (
+        # Find the point where
+
+        MagJthetaDf = (
+            # self.cf1dDipMagJt
+            +self.df2dMagJt
+            # + self.cf2dDipMagJt
+            # + self.remoteCf2dDipMagJt
+        )
+        MagJphiDf = (
+            self.df1DJp
+            + self.df2dMagJp  # + self.cf2dDipMagJp + self.remoteCf2dDipMagJp
+        )
+
+        MagJthetaCf = (
             self.cf1dDipMagJt
-            + self.df2dMagJt
+            # + self.df2dMagJt
             + self.cf2dDipMagJt
             + self.remoteCf2dDipMagJt
         )
-        MagJphi = (
-            self.df1DJp + self.df2dMagJp + self.cf2dDipMagJp + self.remoteCf2dDipMagJp
+        MagJphiCf = (
+            self.cf2dDipMagJp
+            + self.remoteCf2dDipMagJp
+            # self.df1DJp + #self.df2dMagJp + self.cf2dDipMagJp + self.remoteCf2dDipMagJp
         )
 
-        _, _, geoJtheta, geoJphi = sph2sph(
+        badlats = np.nonzero(
+            (self.grid.out.ggLat < self.exclusionmax)
+            & (self.grid.out.ggLat > self.exclusionmin)
+        )
+
+        MagJphiCf[badlats] = np.nan
+        MagJthetaCf[badlats] = np.nan
+
+        # MagJtheta = (
+        #    self.cf1dDipMagJt
+        #    + self.df2dMagJt
+        #    + self.cf2dDipMagJt
+        #    + self.remoteCf2dDipMagJt
+        # )
+        # MagJphi = (
+        #    self.df1DJp + self.df2dMagJp + self.cf2dDipMagJp + self.remoteCf2dDipMagJp
+        # )
+
+        # MagJtheta = MagJthetaCf + MagJthetaDf
+        # MagJphi = MagJphiDf + MagJphiCf
+
+        Brfit = self.df1dBr + self.df2dBr + self.cf2dDipBr + self.remoteCf2dDipMagBr
+        Btfit = self.df1dBt + self.df2dBt + self.cf2dDipMagBt + self.remoteCf2dDipMagBt
+        Bpfit = (
+            self.df2dBp
+            + self.cf1dDipMagBp
+            + self.cf2dDipMagBt
+            + self.remoteCf2dDipMagBp
+        )
+
+        _, _, geoJthetaDf, geoJphiDf = sph2sph(
             self.grid.poleLat,
             0,
             self.grid.out.ggLat,
             self.grid.out.ggLon,
-            MagJtheta,
-            MagJphi,
+            MagJthetaDf,
+            MagJphiDf,
+        )
+
+        _, _, geoJthetaCf, geoJphiCf = sph2sph(
+            self.grid.poleLat,
+            0,
+            self.grid.out.ggLat,
+            self.grid.out.ggLon,
+            MagJthetaCf,
+            MagJphiCf,
         )
 
         Jr = self.cf1dDipJr + self.cf2dDipJr + self.remoteCf2dDipMagJr
+        Jr[badlats] = np.nan
         dsmag = xr.Dataset(
             data_vars=dict(
-                Jphi=(["x", "y"], MagJphi),
-                Jtheta=(["x", "y"], MagJtheta),
+                JphiDf=(["x", "y"], MagJphiDf),
+                JthetaDf=(["x", "y"], MagJthetaDf),
                 Jr=(["x", "y"], Jr),
+                JphiCf=(["x", "y"], MagJphiCf),
+                JthetaCf=(["x", "y"], MagJthetaCf),
             ),
             coords=dict(
                 lon=(["x", "y"], self.grid.out.magLon),
                 lat=(["x", "y"], self.grid.out.magLat),
             ),
-            attrs=dict(description="DSECS result mag"),
+            attrs={
+                "description": "DSECS result mag",
+                "Ionospheric height (km)": self.grid.Ri,
+            },
         )
 
         dsgeo = xr.Dataset(
             data_vars=dict(
-                Jphi=(["x", "y"], geoJphi),
-                Jtheta=(["x", "y"], geoJtheta),
+                JphiDf=(["x", "y"], geoJphiDf),
+                JthetaDf=(["x", "y"], geoJthetaDf),
                 Jr=(["x", "y"], Jr),
+                JphiCf=(["x", "y"], geoJphiCf),
+                JthetaCf=(["x", "y"], geoJthetaCf),
             ),
             coords=dict(
                 lon=(["x", "y"], self.grid.out.ggLon),
                 lat=(["x", "y"], self.grid.out.ggLat),
             ),
-            attrs=dict(description="DSECS result geo"),
+            attrs={
+                "description": "DSECS result geographic coordinates",
+                "Ionospheric height (km)": self.grid.Ri,
+            },
         )
 
         return dsmag, dsgeo
