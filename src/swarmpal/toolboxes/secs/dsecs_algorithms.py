@@ -35,8 +35,8 @@ def _DSECS_steps(SwAin, SwCin):
     Returns
     -------
     List of dicts
-        Each entry contains the original data and the result of the analysis.
-        Results contain coordinates and current densities.
+        Each entry contains the original data and the result of the analysis, Results contain coordinates and current densities. Also and the dsecsdata object.
+
     """
 
     SwA_list, ovals = auto.get_eq(SwAin)
@@ -55,12 +55,13 @@ def _DSECS_steps(SwAin, SwCin):
                 resdict = res.to_dict()
             else:
                 resdict = {}
-            loopres = {"original-data": (SwA, SwC), "result": resdict, "case": case}
+                res = None
+            loopres = {"original-data": (SwA, SwC), "result": res, "case": case}
             out.append(loopres)
     except Exception as e:
         print(e)
 
-    return out, SwA_list, SwC_list, ovals
+    return out
 
 
 def _legPol_n1(n, x, ind=False):
@@ -1737,7 +1738,7 @@ class dsecsdata:
         return self.df2D, Bpara2D, self.matBpara2D, self.df2dBr
 
     def analyze(self):
-        """_summary_"""
+        """Perform the DSECS analhsis steps."""
 
         self.fit1D_df()
         self.fit2D_df()
@@ -2152,5 +2153,7 @@ class dsecsdata:
                 "Ionospheric height (km)": self.grid.Ri,
             },
         )
+
+        # add residual or fit
 
         return dsmag, dsgeo
