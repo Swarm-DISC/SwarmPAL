@@ -35,7 +35,7 @@ def _DSECS_steps(SwAin, SwCin):
     Returns
     -------
     List of dicts
-        Each entry contains the original data and the result of the analysis, Results contain coordinates and current densities. Also and the dsecsdata object.
+        Each entry contains the original data ("original_data), the resulting current densities ("current_densities"), the magnetic fit for Swarm A and C ("magnetic_Fit_Alpha", "magnetic_Fit_Charlie") and the dsecsdata object ("case").
 
     """
 
@@ -51,12 +51,20 @@ def _DSECS_steps(SwAin, SwCin):
             case.populate(SwA, SwC)
             if case.flag == 0:
                 case.analyze()
-                _, res = case.dump()
-                resdict = res.to_dict()
+                _, currents, afit, cfit = case.dump()
+                # resdict = res.to_dict()
             else:
-                resdict = {}
-                res = None
-            loopres = {"original-data": (SwA, SwC), "result": res, "case": case}
+                # resdict = {}
+                currents = None
+                afit = None
+                cfit = None
+            loopres = {
+                "original_data": (SwA, SwC),
+                "current_densities": currents,
+                "magnetic_Fit_Alpha": afit,
+                "magnetic_fit_Charlie": cfit,
+                "case": case,
+            }
             out.append(loopres)
     except Exception as e:
         print(e)
@@ -1585,6 +1593,8 @@ class dsecsdata:
         self.apexcrossingC = float = 0
         self.exclusionmax = 0
         self.exclusionmin = 0
+        self.SwA = None
+        self.SwC = None
 
     def populate(self, SwA, SwC):
         """Initilizes a DSECS analaysis case from Swarm data.
@@ -1658,6 +1668,8 @@ class dsecsdata:
         self.remoteCf2dDipMagJr = 0 * np.empty_like(outproto)
 
         self.exclusionmax, self.exclusionmin = get_exlusion_zone(SwA, SwC)
+        self.SwA = SwA
+        self.SwC = SwC
 
     def fit1D_df(self):
         """1D divergence-free fitting."""
@@ -2101,8 +2113,8 @@ class dsecsdata:
         _, _, geoJthetaDf, geoJphiDf = sph2sph(
             self.grid.poleLat,
             0,
-            self.grid.out.ggLat,
-            self.grid.out.ggLon,
+            self.grid.out.magLat,
+            self.grid.out.magLon,
             MagJthetaDf,
             MagJphiDf,
         )
@@ -2110,11 +2122,14 @@ class dsecsdata:
         _, _, geoJthetaCf, geoJphiCf = sph2sph(
             self.grid.poleLat,
             0,
-            self.grid.out.ggLat,
-            self.grid.out.ggLon,
+            self.grid.out.magLat,
+            self.grid.out.magLon,
             MagJthetaCf,
             MagJphiCf,
         )
+
+        geoJtheta = geoJthetaCf + geoJthetaDf
+        geoJphi = geoJphiDf + geoJphiCf
 
         Jr = self.cf1dDipJr + self.cf2dDipJr + self.remoteCf2dDipMagJr
         Jr[badlats] = np.nan
@@ -2127,8 +2142,8 @@ class dsecsdata:
                 JthetaCf=(["x", "y"], MagJthetaCf),
             ),
             coords=dict(
-                lon=(["x", "y"], self.grid.out.magLon),
-                lat=(["x", "y"], self.grid.out.magLat),
+                Latitude=(["x", "y"], self.grid.out.magLon),
+                Longitude=(["x", "y"], self.grid.out.magLat),
             ),
             attrs={
                 "description": "DSECS result mag",
@@ -2138,22 +2153,145 @@ class dsecsdata:
 
         dsgeo = xr.Dataset(
             data_vars=dict(
-                JphiDf=(["x", "y"], geoJphiDf),
-                JthetaDf=(["x", "y"], geoJthetaDf),
-                Jr=(["x", "y"], Jr),
-                JphiCf=(["x", "y"], geoJphiCf),
-                JthetaCf=(["x", "y"], geoJthetaCf),
+                JEastDf=(
+                    ["x", "y"],
+                    geoJphiDf,
+                    {
+                        "unit": "A/km",
+                        "description": "Div free Eastward current densoty",
+                    },
+                ),
+                JNorthDf=(
+                    ["x", "y"],
+                    -geoJthetaDf,
+                    {
+                        "unit": "A/km",
+                        "description": "Div free Northward current density",
+                    },
+                ),
+                Jr=(
+                    ["x", "y"],
+                    Jr,
+                    {"unit": "nA/m^2", "description": "Radial current density"},
+                ),
+                JEastCf=(
+                    ["x", "y"],
+                    geoJphiCf,
+                    {
+                        "unit": "A/km",
+                        "description": "Curl free Eastward current density",
+                    },
+                ),
+                JNorthCf=(
+                    ["x", "y"],
+                    -geoJthetaCf,
+                    {
+                        "unit": "A/km",
+                        "description": "Curl free Northward current density",
+                    },
+                ),
+                JEastTotal=(
+                    ["x", "y"],
+                    geoJphi,
+                    {"unit": "A/km", "description": "Total Eastward current density"},
+                ),
+                JNorthTotal=(
+                    ["x", "y"],
+                    -geoJtheta,
+                    {"unit": "A/km", "description": "Total Northward current density"},
+                ),
             ),
             coords=dict(
-                lon=(["x", "y"], self.grid.out.ggLon),
-                lat=(["x", "y"], self.grid.out.ggLat),
+                Longitude=(["x", "y"], self.grid.out.ggLon, {"unit": "deg"}),
+                Latitude=(["x", "y"], self.grid.out.ggLat, {"unit": "deg"}),
             ),
             attrs={
                 "description": "DSECS result geographic coordinates",
-                "Ionospheric height (km)": self.grid.Ri,
+                "ionospheric height (km)": self.grid.Ri,
+                "Time interval": np.datetime_as_string(self.SwA.Timestamp[0])
+                + " - "
+                + np.datetime_as_string(self.SwA.Timestamp[-1]),
+                "Mean time": np.datetime_as_string(np.mean(self.SwA.Timestamp)),
             },
         )
 
-        # add residual or fit
+        Brfit = self.df1dBr + self.df2dBr + self.cf2dDipBr + self.remoteCf2dDipMagBr
+        Btfit = self.df1dBt + self.df2dBt + self.cf2dDipMagBt + self.remoteCf2dDipMagBt
+        Bpfit = (
+            self.df2dBp
+            + self.cf1dDipMagBp
+            + self.cf2dDipMagBt
+            + self.remoteCf2dDipMagBp
+        )
 
-        return dsmag, dsgeo
+        geoObsLat, geoObsLon, geoBtfit, geoBpfit = sph2sph(
+            self.grid.poleLat,
+            0,
+            self.latB,
+            self.lonB,
+            Btfit,
+            Bpfit,
+        )
+
+        Na = len(self.SwA.Latitude)
+        BrFitA = Brfit[:Na]
+        BtFitA = geoBtfit[:Na]
+        BpFitA = geoBpfit[:Na]
+        BrFitC = Brfit[Na:]
+        BtFitC = geoBtfit[Na:]
+        BpFitC = geoBpfit[Na:]
+
+        B_NEC_FitA = np.array([-BtFitA, BpFitA, -BrFitA]).T
+        B_NEC_FitC = np.array([-BtFitC, BpFitC, -BrFitC]).T
+
+        fitA = xr.Dataset(
+            data_vars=dict(
+                B_NEC_fit=(["Timestamp", "NEC"], B_NEC_FitA, {"unit": "nT"}),
+                Longitude=(["Timestamp"], self.SwA.Longitude.data, {"unit": "deg"}),
+                Latitude=(["Timestamp"], self.SwA.Latitude.data, {"unit": "deg"}),
+                Radius=(["Timestamp"], self.SwA.Radius.data, {"unit": "m"}),
+            ),
+            coords=dict(
+                Timestamp=(
+                    ["Timestamp"],
+                    self.SwA.Timestamp.data,
+                    {"description": "UTC time"},
+                ),
+                NEC=(
+                    ["NEC"],
+                    ["N", "E", "C"],
+                    {"description": "North East Center frame"},
+                ),
+            ),
+            attrs={
+                "description": "DSECS magnetic field fit.",
+                "satellite": "Swarm Alpha",
+            },
+        )
+
+        fitC = xr.Dataset(
+            data_vars=dict(
+                B_NEC_fit=(["Timestamp", "NEC"], B_NEC_FitC, {"unit": "nT"}),
+                Longitude=(["Timestamp"], self.SwC.Longitude.data, {"unit": "deg"}),
+                Latitude=(["Timestamp"], self.SwC.Latitude.data, {"unit": "deg"}),
+                Radius=(["Timestamp"], self.SwC.Radius.data, {"unit": "m"}),
+            ),
+            coords=dict(
+                Timestamp=(
+                    ["Timestamp"],
+                    self.SwA.Timestamp.data,
+                    {"description": "UTC time"},
+                ),
+                NEC=(
+                    ["NEC"],
+                    ["N", "E", "C"],
+                    {"description": "North East Center frame"},
+                ),
+            ),
+            attrs={
+                "description": "DSECS magnetic field fit.",
+                "satellite": "Swarm Charlie",
+            },
+        )
+
+        return dsmag, dsgeo, fitA, fitC
