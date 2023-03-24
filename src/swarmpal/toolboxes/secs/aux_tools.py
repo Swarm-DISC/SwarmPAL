@@ -302,8 +302,7 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
 
     # Latitudinal extent of the satellite data, only that part where there is
     # data from both satellites.
-    # print(lat1.shape)
-    # print(lat2.shape)
+
     maxlat = min(np.nanmax(lat1), np.nanmax(lat2))
     minlat = max(np.nanmin(lat1), np.nanmin(lat2))
 

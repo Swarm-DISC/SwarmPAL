@@ -48,13 +48,16 @@ def _DSECS_steps(SwAin, SwCin):
 
         for SwA, SwC in zip(SwA_list, SwC_list):
             case = dsecsdata()
+            logger.info("Populating data object.")
             case.populate(SwA, SwC)
             if case.flag == 0:
+                logger.info("Starting analysis.")
                 case.analyze()
+                logger.info("Formatting results.")
                 _, currents, afit, cfit = case.dump()
                 # resdict = res.to_dict()
             else:
-                # resdict = {}
+                logger.info("Analysis failed")
                 currents = None
                 afit = None
                 cfit = None
@@ -67,7 +70,7 @@ def _DSECS_steps(SwAin, SwCin):
             }
             out.append(loopres)
     except Exception as e:
-        print(e)
+        logger.warn(e)
 
     return out
 
@@ -1506,7 +1509,7 @@ def get_exlusion_zone(SwA, SwC):
     apexcrossing_c = np.where(
         np.sign(SwC.ApexLatitude)[:-1].data != np.sign(SwC.ApexLatitude)[1:].data
     )[0][0]
-    # get footpoints
+
     date = pandas.to_datetime(SwA.Timestamp).mean().to_pydatetime()
     apex_out = apexpy.Apex(date=date)
     alat, alon = apex_out.convert(
@@ -1518,8 +1521,9 @@ def get_exlusion_zone(SwA, SwC):
 
     valsA = alat[apexcrossing_a : apexcrossing_a + 2]
     valsC = clat[apexcrossing_c : apexcrossing_c + 2]
-    minval = np.max([valsA[valsA < 0], valsC[valsC < 0]])
-    maxval = np.min([valsA[valsA > 0], valsC[valsC > 0]])
+
+    minval = np.max([np.min(valsA), np.min(valsC)])
+    maxval = np.min([np.max(valsA), np.max(valsC)])
 
     return maxval, minval
 
