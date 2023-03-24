@@ -190,7 +190,7 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
     # Calculate the result vector
     resultVec = svdU.T @ dataVec
 
-    ### works with test example but should check again with real data####
+    # works with test example but should check again with real data####
     resultVec = np.diagflat(ss)[:lkmS, :lkmS] @ resultVec
 
     resultVec = svdV @ resultVec
@@ -403,7 +403,7 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
     return lat2D, lon2D, angle2D, dLon2D, mat2DsecondLat
 
 
-def get_eq(ds, lat_filter_max=60, ovals=[]):
+def get_eq(ds, lat_filter_max=60, ovals=None):
     """Splits data into a list of pieces suitable for DSECS analysis based on latitude.
     Parameters
     ----------
@@ -416,11 +416,11 @@ def get_eq(ds, lat_filter_max=60, ovals=[]):
 
     Returns
     -------
-    out : list of xarray
-        List of data segments split for DSECS analysis.
+    out : list of xarray, or None, None by default
+        List of data segments split for DSECS analysis if they have been precalculated.
     """
     # mask= (np.abs(ds.QDLat) > QD_filter_max) | (np.abs(ds.QDLat) < QD_filter_min)
-    if len(ovals) == 0:
+    if ovals is None:
         mask = np.abs(ds.Latitude) > lat_filter_max
         # mask[np.abs(ds.Latitude) > 60] = 1
         ovals = np.ma.flatnotmasked_contiguous(np.ma.masked_array(mask, mask=mask))

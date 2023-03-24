@@ -1593,8 +1593,8 @@ class dsecsdata:
         self.test = dict()
         self.flag = 0
         self.QDlats = np.ndarray([])
-        self.apexcrossingA = float = 0
-        self.apexcrossingC = float = 0
+        self.apexcrossingA: float = 0
+        self.apexcrossingC: float = 0
         self.exclusionmax = 0
         self.exclusionmin = 0
         self.SwA = None
@@ -1741,7 +1741,7 @@ class dsecsdata:
         self.df2dMagJp = np.reshape(matJp @ self.df2D, self.grid.out.magLat.shape)
 
         # Calculate the magnetic field produced by the 2D DF SECS
-        ### still split into SwA and SwC
+        # still split into SwA and SwC
         self.df2dBr = matBr2D @ self.df2D
         self.df2dBp = matBp2Ddf @ self.df2D
         self.df2dBt = matBt2D @ self.df2D
@@ -1782,7 +1782,6 @@ class dsecsdata:
             #        #Remove effect of 1D & 2D DF currents (must have been fitted earlier)
             # a=SwA.magBp(indA)-SwA.df1dMagBp(indA)-SwA.df2dMagBp(indA);
             # SwA.df1dMagBp = 0 by definition
-            #####magBp missing
             #        #Calculate the B-matrix that gives magnetic field at Swarm orbit from the SECS.
             # The symmetric system is a combination of northern and southern hemisphere systems.
             matBp = SECS_1D_CurlFree_magnetic(
@@ -1795,7 +1794,7 @@ class dsecsdata:
             cf1D = auto.sub_inversion(
                 matBp, regmat, self.epsSVD1Dcf, self.alpha1Dcf, Bphem
             )
-            #        #Calculate the theta-current (southward) produced by the 1D CF SECS.
+            # Calculate the theta-current (southward) produced by the 1D CF SECS.
             latJ = self.grid.out.magLat.flatten()
             matJt = SECS_1D_CurlFree_vector(
                 latJ, gridhem.lat, self.grid.Ri
@@ -1826,13 +1825,13 @@ class dsecsdata:
             self.cf1dDipJr[rind] = tmp[rind]
             #        #Calculate the magnetic field produced by the 1D CF SECS at the Swarm satellites.
             # There is only eastward field, so the other components remain zero (as formatted).
-            ###need to split into SwA and SwC
+            # need to split into SwA and SwC
             self.cf1dDipMagBp[ind] = matBp @ cf1D
         return cf1D, Bp, matBp, Bphem
 
     def fit2D_cf(self):
         """2D curl-free fitting."""
-        ### grid generation (also remote grid) missing
+        # grid generation (also remote grid) missing
         # Fit is done to all components of the magnetic disturbance.
         # Remove field explained by the 1D & 2D DF SECS and 1D CF SECS (dipolar)
         Br = self.Br - self.df1dBr - self.df2dBr
@@ -1848,7 +1847,7 @@ class dsecsdata:
         indS = np.nonzero(self.apexlats <= 0)
         indRS = np.nonzero(self.grid.out.magLat <= 0)
 
-        ### add indN and indRN to class
+        # add indN and indRN to class
         for ind, rind, gridhem, remote_hem, label in zip(
             [indN, indS],
             [indRN, indRS],
@@ -1856,7 +1855,7 @@ class dsecsdata:
             [self.grid.secs2DcfRemoteNorth, self.grid.secs2DcfRemoteSouth],
             ["north", "south"],
         ):
-            ###need to flatten these?
+            # need to flatten these?
             Br_hem = Br[ind]
             Bt_hem = Bt[ind]
             Bp_hem = Bp[ind]
@@ -1867,7 +1866,7 @@ class dsecsdata:
             # Calculate B-matrices.
             theta2D = (90 - gridhem.magLat) / 180 * np.pi
             phi2D = gridhem.magLon / 180 * np.pi
-            ###should rename those to cf and df?
+            # should rename those to cf and df?
             matBr2D, matBt2D, matBp2D = SECS_2D_CurlFree_antisym_magnetic(
                 thetaB_hem,
                 phiB_hem,
@@ -1878,11 +1877,11 @@ class dsecsdata:
                 gridhem.angle2D,
             )
 
-            ###ask Heikki if we should keep this switch
+            # ask Heikki if we should keep this switch
             # if result.remoteCFdip:
             # if True:
             # B-matrices for remote grid
-            ### split remote grid into north and south
+            # split remote grid into north and south
             remoteTheta = (90 - remote_hem.magLat) / 180 * np.pi
             remotePhi = remote_hem.magLon / 180 * np.pi
 
@@ -1994,7 +1993,7 @@ class dsecsdata:
             np.put(self.cf2dDipMagBt, ind, matBt2D @ Icf)
             np.put(self.cf2dDipMagBp, ind, matBp2D @ Icf)
 
-            ###keep this switch?
+            # keep this switch?
             # if result.remoteCFdip:
             # if True:
             # Current produced by the remote SECS
