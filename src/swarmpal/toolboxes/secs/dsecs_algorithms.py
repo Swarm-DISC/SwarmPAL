@@ -1025,7 +1025,7 @@ class dsecsgrid:
     """Class for all the grids needed in DSECS analysis"""
 
     def __init__(self):
-        """Initialiaze all the necessary parameters."""
+        """Initialize all the necessary parameters."""
         self.out = grid2D(origin="geo")
         self.secs2Ddf = grid2D(origin="mag")
         self.secs1Ddf = grid1D()
@@ -1408,7 +1408,7 @@ def mag_transform_dsecs(SwA, SwC, pole_lat, pole_lon):
     Returns
     -------
     SwA, SwC : xarray
-        Swarm A and C datsets including data rotated to the magnetic coordinate system.
+        Swarm A and C datasets including data rotated to the magnetic coordinate system.
     """
 
     _, _, auvt, auvp = sph2sph(
@@ -1532,7 +1532,7 @@ class dsecsdata:
     """Class for DSECS variables and fitting procedures"""
 
     def __init__(self):
-        """Initalize all the necessary variables."""
+        """Initialize all the necessary variables."""
         self.lonB = np.array([])
         self.latB = np.array([])
         self.rB = np.array([])
@@ -1601,7 +1601,7 @@ class dsecsdata:
         self.SwC = None
 
     def populate(self, SwA, SwC):
-        """Initilizes a DSECS analaysis case from Swarm data.
+        """Initializes a DSECS analaysis case from Swarm data.
         Parameters
         ----------
         SwA, SwC : xarray
@@ -2055,7 +2055,9 @@ class dsecsdata:
         Returns
         -------
         dsmag : xarray of the results in the magnetic coordinate system.
-        dsgeo : xarray of the results in geographic coordiante system.
+        dsgeo : xarray of the results in geographic coordinate system.
+        fitA : xarray with fitted magnetic field for Swarm A
+        fitC : xarray with fitted magnetic field for Swarm C
         """
 
         # Find the point where

@@ -387,7 +387,7 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
     #    i1, i2 = np.ix_(i1, i2)
     #    mat2DsecondLat[i1, i2] = apumat
 
-    # need C ordering frop numpy
+    # need C ordering drop numpy
     c1 = np.zeros(((Nlat - 2) * Nlon,))
     c1[0] = 1
     # c1[Nlon]=-2
@@ -488,7 +488,7 @@ def sub_points_along_fieldline(thetaSECS, Rsecs, L, minD):
         elements), [radian]
     """
 
-    # Minimum length of integration steps (NOTE: actually the minimum average lenght)
+    # Minimum length of integration steps (NOTE: actually the minimum average length)
     # print('hupep7')
     # print('thetaS ' + type(thetaSECS).__name__)
     # print(thetaSECS)
