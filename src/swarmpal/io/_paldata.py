@@ -302,7 +302,7 @@ class PalData:
             Provide instances of PalDataItem as keyword arguments
         """
         if self.datatree:
-            logger.warn("Resetting contents of PalData")
+            logger.warn(" Resetting contents of PalData")
             self.datatree = DataTree(name=self.datatree.name)
         for name, item in paldataitems.items():
             # Use paldataitems to populate the DataTree; triggers download
@@ -485,7 +485,7 @@ class PalProcess(ABC):
         procname = self.process_name
         subtree_root_pal_meta = subtree.swarmpal.pal_meta["."]
         if procname in subtree_root_pal_meta.keys():
-            logger.warn(f"Rerunning {procname}: May overwrite existing data")
+            logger.warn(f" Rerunning {procname}: May overwrite existing data")
         # Apply process to create updated datatree
         subtree = self._call(subtree)
         # Update metadata with details of the applied process

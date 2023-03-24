@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 from datatree import DataTree
-from xarray import Dataset
+from xarray import DataArray, Dataset
 
 from swarmpal.io import PalProcess
 from swarmpal.toolboxes.tfa import tfalib
@@ -40,39 +40,45 @@ class Preprocess(PalProcess):
     """
 
     @property
-    def process_name(self):
-        return "Preprocess"
+    def process_name(self) -> str:
+        return "TFA_Preprocess"
 
     def set_config(
         self,
         dataset: str = "",
         active_variable: str = "",
+        active_component: int | None = None,
         remove_model: bool = False,
         model: str = "",
         convert_to_mfa: bool = False,
         clean_by_flags: bool = False,
-        clean_varname: str = "",
-        clean_flagname: str = "",
-        clean_maxval: int | None = None,
+        flagclean_varname: str = "",
+        flagclean_flagname: str = "",
+        flagclean_maxval: int | None = None,
     ) -> None:
         self.config = dict(
             dataset=dataset,
             active_variable=active_variable,
+            active_component=active_component,
             remove_model=remove_model,
             model=model,
             convert_to_mfa=convert_to_mfa,
             clean_by_flags=clean_by_flags,
-            clean_varname=clean_varname,
-            clean_flagname=clean_flagname,
-            clean_maxval=clean_maxval,
+            flagclean_varname=flagclean_varname,
+            flagclean_flagname=flagclean_flagname,
+            flagclean_maxval=flagclean_maxval,
         )
 
     @property
     def active_variable(self):
         return self.config.get("active_variable", "")
 
+    @property
+    def active_component(self):
+        return self.config.get("active_component", "")
+
     def _call(self, datatree: DataTree) -> DataTree:
-        self._validate_inputs()
+        self._validate_inputs(datatree)
         # Select the datatree to work on
         self.subtree = datatree[self.config.get("dataset")]
         # Prepare data depending on the content
@@ -83,17 +89,31 @@ class Preprocess(PalProcess):
         # Optionally clean according to flag values
         if self.config.get("clean_by_flags", False):
             ds = self._flag_cleaning(ds)
+        # Assign new variable to dataset (to be used in next processes)
+        da = ds[self.active_variable][:, self.active_component].copy(deep=True)
+        ds = ds.assign({"TFA_Variable": da})
         # Assign dataset back into the datatree to return
         self.subtree = self.subtree.assign(ds.copy())
         self.subtree.parent = datatree
         return datatree
 
-    def _validate_inputs(self):
+    def _validate_inputs(self, datatree):
         """Some checks that the inputs and config are valid"""
         dataset = self.config.get("dataset")
         active_variable = self.config.get("active_variable")
+        active_component = self.config.get("active_component")
         if not all((dataset, active_variable)):
-            raise PalError("dataset and/or active_variable not set")
+            raise PalError("TFA Preprocess: dataset and/or active_variable not set")
+        # Catch the cases with special names that aren't initially available in the dataset (they are set later)
+        if any(x in active_variable for x in ("res_", "MFA", "Eh_XYZ", "Ev_XYZ")):
+            target_shape = (len(datatree[dataset]["Timestamp"]), 3)
+        else:
+            target_shape = datatree[dataset][active_variable].shape
+        # Check if active_component is set appropriately, according to the shape of the active_variable
+        if (len(target_shape) > 1) and (active_component is None):
+            raise PalError("TFA Preprocess: active_component not set")
+        if (len(target_shape) == 1) and (active_component):
+            raise PalError("TFA Preprocess: active_component set, but no vector found")
 
     def _prep_magnetic_data(self, ds: Dataset) -> Dataset:
         """Subtract model and/or rotate to MFA"""
@@ -117,6 +137,10 @@ class Preprocess(PalProcess):
                 B_MFA = tfalib.mfa(ds["B_NEC"].data, ds[f"B_NEC_{model}"].data)
             ds = ds.assign_coords({"MFA": [0, 1, 2]})
             ds = ds.assign({"B_MFA": (("Timestamp", "MFA"), B_MFA)})
+            ds["B_MFA"].attrs = {
+                "units": "nT",
+                "description": "Magnetic field in Mean-field aligned coordinates",
+            }
         return ds
 
     def _prep_efi_expt_data(self, ds: Dataset) -> Dataset:
@@ -139,9 +163,9 @@ class Preprocess(PalProcess):
 
     def _flag_cleaning(self, ds):
         """Set values to NaN where flags exceed a threshold"""
-        varname = self.config.get("clean_varname", None)
-        flagname = self.config.get("clean_flagname", None)
-        max_val = self.config.get("clean_maxval", None)
+        varname = self.config.get("flagclean_varname", None)
+        flagname = self.config.get("flagclean_flagname", None)
+        max_val = self.config.get("flagclean_maxval", None)
         # Use default parameters if none given in config
         varname = varname if varname else self.active_variable
         flagname = flagname if flagname else FLAG_THRESHOLDS[varname]["flag_name"]
@@ -150,3 +174,196 @@ class Preprocess(PalProcess):
         inds_to_remove = ds[flagname] > max_val
         ds[varname][inds_to_remove, ...] = np.NaN
         return ds
+
+
+def _get_tfa_active_subtree(datatree):
+    """Returns the relevant subtree when Preprocess has been applied"""
+    # Scan the tree based on previous preprocess application
+    pal_processes_meta = datatree.swarmpal.pal_meta.get(".", {})
+    tfa_preprocess_meta = pal_processes_meta.get("TFA_Preprocess")
+    if not tfa_preprocess_meta:
+        raise PalError("Must first run tfa.processes.Preprocess")
+    return datatree[tfa_preprocess_meta.get("dataset")]
+
+
+class Clean(PalProcess):
+    """Clean TFA_Variable by removing outliers and interpolate gaps"""
+
+    @property
+    def process_name(self) -> str:
+        return "TFA_Clean"
+
+    def set_config(
+        self,
+        window_size: int = 10,
+        method: str = "iqr",
+        multiplier: float = 0.5,
+    ) -> None:
+        self.config = dict(
+            window_size=window_size,
+            method=method,
+            multiplier=multiplier,
+        )
+
+    def _call(self, datatree) -> DataTree:
+        # Identify the DataArray to modify
+        subtree = _get_tfa_active_subtree(datatree)
+        target_var = subtree["TFA_Variable"]
+        # Apply cleaning routine inplace
+        self._clean_variable(target_var)
+        return datatree
+
+    def _clean_variable(self, target_var) -> DataArray:
+        # Remove outliers
+        inds = tfalib.outliers(
+            target_var.data,
+            self.config.get("window_size"),
+            method=self.config.get("method"),
+            multiplier=self.config.get("multiplier"),
+        )
+        target_var.data[inds] = np.NaN
+        # Interpolate over gaps
+        s = target_var.data.shape
+        if len(s) == 1:
+            N = s[0]
+            t_ind = np.arange(N)
+            x = target_var.data
+            nonNaN = ~np.isnan(x)
+            y = np.interp(t_ind, t_ind[nonNaN], x[nonNaN])
+            target_var.data = y
+        else:
+            N, D = target_var.data.shape
+            t_ind = np.arange(N)
+            for i in range(D):
+                x = np.reshape(target_var.data[:, i], (N,))
+                nonNaN = ~np.isnan(x)
+                y = np.interp(t_ind, t_ind[nonNaN], x[nonNaN])
+                target_var.data[:, i] = y
+        return target_var
+
+
+class Filter(PalProcess):
+    """Filtering"""
+
+    @property
+    def process_name(self) -> str:
+        return "TFA_Filtering"
+
+    def set_config(
+        self,
+        sampling_rate: float = 1,
+        cutoff_frequency: float = 20 / 1000,
+    ) -> None:
+        self.config = dict(
+            sampling_rate=sampling_rate,
+            cutoff_frequency=cutoff_frequency,
+        )
+
+    def _call(self, datatree) -> DataTree:
+        # Identify the DataArray to modify
+        subtree = _get_tfa_active_subtree(datatree)
+        target_var = subtree["TFA_Variable"]
+        # Apply filtering routine inplace
+        target_var = self._filter(target_var)
+        return datatree
+
+    def _filter(self, target_var) -> DataArray:
+        target_var.data = tfalib.filter(
+            target_var.data,
+            self.config.get("sampling_rate"),
+            self.config.get("cutoff_frequency"),
+        )
+        return target_var
+
+
+class Wavelet(PalProcess):
+    """Apply wavelet analysis"""
+
+    @property
+    def process_name(self) -> str:
+        return "TFA_Wavelet"
+
+    def set_config(
+        self,
+        time_step: int = 1,
+        min_frequency: float | None = None,
+        max_frequency: float | None = None,
+        min_scale: float | None = None,
+        max_scale: float | None = None,
+        dj: float = 0.1,
+    ) -> None:
+        self.config = dict(
+            time_step=time_step,
+            min_frequency=min_frequency,
+            max_frequency=max_frequency,
+            min_scale=min_scale,
+            max_scale=max_scale,
+            dj=dj,
+        )
+
+    def _call(self, datatree: DataTree) -> DataTree:
+        self._configure()
+        # Identify the DataArray to modify
+        subtree = _get_tfa_active_subtree(datatree)
+        target_var = subtree["TFA_Variable"]
+        # Apply wavelet routine
+        norm, scale = self._wavelets(target_var)
+        # Assign new array to dataset
+        subtree = subtree.assign_coords({"scale": scale})
+        subtree["wavelet_power"] = DataArray(
+            data=norm,
+            dims=("scale", "Timestamp"),
+        )
+        subtree.parent = datatree
+        return datatree
+
+    def _configure(self):
+        if self.config["min_scale"] is None:
+            self.config["min_scale"] = 1 / self.config["max_frequency"]
+            self.config["max_scale"] = 1 / self.config["min_frequency"]
+
+    def _wavelets(self, target_var: DataArray):
+        scale = tfalib.wavelet_scales(
+            self.config.get("min_scale"),
+            self.config.get("max_scale"),
+            self.config.get("dj"),
+        )
+        wave = tfalib.wavelet_transform(
+            target_var.data,
+            dx=self.config.get("time_step"),
+            minScale=self.config.get("min_scale"),
+            maxScale=self.config.get("max_scale"),
+            dj=self.config.get("dj"),
+        )[0]
+        norm = tfalib.wavelet_normalize(
+            np.abs(wave) ** 2,
+            scale,
+            dx=self.config.get("time_step"),
+            dj=self.config.get("dj"),
+            wavelet_norm_factor=0.74044116,
+        )
+        return norm, scale
+
+
+class WaveDetection(PalProcess):
+    """Screen out potential false waves
+
+    Removes part of the wavelet spectrum that might be due to spikes, data gaps, ESFs or trailing parts of wave
+    activity from either above or below the range of frequencies that were
+    used to perform the wavelet transform.
+    """
+
+    @property
+    def process_name(self) -> str:
+        return "TFA_WaveDetection"
+
+    def set_config(
+        self,
+    ):
+        ...
+
+    def _call(self, datatree):
+        ...
+
+    def _attach_ibi(self):
+        ...
