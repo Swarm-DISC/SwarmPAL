@@ -3,17 +3,11 @@ name: swarmpal
 channels:
   - conda-forge
 dependencies:
-  - python=3.8
+  - python=3.10
   - pip
-  - pipx
-  # IDE
-  - jupyterlab=3.2
-  # - code-server=4.1
-  # - jupyter-vscode-proxy=0.1
   # Compiler required for apexpy
   - fortran-compiler
   # Dev tools (could be handled by nox)
-  - pre-commit
   - pytest
   - sphinx
   - nox
@@ -28,16 +22,16 @@ dependencies:
   # Necessary for tqdm progress bars to work in vscode
   - ipywidgets
   # Likely swarmpal minimum dependencies
-  - cartopy=0.20.2
-  - dask=2022.2.1
-  - matplotlib=3.5.1
-  - numpy=1.22.3
-  - pandas=1.4.1
-  - scipy=1.8.0
-  - xarray=0.21.1
+  - cartopy
+  - dask
+  - matplotlib
+  - numpy
+  - pandas
+  - scipy
+  - viresclient
+  - xarray
   - pip:
-    - apexpy==1.1.0
-    - viresclient==0.10.1
-    - hapiclient==0.2.3
+    - apexpy
+    - hapiclient
     # This package
-    - -e .[dev,docs,dsecs]
+    - -e .[test,dev,docs,dsecs]

@@ -140,6 +140,5 @@ cython_debug/
 # setuptools_scm
 src/*/_version.py
 
-
 # VSCode
 .vscode/*
