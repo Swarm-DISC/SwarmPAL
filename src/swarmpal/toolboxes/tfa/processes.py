@@ -48,9 +48,11 @@ class Preprocess(PalProcess):
         dataset: str = "",
         active_variable: str = "",
         active_component: int | None = None,
+        sampling_rate: float = 1,
         remove_model: bool = False,
         model: str = "",
         convert_to_mfa: bool = False,
+        use_magnitude: bool = False,
         clean_by_flags: bool = False,
         flagclean_varname: str = "",
         flagclean_flagname: str = "",
@@ -60,9 +62,11 @@ class Preprocess(PalProcess):
             dataset=dataset,
             active_variable=active_variable,
             active_component=active_component,
+            sampling_rate=sampling_rate,
             remove_model=remove_model,
             model=model,
             convert_to_mfa=convert_to_mfa,
+            use_magnitude=use_magnitude,
             clean_by_flags=clean_by_flags,
             flagclean_varname=flagclean_varname,
             flagclean_flagname=flagclean_flagname,
@@ -89,9 +93,16 @@ class Preprocess(PalProcess):
         # Optionally clean according to flag values
         if self.config.get("clean_by_flags", False):
             ds = self._flag_cleaning(ds)
-        # Assign new variable to dataset (to be used in next processes)
-        da = ds[self.active_variable][:, self.active_component].copy(deep=True)
-        ds = ds.assign({"TFA_Variable": da})
+        # Identify and assign "TFA_Variable" (to be used in next processes)
+        if self.active_component is not None:
+            da = ds[self.active_variable][:, self.active_component].copy(deep=True)
+        elif self.config["use_magnitude"]:
+            da = (ds[self.active_variable] ** 2).sum(axis=1).pipe(np.sqrt)
+        else:
+            da = ds[self.active_variable].copy(deep=True)
+        da = da.rename({"Timestamp": "TFA_Time"})
+        da = self._constant_cadence(da)
+        ds = ds.assign({"TFA_Variable": da, "TFA_Time": da["TFA_Time"]})
         # Assign dataset back into the datatree to return
         self.subtree = self.subtree.assign(ds.copy())
         self.subtree.parent = datatree
@@ -102,17 +113,22 @@ class Preprocess(PalProcess):
         dataset = self.config.get("dataset")
         active_variable = self.config.get("active_variable")
         active_component = self.config.get("active_component")
+        use_magnitude = self.config.get("use_magnitude")
         if not all((dataset, active_variable)):
             raise PalError("TFA Preprocess: dataset and/or active_variable not set")
         # Catch the cases with special names that aren't initially available in the dataset (they are set later)
-        if any(x in active_variable for x in ("res_", "MFA", "Eh_XYZ", "Ev_XYZ")):
+        if any(x in active_variable for x in ("B_NEC_res_", "MFA", "Eh_XYZ", "Ev_XYZ")):
             target_shape = (len(datatree[dataset]["Timestamp"]), 3)
         else:
             target_shape = datatree[dataset][active_variable].shape
         # Check if active_component is set appropriately, according to the shape of the active_variable
-        if (len(target_shape) > 1) and (active_component is None):
+        if (
+            (len(target_shape) > 1)
+            and (active_component is None)
+            and (not use_magnitude)
+        ):
             raise PalError("TFA Preprocess: active_component not set")
-        if (len(target_shape) == 1) and (active_component):
+        if (len(target_shape) == 1) and (active_component is not None):
             raise PalError("TFA Preprocess: active_component set, but no vector found")
 
     def _prep_magnetic_data(self, ds: Dataset) -> Dataset:
@@ -175,6 +191,31 @@ class Preprocess(PalProcess):
         ds[varname][inds_to_remove, ...] = np.NaN
         return ds
 
+    def _constant_cadence(self, da):
+        """Convert array to that of constant cadence"""
+        # Convert time to seconds for tfalib.constant_cadence
+        t_old = da["TFA_Time"].data
+        t_old_sec = (t_old - t_old[0]) / np.timedelta64(1, "s")
+        new_t_sec, new_X = tfalib.constant_cadence(
+            t_old_sec, da.data, self.config["sampling_rate"], interp=False
+        )[0:2]
+        new_t = t_old[0] + (new_t_sec * 1e9).astype("timedelta64[ns]")
+        # Assign into new array to return
+        da_new = DataArray(
+            data=new_X,
+            dims=("TFA_Time",),
+        )
+        da_new = da_new.assign_coords({"TFA_Time": new_t})
+        da_new.attrs = {
+            "units": da.attrs.get("units", ""),
+            "description": da.attrs.get("description", ""),
+        }
+        da_new["TFA_Time"].attrs = {
+            "units": da["TFA_Time"].attrs.get("units", ""),
+            "description": da["TFA_Time"].attrs.get("description", ""),
+        }
+        return da_new
+
 
 def _get_tfa_active_subtree(datatree):
     """Returns the relevant subtree when Preprocess has been applied"""
@@ -184,6 +225,13 @@ def _get_tfa_active_subtree(datatree):
     if not tfa_preprocess_meta:
         raise PalError("Must first run tfa.processes.Preprocess")
     return datatree[tfa_preprocess_meta.get("dataset")]
+
+
+def _get_sampling_rate(datatree):
+    """Get the sampling rate set by Preprocess"""
+    pal_processes_meta = datatree.swarmpal.pal_meta.get(".", {})
+    tfa_preprocess_meta = pal_processes_meta.get("TFA_Preprocess")
+    return tfa_preprocess_meta["sampling_rate"]
 
 
 class Clean(PalProcess):
@@ -251,7 +299,7 @@ class Filter(PalProcess):
 
     def set_config(
         self,
-        sampling_rate: float = 1,
+        sampling_rate: float | None = None,
         cutoff_frequency: float = 20 / 1000,
     ) -> None:
         self.config = dict(
@@ -260,12 +308,17 @@ class Filter(PalProcess):
         )
 
     def _call(self, datatree) -> DataTree:
+        self._configure(datatree)
         # Identify the DataArray to modify
         subtree = _get_tfa_active_subtree(datatree)
         target_var = subtree["TFA_Variable"]
         # Apply filtering routine inplace
         target_var = self._filter(target_var)
         return datatree
+
+    def _configure(self, datatree):
+        if self.config["sampling_rate"] is None:
+            self.config["sampling_rate"] = _get_sampling_rate(datatree)
 
     def _filter(self, target_var) -> DataArray:
         target_var.data = tfalib.filter(
@@ -285,7 +338,7 @@ class Wavelet(PalProcess):
 
     def set_config(
         self,
-        time_step: int = 1,
+        sampling_rate: float | None = None,
         min_frequency: float | None = None,
         max_frequency: float | None = None,
         min_scale: float | None = None,
@@ -293,7 +346,7 @@ class Wavelet(PalProcess):
         dj: float = 0.1,
     ) -> None:
         self.config = dict(
-            time_step=time_step,
+            sampling_rate=sampling_rate,
             min_frequency=min_frequency,
             max_frequency=max_frequency,
             min_scale=min_scale,
@@ -302,7 +355,7 @@ class Wavelet(PalProcess):
         )
 
     def _call(self, datatree: DataTree) -> DataTree:
-        self._configure()
+        self._configure(datatree)
         # Identify the DataArray to modify
         subtree = _get_tfa_active_subtree(datatree)
         target_var = subtree["TFA_Variable"]
@@ -312,15 +365,17 @@ class Wavelet(PalProcess):
         subtree = subtree.assign_coords({"scale": scale})
         subtree["wavelet_power"] = DataArray(
             data=norm,
-            dims=("scale", "Timestamp"),
+            dims=("scale", "TFA_Time"),
         )
         subtree.parent = datatree
         return datatree
 
-    def _configure(self):
+    def _configure(self, datatree):
         if self.config["min_scale"] is None:
             self.config["min_scale"] = 1 / self.config["max_frequency"]
             self.config["max_scale"] = 1 / self.config["min_frequency"]
+        if self.config["sampling_rate"] is None:
+            self.config["sampling_rate"] = _get_sampling_rate(datatree)
 
     def _wavelets(self, target_var: DataArray):
         scale = tfalib.wavelet_scales(
@@ -330,7 +385,7 @@ class Wavelet(PalProcess):
         )
         wave = tfalib.wavelet_transform(
             target_var.data,
-            dx=self.config.get("time_step"),
+            dx=1 / self.config.get("sampling_rate"),
             minScale=self.config.get("min_scale"),
             maxScale=self.config.get("max_scale"),
             dj=self.config.get("dj"),
@@ -338,7 +393,7 @@ class Wavelet(PalProcess):
         norm = tfalib.wavelet_normalize(
             np.abs(wave) ** 2,
             scale,
-            dx=self.config.get("time_step"),
+            dx=1 / self.config.get("sampling_rate"),
             dj=self.config.get("dj"),
             wavelet_norm_factor=0.74044116,
         )
