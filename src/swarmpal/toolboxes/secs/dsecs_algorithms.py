@@ -870,7 +870,7 @@ def get_data_slices(
     t2,
     model="IGRF",
 ):
-    """Fetches Swarm data and splits it into slices suitable for DSECS analysis.
+    """Fetches Swarm data.
     Parameters
     ----------
     t1 : datetime
@@ -881,8 +881,8 @@ def get_data_slices(
         Magnetic field model, by default 'IGRF'
     Returns
     -------
-    SwA, SwC : list of xarray
-        List of Swarm A and C data split into slices for DSECS analysis.
+    SwA, SwC : xarray
+        Swarm A and C data as xarray returned from Vires.
     """
 
     inputs = SecsInputs(
