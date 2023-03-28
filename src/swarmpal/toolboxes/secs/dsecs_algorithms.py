@@ -64,7 +64,7 @@ def _DSECS_steps(SwAin, SwCin):
             loopres = {
                 "original_data": (SwA, SwC),
                 "current_densities": currents,
-                "magnetic_Fit_Alpha": afit,
+                "magnetic_fit_Alpha": afit,
                 "magnetic_fit_Charlie": cfit,
                 "case": case,
             }
@@ -943,7 +943,7 @@ class grid2D:
         Parameters
         ----------
         origin : str
-            parameter controlling if the grif is created in geogrpahic or magnetic coordinates.
+            parameter controlling if the grid is created in geogrpahic or magnetic coordinates.
             'geo' or 'mag'.
 
         """
@@ -1754,7 +1754,7 @@ class dsecsdata:
         return self.df2D, Bpara2D, self.matBpara2D, self.df2dBr
 
     def analyze(self):
-        """Perform the DSECS analhsis steps."""
+        """Perform the DSECS analysis steps."""
 
         self.fit1D_df()
         self.fit2D_df()
