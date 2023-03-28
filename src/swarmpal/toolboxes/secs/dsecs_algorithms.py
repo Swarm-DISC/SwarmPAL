@@ -2225,7 +2225,7 @@ class dsecsdata:
         Bpfit = (
             self.df2dBp
             + self.cf1dDipMagBp
-            + self.cf2dDipMagBt
+            + self.cf2dDipMagBp
             + self.remoteCf2dDipMagBp
         )
 
