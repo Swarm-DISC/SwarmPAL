@@ -21,7 +21,7 @@ changelog
 
 guides/fac/intro_fac
 guides/secs/intro_secs
-guides/secs/using_secs
+guides/secs/using_dsecs
 guides/tfa/intro_tfa
 ```
 
