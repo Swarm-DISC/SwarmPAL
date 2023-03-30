@@ -13,7 +13,7 @@ swarmpal.toolboxes.secs.processes
 swarmpal.toolboxes.secs.dsecs_algorithms
 *********************************
 
-.. automodule:: swarmpal.toolboxes.secs.processes
+.. automodule:: swarmpal.toolboxes.secs.dsecs_algorithms
     :members:
     :undoc-members:
     :inherited-members:
@@ -22,7 +22,7 @@ swarmpal.toolboxes.secs.dsecs_algorithms
 swarmpal.toolboxes.secs.aux_tools
 *********************************
 
-.. automodule:: swarmpal.toolboxes.secs.processes
+.. automodule:: swarmpal.toolboxes.secs.aux_tools
     :members:
     :undoc-members:
     :inherited-members:
