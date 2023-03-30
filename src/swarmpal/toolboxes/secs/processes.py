@@ -5,8 +5,9 @@ from pyproj import CRS, Transformer
 from xarray import Dataset
 
 from swarmpal.io import PalProcess
-from swarmpal.toolboxes.secs.aux_tools import get_eq
-from swarmpal.toolboxes.secs.dsecs_algorithms import dsecsdata
+from swarmpal.toolboxes.secs.dsecs_algorithms import _DSECS_steps
+
+# from swarmpal.toolboxes.secs.dsecs_algorithms import dsecsdata
 
 
 class DSECS_Process(PalProcess):
@@ -45,23 +46,28 @@ class DSECS_Process(PalProcess):
         ds_alpha = self._append_apex_coords(ds_alpha)
         ds_charlie = self._append_apex_coords(ds_charlie)
         # Prepare for input to DSECS tools
-        SwA_list = get_eq(ds_alpha)  # lists of suitable segments
-        SwC_list = get_eq(ds_charlie)
+
+        dsecs_output = _DSECS_steps(ds_alpha, ds_charlie)
+        # SwA_list = get_eq(ds_alpha)  # lists of suitable segments
+        # SwC_list = get_eq(ds_charlie)
         # Apply DSECS algorithm to each segment in turn
-        for SwA, SwC in zip(SwA_list, SwC_list):
-            case = dsecsdata()
-            case.populate(SwA, SwC)
-            res, data, mapping = case.fit1D_df()
-            break
+        # for SwA, SwC in zip(SwA_list, SwC_list):
+        #    case = dsecsdata()
+        #    case.populate(SwA, SwC)
+        #    res, data, mapping = case.fit1D_df()
+        #    break
         # Store outputs into the datatree
-        datatree["output"] = DataTree(
-            data=Dataset(
-                data_vars={
-                    "Data": ("index", data),
-                    "Fit": ("index", mapping @ res),
-                }
-            )
-        )
+        for i, output in enumerate(dsecs_output):
+            if output["current_densities"] is not None:
+                datatree["output_" + str(i)] = DataTree(
+                    data=output["current_densities"]
+                )
+                datatree["Fit_Alpha_" + str(i)] = DataTree(
+                    data=output["magnetic_fit_Alpha"]
+                )
+                datatree["Fit_Charlie_" + str(i)] = DataTree(
+                    data=output["magnetic_fit_Charlie"]
+                )
         return datatree
 
     @staticmethod

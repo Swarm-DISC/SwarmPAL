@@ -865,7 +865,7 @@ def _calc_root(x, y, z):
     return root
 
 
-def get_data_slices(
+def get_data(
     t1,
     t2,
     model="IGRF",
@@ -1501,7 +1501,7 @@ def trim_data(SwA, SwC):
     return SwA, SwC
 
 
-def get_exlusion_zone(SwA, SwC):
+def get_exclusion_zone(SwA, SwC):
 
     apexcrossing_a = np.where(
         np.sign(SwA.ApexLatitude)[:-1].data != np.sign(SwA.ApexLatitude)[1:].data
@@ -1671,7 +1671,7 @@ class dsecsdata:
         self.remoteCf2dDipMagJt = 0 * np.empty_like(outproto)
         self.remoteCf2dDipMagJr = 0 * np.empty_like(outproto)
 
-        self.exclusionmax, self.exclusionmin = get_exlusion_zone(SwA, SwC)
+        self.exclusionmax, self.exclusionmin = get_exclusion_zone(SwA, SwC)
         self.SwA = SwA
         self.SwC = SwC
 
@@ -2252,6 +2252,11 @@ class dsecsdata:
         fitA = xr.Dataset(
             data_vars=dict(
                 B_NEC_fit=(["Timestamp", "NEC"], B_NEC_FitA, {"unit": "nT"}),
+                B_NEC_data=(
+                    ["Timestamp", "NEC"],
+                    self.SwA["B_NEC_res"].data,
+                    {"unit": "nT"},
+                ),
                 Longitude=(["Timestamp"], self.SwA.Longitude.data, {"unit": "deg"}),
                 Latitude=(["Timestamp"], self.SwA.Latitude.data, {"unit": "deg"}),
                 Radius=(["Timestamp"], self.SwA.Radius.data, {"unit": "m"}),
@@ -2277,6 +2282,11 @@ class dsecsdata:
         fitC = xr.Dataset(
             data_vars=dict(
                 B_NEC_fit=(["Timestamp", "NEC"], B_NEC_FitC, {"unit": "nT"}),
+                B_NEC_data=(
+                    ["Timestamp", "NEC"],
+                    self.SwC["B_NEC_res"].data,
+                    {"unit": "nT"},
+                ),
                 Longitude=(["Timestamp"], self.SwC.Longitude.data, {"unit": "deg"}),
                 Latitude=(["Timestamp"], self.SwC.Latitude.data, {"unit": "deg"}),
                 Radius=(["Timestamp"], self.SwC.Radius.data, {"unit": "m"}),
