@@ -4,7 +4,13 @@ Adapted from MatLab code by Heikki Vanhamäki.
 
 """
 
+
+import logging
+
+import apexpy
 import numpy as np
+import pandas
+import xarray as xr
 
 import swarmpal.toolboxes.secs.aux_tools as auto
 from swarmpal.toolboxes.secs import SecsInputs
@@ -13,6 +19,60 @@ from swarmpal.toolboxes.secs.aux_tools import (
     sub_FindLongestNonZero,
     sub_Swarm_grids,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _DSECS_steps(SwAin, SwCin):
+    """DSECS analysis for Vires xarray input.
+
+    Parameters
+    ----------
+    SwAin : xarray from SecsInput
+        Input data for Swarm Alpha
+    SwCin : xarray from SecsInput
+        Input data for Swarm Charlie
+
+    Returns
+    -------
+    List of dicts
+        Each entry contains the original data ("original_data), the resulting current densities ("current_densities"), the magnetic fit for Swarm A and C ("magnetic_Fit_Alpha", "magnetic_Fit_Charlie") and the dsecsdata object ("case").
+
+    """
+
+    SwA_list, ovals = auto.get_eq(SwAin)
+    SwC_list, _ = auto.get_eq(SwCin, ovals=ovals)
+
+    out = []
+
+    try:
+        for SwA, SwC in zip(SwA_list, SwC_list):
+            case = dsecsdata()
+            logger.info("Populating data object.")
+            case.populate(SwA, SwC)
+            if case.flag == 0:
+                logger.info("Starting analysis.")
+                case.analyze()
+                logger.info("Formatting results.")
+                _, currents, afit, cfit = case.dump()
+                # resdict = res.to_dict()
+            else:
+                logger.info("Analysis failed")
+                currents = None
+                afit = None
+                cfit = None
+            loopres = {
+                "original_data": (SwA, SwC),
+                "current_densities": currents,
+                "magnetic_fit_Alpha": afit,
+                "magnetic_fit_Charlie": cfit,
+                "case": case,
+            }
+            out.append(loopres)
+    except Exception as e:
+        logger.warn(e)
+
+    return out
 
 
 def _legPol_n1(n, x, ind=False):
@@ -42,7 +102,7 @@ def _legPol_n1(n, x, ind=False):
             Pa[:, j] = (
                 2 * x * Pa[:, j - 1]
                 - Pa[:, j - 2]
-                + (x * Pa[:, j - 1] - Pa[:, j - 2]) / (j - 1)
+                + (x * Pa[:, j - 1] - Pa[:, j - 2]) / (j)
             )
     if ind or n == 1:
         return -1 * Pa[:, n]
@@ -101,10 +161,10 @@ def SECS_1D_DivFree_vector(latV, latSECS, ri):
        2D array that maps the 1D elementary current amplitudes to currents.
     """
 
-    # ravel and reassign
+    # flatten and reassign
 
-    latV = latV.ravel()
-    latSECS = latSECS.ravel()
+    latV = latV.flatten()
+    latSECS = latSECS.flatten()
 
     nv = len(latV)
     nsecs = len(latSECS)
@@ -118,7 +178,7 @@ def SECS_1D_DivFree_vector(latV, latSECS, ri):
     if (nsecs) > 1:
         d_theta = np.nan + theta_secs
         d_theta[0] = theta_secs[0] - theta_secs[1]
-        d_theta[1:] = (theta_secs[:-1] - theta_secs[1:]) / 2
+        d_theta[1:-1] = (theta_secs[:-2] - theta_secs[2:]) / 2
         d_theta[-1] = theta_secs[-2] - theta_secs[-1]
     else:
         d_theta = np.array([0.5 / 180 * np.pi])
@@ -174,10 +234,10 @@ def SECS_1D_DivFree_magnetic(latB, latSECS, rb, rsecs, M):
     # if rb is scale, use same rb for all points
     rb = rb + 0 * latB
 
-    # ravel
-    latB = latB.ravel()
-    latSECS = latSECS.ravel()
-    rb = rb.ravel()
+    # flatten
+    latB = latB.flatten()
+    latSECS = latSECS.flatten()
+    rb = rb.flatten()
 
     t = np.where(rb <= rsecs, rb / rsecs, rsecs / rb)
     M = np.abs(np.round(M))
@@ -199,10 +259,13 @@ def SECS_1D_DivFree_magnetic(latB, latSECS, rb, rsecs, M):
     # Legendre polynomials of cos(thetaSECS) and cos(thetaB) for m=1...M
 
     PtS = _legPol(M, np.cos(thetaSECS), False)
-    PtS = PtS[:, 1 : M + 2]
+    # PtS = PtS[:, 1 : M + 2]
+    PtS = PtS[:, 1:]
     PtB = _legPol(M, np.cos(thetaB), False)
-    PtB = PtB[:, 1 : M + 2]
-    # Calculate the sum in eqs (6) and (B6) in Vanhamäki et al. (2003) up to M.
+    # PtB = PtB[:, 1 : M + 2]
+    PtB = PtB[:, 1:]
+    # Calculate the sum Flinein eqs (6) and (B6) in Vanhamäki et al. (2003) up to M.
+
     matBradial = (t_aux * PtB) @ PtS.T
 
     # Then theta-component. See equations (7) and (B7) in Vanhamäki et al. (2003).
@@ -214,9 +277,9 @@ def SECS_1D_DivFree_magnetic(latB, latSECS, rb, rsecs, M):
     t_aux = np.zeros((len(latB), M))
     t_aux[:, 0] = 0.2 * np.pi / rb * t * np.where(rb <= rsecs, 1, -rsecs / rb)
     above = rb > rsecs
-    for i in range(1, M):
-        t_aux[:, i] = t * t_aux[:, i - 1]
-        t_aux[:, i - 1] = t_aux[:, i - i] / (i + above)
+    for i in range(0, M - 1):
+        t_aux[:, i + 1] = t * t_aux[:, i]
+        t_aux[:, i] = t_aux[:, i] / (i + 1 + above)
     t_aux[:, M - 1] = t_aux[:, M - 1] / (M + above)
     # Associated Legendre polynomials of cos(thetaB) for m=1...M
     PtBa = _legPol_n1(M, np.cos(thetaB), False)
@@ -269,9 +332,9 @@ def SECS_1D_CurlFree_magnetic(latB, latSECS, rb, rsecs, geometry):
     """
 
     # if rb is scale, use same rb for all points
-    latB = latB.ravel()
-    rb = rb.ravel()
-    latSECS = latSECS.ravel()
+    latB = latB.flatten()
+    rb = rb.flatten()
+    latSECS = latSECS.flatten()
     rb = rb + 0 * latB
 
     # For each individual CF SECS we have
@@ -356,12 +419,12 @@ def SECS_2D_DivFree_vector(thetaV, phiV, thetaSECS, phiSECS, radius, limitangle)
     ndarray
         2D array to map the elementary current system amplitudes to phi component of current density.
     """
-    # ravel and reassign
-    thetaV = thetaV.ravel()
-    phiV = phiV.ravel()
-    thetaSECS = thetaSECS.ravel()
-    phiSECS = phiSECS.ravel()
-    limitangle = limitangle.ravel()
+    # flatten and reassign
+    thetaV = thetaV.flatten()
+    phiV = phiV.flatten()
+    thetaSECS = thetaSECS.flatten()
+    phiSECS = phiSECS.flatten()
+    limitangle = limitangle.flatten()
 
     # number of points where V is calculated and scaling factors are given
     Nv = len(thetaV)
@@ -443,12 +506,12 @@ def SECS_2D_DivFree_magnetic(thetaB, phiB, thetaSECS, phiSECS, rb, rsecs):
         2D array to map the elementary current system amplitudes to phi component of magnetic field.
     """
 
-    # ravel and reassign
-    thetaB = thetaB.ravel()
-    phiB = phiB.ravel()
-    thetaSECS = thetaSECS.ravel()
-    phiSECS = phiSECS.ravel()
-    rb = rb.ravel()
+    # flatten and reassign
+    thetaB = thetaB.flatten()
+    phiB = phiB.flatten()
+    thetaSECS = thetaSECS.flatten()
+    phiSECS = phiSECS.flatten()
+    rb = rb.flatten()
 
     # number of points where B is calculated and scaling factors are given
 
@@ -481,7 +544,7 @@ def SECS_2D_DivFree_magnetic(thetaB, phiB, thetaSECS, phiSECS, rb, rsecs):
 
         #  %sin and cos of angle C, divided by sin(theta').
         # See Eqs. (A2)-(A5) and Fig. 14 of Vanhamäki et al.(2003)
-        ind = np.argwhere(Sin2ThetaPrime > 1e-10)
+        ind = np.nonzero(Sin2ThetaPrime > 1e-10)
         sinC = np.zeros(CosThetaPrime.shape)
         cosC = np.zeros(CosThetaPrime.shape)
         sinC[ind] = (
@@ -518,6 +581,7 @@ def SECS_2D_DivFree_magnetic(thetaB, phiB, thetaSECS, phiSECS, rb, rsecs):
             auxHorizontal = -factor[n] * (auxroot + CosThetaPrime - 1) / 2
 
         # See Eqs. (9) and (A7) of Amm and Viljanen (1999).
+
         matBradial[n, :] = auxVertical * factor[n] * (1 / auxroot - 1)
         matBtheta[n, :] = auxHorizontal * cosC
         matBphi[n, :] = -auxHorizontal * sinC
@@ -603,15 +667,15 @@ def SECS_2D_CurlFree_antisym_magnetic(
 
     """
 
-    # ravel and reassign
+    # flatten and reassign
 
-    thetaB = thetaB.ravel()
-    phiB = phiB.ravel()
-    rb = rb.ravel()
-    thetaSECS = thetaSECS.ravel()
-    phiSECS = phiSECS.ravel()
+    thetaB = thetaB.flatten()
+    phiB = phiB.flatten()
+    rb = rb.flatten()
+    thetaSECS = thetaSECS.flatten()
+    phiSECS = phiSECS.flatten()
     rsecs = rsecs
-    limitangle = limitangle.ravel()
+    limitangle = limitangle.flatten()
 
     Nb = len(thetaB)
     Nsecs = len(thetaSECS)
@@ -626,13 +690,17 @@ def SECS_2D_CurlFree_antisym_magnetic(
     athetaSECS = np.pi - thetaSECS
 
     aux = rsecs**2 / rb
-    bp, bt = SECS_2D_DivFree_magnetic(thetaB, phiB, thetaSECS, phiSECS, aux, rsecs)[1:]
-    bt = -bt
-    abp, abt = SECS_2D_DivFree_magnetic(thetaB, phiB, athetaSECS, phiSECS, aux, rsecs)[
-        1:
-    ]
-    abt = -abt
+    _, bp, bt = SECS_2D_DivFree_magnetic(thetaB, phiB, thetaSECS, phiSECS, aux, rsecs)
+    # bt = -bt
+    _, abp, abt = SECS_2D_DivFree_magnetic(
+        thetaB, phiB, athetaSECS, phiSECS, aux, rsecs
+    )
+    # abt = -abt
     aux = aux / rb
+    a2 = -bt + abt
+    matBtheta = (a2.T * aux).T
+    a2 = bp - abp
+    matBphi = (a2.T * aux).T
 
     # loop over secs poles
     for n in range(Nsecs):
@@ -643,18 +711,9 @@ def SECS_2D_CurlFree_antisym_magnetic(
 
         # First B of the horizontal current
         # this is the same as the horizontal magnetic field of a 2d df SECS, suitably scaled and rotated by 90 degrees.
-        # aux = rsecs**2/rb
-        # bp,bt = SECS_2D_DivFree_magnetic(thetaB, phiB, thetaSECS[n],phiSECS[n],aux,rsecs)[1:]
-        # bt = -bt
-        # abp,abt = SECS_2D_DivFree_magnetic(thetaB,phiB,athetaSECS[n],phiSECS[n],aux,rsecs)[1:]
-        # abt = -abt
-        # aux = aux/rb
-        matBtheta[:, n] = (bt[:, n] - abt[:, n]) * aux
-        matBphi[:, n] = (bp[:, n] - abp[:, n]) * aux
 
-        # then dipolar line currents by very simple numerical integration
         bx, by, bz = secs_2d_curlFree_antisym_lineintegral(
-            thetaB, phiB, rb, thetaSECS[n], phiSECS[n], rsecs, smallr
+            thetaB, phiB, thetaSECS[n], phiSECS[n], rb, rsecs, smallr
         )
 
         # add to the magnetic field of the horizontal current
@@ -702,10 +761,10 @@ def secs_2d_curlFree_antisym_lineintegral(
         Cartesian components of the magnetic field at the magnetometer locations [nT]
     """
 
-    # ravel and reassign
+    # flatten and reassign
 
-    # thetaSECS = thetaSECS.ravel()
-    # phiSECS = phiSECS.ravel()
+    # thetaSECS = thetaSECS.flatten()
+    # phiSECS = phiSECS.flatten()
 
     # Need the theta-angles of the integration points and the integration step
     L = rsecs / np.sin(thetaSECS) ** 2
@@ -720,13 +779,17 @@ def secs_2d_curlFree_antisym_lineintegral(
     thetaFP = np.arcsin(
         np.sqrt(rsecs / rb) * np.sin(thetaB)
     )  # co-latitude of the footpoints, mapped to the northern hemisphere
+
     ind = np.nonzero(thetaB > np.pi / 2)
+
     thetaFP[ind] = np.pi - thetaFP[ind]
+
     # Horizontal distances as  cosine of co-latitude in the SECS-centered system
     # See Eq. (A5) and Fig. 14 of Vanhamäki et al.(2003)
     tmp = np.cos(thetaFP) * np.cos(thetaSECS) + np.sin(thetaFP) * np.sin(
         thetaSECS
     ) * np.cos(phiSECS - phiB)
+
     minD = rsecs * np.arccos(np.max(tmp))
 
     # Calculate the theta-angles of the points used in the integration
@@ -751,15 +814,15 @@ def secs_2d_curlFree_antisym_lineintegral(
 
     # |distances between current elements and field points|^3
     diffx = (np.expand_dims(x0, -1) - x).T  # (x0[:,np.newaxis] -x).T
-    diffy = (np.expand_dims(y0, -1) - x).T  # (y0[:,np.newaxis] -y).T
-    diffz = (np.expand_dims(z0, -1) - x).T  # (z0[:,np.newaxis] -z).T
+    diffy = (np.expand_dims(y0, -1) - y).T  # (y0[:,np.newaxis] -y).T
+    diffz = (np.expand_dims(z0, -1) - z).T  # (z0[:,np.newaxis] -z).T
 
-    tt = np.sqrt(diffx * diffx + diffy * diffy + diffz * diffz)
-    root = tt * tt * tt
+    tt = diffx * diffx + diffy * diffy + diffz * diffz
+    root = np.sqrt(tt * tt * tt)
 
     # Remove singularity by setting a lower lomit to the distance between current elements and field points.
     # Use the small number
-    root = np.where(root < smallr * smallr * smallr, smallr, root)
+    root = np.where(root < smallr * smallr * smallr, smallr**3, root)
 
     # xyz components of the magnetic field
     # now there is a common factor mu0/(4*pi) = 1e.7
@@ -770,9 +833,9 @@ def secs_2d_curlFree_antisym_lineintegral(
     ysum = (dlx * diffz.T - dlz * diffx.T) / root.T
     zsum = (dlx * diffy.T - dly * diffx.T) / root.T
 
-    bx = 0.1 * np.sum(xsum.T).T
-    by = 0.1 * np.sum(ysum.T).T
-    bz = 0.1 * np.sum(zsum.T).T
+    bx = 0.1 * np.sum(xsum, axis=1)
+    by = -0.1 * np.sum(ysum, axis=1)
+    bz = 0.1 * np.sum(zsum, axis=1)
 
     return bx, by, bz
 
@@ -802,26 +865,24 @@ def _calc_root(x, y, z):
     return root
 
 
-def get_data_slices(
+def get_data(
     t1,
     t2,
     model="IGRF",
 ):
-    """Get data and split it into slices suitable for DSECS analysis.
-
+    """Fetches Swarm data.
     Parameters
     ----------
-    t1 : _type_, optional
-        _description_
-    t2 : _type_, optional
-        _description_
+    t1 : datetime
+        Start date
+    t2 : datetime
+        End date
     model : str, optional
-        _description_, by default 'IGRF'
-
+        Magnetic field model, by default 'IGRF'
     Returns
     -------
-    _type_
-        _description_
+    SwA, SwC : xarray
+        Swarm A and C data as xarray returned from Vires.
     """
 
     inputs = SecsInputs(
@@ -830,17 +891,26 @@ def get_data_slices(
         model=model,
     )
 
-    SwA = auto.get_eq(inputs.s1.xarray)
+    # SwA = auto.get_eq(inputs.s1.xarray)
 
-    SwC = auto.get_eq(inputs.s2.xarray)
+    # SwC = auto.get_eq(inputs.s2.xarray)
 
     # SwA,SwC = getUnitVectors(SwA,SwC)
 
-    return SwA, SwC
+    return inputs.s1.xarray, inputs.s2.xarray
 
 
 def getUnitVectors(SwA, SwC):
-    """Get the magnetic unit vectors."""
+    """Calculates the magnetic unit vectors.
+    Parameters
+    ----------
+    SwA, SwC : xarray
+        Swarm A and C datasets.
+    Returns
+    -------
+    SwA, SwC : xarray
+        Swarm A and C datasets including magnetic unit vectors 'ggUvT', 'ggUvP' and 'UvR'.
+    """
 
     # Geographical components of unit vector in the main field direction
     # from sub_ReadMagDataLR, check again model and signs
@@ -869,6 +939,14 @@ class grid2D:
     """Class for 2D DSECS grids"""
 
     def __init__(self, origin="geo"):
+        """Initializes the grid.
+        Parameters
+        ----------
+        origin : str
+            parameter controlling if the grid is created in geogrpahic or magnetic coordinates.
+            'geo' or 'mag'.
+
+        """
         self.ggLat = np.array([])
         self.ggLon = np.array([])
         self.magLat = np.array([])
@@ -881,26 +959,19 @@ class grid2D:
     def create(
         self, lat1, lon1, lat2, lon2, dlat, lonRat, extLat, extLon, poleLat, poleLon
     ):
-        """Initialize from data
-
+        """Initializes the 2D grid from Swarm data.
         Parameters
         ----------
-        lat1 : _type_
-            _description_
-        lon1 : _type_
-            _description_
-        lat2 : _type_
-            _description_
-        lon2 : _type_
-            _description_
-        dlat : _type_
-            _description_
-        lonRat : _type_
-            _description_
-        extLat : _type_
-            _description_
-        extLon : _type_
-            _description_
+        lat1, lat2 : ndarray
+            Swarm A and C latitudes, [degree].
+        lon1, lon2 : ndarray
+            Swarm A and C longitudes, [degree].
+        dlat : float
+            2D grid spacing in latitudinal direction, [degree].
+        lonRat : int or float
+             Ratio between the satellite separation and longitudinal spacing of the 2D grid.
+        extLat, extLon : int
+            Number of points to extend the 2D grid outside data area in latitudinal and longitudinal directions.
         """
 
         Lat, Lon, self.angle2D, self.diff2lon2D, self.diff2lat2D = sub_Swarm_grids(
@@ -913,7 +984,7 @@ class grid2D:
             extLat,
             extLon,
         )
-
+        Lon = Lon % 360
         if self.origin == "geo":
             self.ggLat, self.ggLon = Lat, Lon
             self.magLat, self.magLon, _, _ = sph2sph(
@@ -925,7 +996,7 @@ class grid2D:
             self.ggLat, self.ggLon, _, _ = sph2sph(
                 poleLat, 0, self.magLat, self.magLon, [], []
             )
-            self.magLon = self.magLon % 360
+            self.ggLon = self.ggLon % 360
 
 
 class grid1D:
@@ -936,28 +1007,15 @@ class grid1D:
         self.diff2 = np.array([])
 
     def create(self, lat1, lat2, dlat, extLat):
-        """Initialize from data.
-
+        """Initializes the 1D grid from Swarm data.
         Parameters
         ----------
-        lat1 : _type_
-            _description_
-        lat2 : _type_
-            _description_
-        dlat : _type_
-            _description_
-        extLat : _type_
-            _description_
-
-        Returns
-        -------
-        _type_
-            _description_
-
-        Raises
-        ------
-        ValueError
-            _description_
+        lat1, lat2 : ndarray
+            Swarm A and C latitudes ,[degree].
+        dlat : int or float
+             1D grid spacing in latitudinal direction, [degree].
+        extLat : int
+            Number of points to extend the 1D grid outside data area in latitudinal direction.
         """
 
         self.lat, self.diff2 = auto.sub_Swarm_grids_1D(lat1, lat2, dlat, extLat)
@@ -967,6 +1025,7 @@ class dsecsgrid:
     """Class for all the grids needed in DSECS analysis"""
 
     def __init__(self):
+        """Initialize all the necessary parameters."""
         self.out = grid2D(origin="geo")
         self.secs2Ddf = grid2D(origin="mag")
         self.secs1Ddf = grid1D()
@@ -985,15 +1044,22 @@ class dsecsgrid:
         self.lonRatioOut = 2
         self.extLatOut = 0
         self.extLonOut = 3
-        self.extLat1D = 1
+        self.extLat1D = 5
         self.indsN = dict()
         self.insdS = dict()
         self.extLat2D = 5
         self.extLon2D = 7
         self.cfremoteN = 3
+        self.flag = 0
+        self.test = dict()
 
     def FindPole(self, SwA):
-        """Find the best pole location for the analysis"""
+        """Finds the best location for a local magnetic dipole pole based on Swarm measurements.
+        Parameters
+        ----------
+        SwA : xarray
+            Swarm A dataset.
+        """
         # define search grid
         dlat = 0.5  # latitude step [degree]
         minlat = 60  # latitude range
@@ -1051,30 +1117,20 @@ class dsecsgrid:
         self.poleLon = lonP[ind]
 
     def create(self, SwA, SwC):
-        """Initialize the grids from data.
-
-
+        """Initializes the 1D and 2D grids from Swarm data.
         Parameters
         ----------
-        SwA : _type_
-            _description_
-        SwC : _type_
-            _description_
-
-        Returns
-        -------
-        _type_
-            _description_
-
-        Raises
-        ------
-        ValueError
-            _description_
+        SwA, SwC : xarray
+            Swarm A and C datasets.
         """
 
         # Make grid around [-X,X] latitudes
         limitOutputLat = self.outputlimitlat
         ind = np.nonzero(abs(SwA["Latitude"].data) <= limitOutputLat)
+        if len(ind[0]) == 0:
+            logger.warn("No data within analysis area.")
+            self.flag = 1
+            return
         lat1 = SwA["Latitude"].data[ind]
         lon1 = SwA["Longitude"].data[ind]
         ind = np.nonzero(abs(SwC["Latitude"].data) <= limitOutputLat)
@@ -1114,8 +1170,18 @@ class dsecsgrid:
         indsN = dict()
         indsS = dict()
         for dat, sat in zip([SwA, SwC], ["A", "C"]):
-            indsN[sat] = np.argwhere(dat["ApexLatitude"].data > 0)
-            indsS[sat] = np.argwhere(dat["ApexLatitude"].data <= 0)
+            indsN[sat] = np.nonzero(dat["ApexLatitude"].data > 0)
+            indsS[sat] = np.nonzero(dat["ApexLatitude"].data <= 0)
+
+        if (
+            len(indsN["A"]) == 0
+            or len(indsN["C"]) == 0
+            or len(indsS["A"]) == 0
+            or len(indsS["C"]) == 0
+        ):
+            logger.warn("No data from both hemispheres.")
+            self.flag = 1
+            return
 
         self.indsN = indsN
         self.insdS = indsS
@@ -1147,6 +1213,7 @@ class dsecsgrid:
         # self.secs2DcfNorth.create()
         # self.secs2DcfNorth.create()
         # 2D
+
         # North first
         trackALatN, trackALonN = getLocalDipoleFPtrack2D(
             SwA["magLat"].data[indsN["A"]],
@@ -1160,12 +1227,13 @@ class dsecsgrid:
             SwC["Radius"].data[indsN["C"]] * 1e-3,
             self.Ri,
         )
-        temp = np.min([np.min(trackALatN), np.min(trackCLatN)])
+        temp = np.array([np.min([np.min(trackALatN), np.min(trackCLatN)])])
+
         self.secs2DcfNorth.create(
-            np.append(temp - 1, trackALatN),
-            np.append(trackALonN[0], trackALonN),
-            np.append(temp - 1, trackCLatN),
-            np.append(trackCLonN[0], trackCLonN),
+            np.concatenate((temp - 1, trackALatN)),
+            np.insert(trackALonN, 0, trackALonN[0]),
+            np.concatenate((temp - 1, trackCLatN)),
+            np.insert(trackCLonN, 0, trackCLonN[0]),
             self.dlatOut,
             self.lonRatioOut,
             self.extLat2D,
@@ -1176,25 +1244,27 @@ class dsecsgrid:
 
         # get outer shell for remote curl free locations
         Rlat, Rlon, Rangle, _, _ = auto.sub_Swarm_grids(
-            np.append(temp - 1, trackALatN),
-            np.append(trackALonN[0], trackALonN),
-            np.append(temp - 1, trackCLatN),
-            np.append(trackCLonN[0], trackCLonN),
+            np.concatenate((temp - 1, trackALatN)),
+            np.insert(trackALonN, 0, trackALonN[0]),
+            np.concatenate((temp - 1, trackCLatN)),
+            np.insert(trackCLonN, 0, trackCLonN[0]),
             self.dlatOut,
             self.lonRatioOut,
             self.extLat2D + self.cfremoteN,
             self.extLon2D + self.cfremoteN,
-            self.poleLat,
-            self.poleLon,
         )
+        Rlon = Rlon % 360
 
-        N1, N2 = self.secs2DcfNorth.shape
+        N1, N2 = self.secs2DcfNorth.ggLat.shape
         mask = np.ones(Rlat.shape)
-        mask[self.cfremoteN :, self.cfremoteN :][:N1, :N2] = 0
-        ind = np.argwhere(mask)
-        self.secs2DcfRemoteNorth.magLat = Rlat[ind]
-        self.secs2DcfRemoteNorth.maglon = Rlon[ind]
-        self.secs2DcfRemoteNorth.angle2D = Rangle[ind]
+
+        mask[
+            self.cfremoteN : self.cfremoteN + N1, self.cfremoteN : self.cfremoteN + N2
+        ] = 0
+
+        self.secs2DcfRemoteNorth.magLat = Rlat[mask > 0]
+        self.secs2DcfRemoteNorth.magLon = Rlon[mask > 0]
+        self.secs2DcfRemoteNorth.angle2D = Rangle[mask > 0]
 
         # South
         trackALatS, trackALonS = getLocalDipoleFPtrack2D(
@@ -1209,12 +1279,13 @@ class dsecsgrid:
             SwC["Radius"].data[indsS["C"]] * 1e-3,
             self.Ri,
         )
-        temp = np.max([np.max(trackALatN), np.max(trackCLatN)])
+
+        temp = np.array([np.max([np.max(trackALatS), np.max(trackCLatS)])])
         self.secs2DcfSouth.create(
-            np.append(temp + 1, trackALatS),
-            np.append(trackALonS[0], trackALonS),
-            np.append(temp + 1, trackCLatS),
-            np.append(trackCLonS[0], trackCLonS),
+            np.concatenate((temp + 1, trackALatS)),
+            np.insert(trackALonS, 0, trackALonS[0]),
+            np.concatenate((temp + 1, trackCLatS)),
+            np.insert(trackCLonS, 0, trackCLonS[0]),
             self.dlatOut,
             self.lonRatioOut,
             self.extLat2D,
@@ -1224,48 +1295,43 @@ class dsecsgrid:
         )
 
         Rlat, Rlon, Rangle, _, _ = auto.sub_Swarm_grids(
-            np.append(temp + 1, trackALatS),
-            np.append(trackALonS[0], trackALonS),
-            np.append(temp + 1, trackCLatS),
-            np.append(trackCLonS[0], trackCLonS),
+            np.concatenate((temp + 1, trackALatS)),
+            np.insert(trackALonS, 0, trackALonS[0]),
+            np.concatenate((temp + 1, trackCLatS)),
+            np.insert(trackCLonS, 0, trackCLonS[0]),
             self.dlatOut,
             self.lonRatioOut,
             self.extLat2D + self.cfremoteN,
             self.extLon2D + self.cfremoteN,
-            self.poleLat,
-            self.poleLon,
         )
+        Rlon = Rlon % 360
 
-        N1, N2 = self.secs1DcfSouth.shape
+        N1, N2 = self.secs2DcfSouth.ggLat.shape
         mask = np.ones(Rlat.shape)
-        mask[self.cfremoteN :, self.cfremoteN :][:N1, :N2] = 0
-        ind = np.argwhere(mask)
-        self.secs2DcfRemoteSouth.magLat = Rlat[ind]
-        self.secs2DcfRemoteSouth.magLon = Rlon[ind]
-        self.secs2DcfRemoteSouth.angle2D = Rangle[ind]
+        mask[
+            self.cfremoteN : self.cfremoteN + N1, self.cfremoteN : self.cfremoteN + N2
+        ] = 0
+        self.secs2DcfRemoteSouth.magLat = Rlat[mask > 0]
+        self.secs2DcfRemoteSouth.magLon = Rlon[mask > 0]
+        self.secs2DcfRemoteSouth.angle2D = Rangle[mask > 0]
 
         # self.ggLat1D,_ = auto.sub_Swarm_grids_1D(lat1,lat2,)
 
 
 def getLocalDipoleFPtrack1D(latB, rB, Ri):
-    """Get the local dipole footpoints for the CF grid creation.
-
+    """Finds the local dipole footpoints for the 1D curl-free grid creation.
     Parameters
     ----------
-    SwA : _type_
-        _description_
-    SwC : _type_
-        _description_
-
+    latB : ndarrar
+        Magnetic latitude of the satellite, [degree].
+    rB : ndarray
+        Geocentric radius of the satellite, [km].
+    Ri : int or float
+        Assumed radius of the spherical shell where the currents flow, [km].
     Returns
     -------
-    _type_
-        _description_
-
-    Raises
-    ------
-    ValueError
-        _description_
+    track : ndarray
+        Latitude of the local dipole footpoints of the satellite, [degree].
     """
 
     # Use the LOCAL DIPOLE footpoints in grid construction
@@ -1273,7 +1339,7 @@ def getLocalDipoleFPtrack1D(latB, rB, Ri):
     thetaFP = np.arcsin(
         np.sqrt(Ri / rB) * np.sin(thetaB)
     )  # co-latitude of the footpoints, mapped to the northern hemisphere
-    ind = np.argwhere(thetaB > np.pi / 2)
+    ind = np.nonzero(thetaB > np.pi / 2)
     thetaFP[ind] = np.pi - thetaFP[ind]
     latFP = 90 - thetaFP / np.pi * 180
     track = np.arange(np.min(np.abs(latFP)), np.max(1 + np.abs(latFP)), 0.2)
@@ -1282,12 +1348,36 @@ def getLocalDipoleFPtrack1D(latB, rB, Ri):
 
 
 def getLocalDipoleFPtrack2D(latB, lonB, rB, Ri):
-    thetaB = (90 - latB) / 180 * np.pi
+    """Finds the local dipole footpoints for the 2D curl-free grid creation.
+    Parameters
+    ----------
+    latB : ndarray
+        Magnetic latitude of the satellite, [degree].
+    lonB : ndarray
+        Magnetic longitude of the satellite, [degree].
+    rB : ndarray
+        Geocentric radius of the satellite, [km].
+    Ri : int or float
+        Assumed radius of the spherical shell where the currents flow, [km].
+    Returns
+    -------
+    latFP, lonFP : ndarray
+        Latidue and longitude of the local dipole footpoints of the satellite, [degree].
+    """
+
+    latB = np.squeeze(latB)
+    lonB = np.squeeze(lonB)
+    rB = np.squeeze(rB)
+    thetaB = (90 - latB.flatten()) / 180 * np.pi
+
     thetaFP = np.arcsin(
         np.sqrt(Ri / rB) * np.sin(thetaB)
     )  # co-latitude of the footpoints, mapped to the northern hemisphere
-    ind = np.argwhere(thetaB > np.pi / 2)
+
+    ind = np.nonzero(thetaB > np.pi / 2)
+
     thetaFP[ind] = np.pi - thetaFP[ind]
+
     latFP = 90 - thetaFP / np.pi * 180
     lonFP = lonB
     sorted = np.argsort(np.abs(latFP))
@@ -1295,28 +1385,29 @@ def getLocalDipoleFPtrack2D(latB, lonB, rB, Ri):
     lonFP = lonFP[sorted]
     # probe which hemisphere is being processed
     if np.mean(latB) > 0:
-        latFP = latFP[latFP > 0]
-        lonFP = lonFP[latFP > 0]
+        inds = latFP > 0
+        latFP = latFP[inds]
+        lonFP = lonFP[inds]
     else:
-        latFP = latFP[latFP < 0]
-        lonFP = lonFP[lonFP < 0]
+        inds = latFP < 0
+        latFP = latFP[inds]
+        lonFP = lonFP[inds]
 
     return latFP, lonFP
 
 
 def mag_transform_dsecs(SwA, SwC, pole_lat, pole_lon):
-    """Rotate the data to magnetic coordinate systems.
-
+    """Rotates the data to a magnetic coordinate systems.
     Parameters
     ----------
-    SwA : _type_
-        _description_
-    SwC : _type_
-        _description_
-    pole_lat : _type_
-        _description_
-    pole_lon : _type_
-        _description_
+    SwA, SwC : xarray
+        Swarm A and C datasets.
+    pole_lat, pole_lon : float
+        Latitude and longitude of the new pole in the old coordinates, [degree].
+    Returns
+    -------
+    SwA, SwC : xarray
+        Swarm A and C datasets including data rotated to the magnetic coordinate system.
     """
 
     _, _, auvt, auvp = sph2sph(
@@ -1359,7 +1450,7 @@ def mag_transform_dsecs(SwA, SwC, pole_lat, pole_lon):
             "magLat": ("Timestamp", amaglat),
             "magLon": ("Timestamp", amaglon),
             "magBt": ("Timestamp", amagbt),
-            "magBp": ("Timestamp", amagbt),
+            "magBp": ("Timestamp", amagbp),
         }
     )
     SwC = SwC.assign(
@@ -1369,7 +1460,7 @@ def mag_transform_dsecs(SwA, SwC, pole_lat, pole_lon):
             "magLat": ("Timestamp", cmaglat),
             "magLon": ("Timestamp", cmaglon),
             "magBt": ("Timestamp", cmagbt),
-            "magBp": ("Timestamp", cmagbt),
+            "magBp": ("Timestamp", cmagbp),
         }
     )
 
@@ -1381,7 +1472,16 @@ def mag_transform_dsecs(SwA, SwC, pole_lat, pole_lon):
 
 
 def trim_data(SwA, SwC):
-    """Find periods with suitable spaceraft velocity for analysis."""
+    """Finds a period with suitable spaceraft velocity for analysis.
+    Parameters
+    ----------
+    SwA, SwC : xarray
+        Swarm A and C datasets.
+    Returns
+    -------
+    SwA, SwC : xarray
+        Swarm A and C datasets trimmed to the suitable period.
+    """
 
     Vx = np.gradient(SwA["magLat"])  # northward velocity [deg/step]
     Vy = np.gradient(SwA["magLon"]) * np.cos(
@@ -1400,10 +1500,37 @@ def trim_data(SwA, SwC):
     return SwA, SwC
 
 
+def get_exclusion_zone(SwA, SwC):
+    apexcrossing_a = np.where(
+        np.sign(SwA.ApexLatitude)[:-1].data != np.sign(SwA.ApexLatitude)[1:].data
+    )[0][0]
+    apexcrossing_c = np.where(
+        np.sign(SwC.ApexLatitude)[:-1].data != np.sign(SwC.ApexLatitude)[1:].data
+    )[0][0]
+
+    date = pandas.to_datetime(SwA.Timestamp).mean().to_pydatetime()
+    apex_out = apexpy.Apex(date=date)
+    alat, alon = apex_out.convert(
+        SwA.ApexLatitude, SwA.ApexLongitude, "apex", "geo", height=130
+    )
+    clat, clon = apex_out.convert(
+        SwC.ApexLatitude, SwC.ApexLongitude, "apex", "geo", height=130
+    )
+
+    valsA = alat[apexcrossing_a : apexcrossing_a + 2]
+    valsC = clat[apexcrossing_c : apexcrossing_c + 2]
+
+    minval = np.max([np.min(valsA), np.min(valsC)])
+    maxval = np.min([np.max(valsA), np.max(valsC)])
+
+    return maxval, minval
+
+
 class dsecsdata:
     """Class for DSECS variables and fitting procedures"""
 
     def __init__(self):
+        """Initialize all the necessary variables."""
         self.lonB = np.array([])
         self.latB = np.array([])
         self.rB = np.array([])
@@ -1421,21 +1548,26 @@ class dsecsdata:
         self.epsSVD1Dcf: float = 100e-4
         self.alpha2D: float = 50e-5
         self.epsSVD2D: float = 10e-4
-        self.df1D: np.ndarray([])
-        self.df2D: np.ndarray([])
-        self.cf1D: np.ndarray([])
-        self.cf2D: np.ndarray([])
-        self.matBr1D: np.ndarray([])
-        self.matBt1D: np.ndarray([])
-        self.matBpara1D: np.ndarray([])
-        self.matBpara2D: np.ndarray([])
-        self.apexlats: np.ndarray([])
+        self.epsSVD2dcf: float = 20e-4
+        self.alpha2Dcf: float = 10e-1
+        self.df1D = np.ndarray([])
+        self.df2D = np.ndarray([])
+        self.cf1D = np.ndarray([])
+        self.cf2D = np.ndarray([])
+        self.df2dBr = np.ndarray([])
+        self.df2dBp = np.ndarray([])
+        self.df2dBt = np.ndarray([])
+        self.df1dBt = np.ndarray([])
+        self.df1dBr = np.ndarray([])
+        self.matBr1Ddf = np.ndarray([])
+        self.matBt1Ddf = np.ndarray([])
+        self.df1DJp = np.ndarray([])
+        self.matBpara1D = np.ndarray([])
+        self.matBpara2D = np.ndarray([])
+        self.apexlats = np.ndarray([])
         self.cf1dDipMagJp = np.ndarray([])
         self.cf1dDipMagJt = np.ndarray([])
         self.cf1dDipJr = np.ndarray([])
-        self.cf1dDipBr = np.ndarray([])
-        self.cf1dDipMagBt = np.ndarray([])
-        self.cf1dDipMagBp = np.ndarray([])
         self.cf1dDipBr = np.ndarray([])
         self.cf1dDipMagBt = np.ndarray([])
         self.cf1dDipMagBp = np.ndarray([])
@@ -1445,15 +1577,34 @@ class dsecsdata:
         self.cf2dDipBr = np.ndarray([])
         self.cf2dDipMagBt = np.ndarray([])
         self.cf2dDipMagBp = np.ndarray([])
-        self.cf2dDipBr = np.ndarray([])
-        self.cf2dDipMagBt = np.ndarray([])
-        self.cf2dDipMagBp = np.ndarray([])
         self.matBp2Ddf = np.ndarray([])
         self.matBt2Ddf = np.ndarray([])
         self.matBr2Ddf = np.ndarray([])
+        self.df2dMagJt = np.ndarray([])
+        self.df2dMagJp = np.ndarray([])
+        self.remoteCf2dDipMagBr = np.ndarray([])
+        self.remoteCf2dDipMagBt = np.ndarray([])
+        self.remoteCf2dDipMagBp = np.ndarray([])
+        self.remoteCf2dDipMagJp = np.ndarray([])
+        self.remoteCf2dDipMagJt = np.ndarray([])
+        self.remoteCf2dDipMagJr = np.ndarray([])
+        self.test = dict()
+        self.flag = 0
+        self.QDlats = np.ndarray([])
+        self.apexcrossingA: float = 0
+        self.apexcrossingC: float = 0
+        self.exclusionmax = 0
+        self.exclusionmin = 0
+        self.SwA = None
+        self.SwC = None
 
     def populate(self, SwA, SwC):
-        """Initialize a DSECS analaysis case from data"""
+        """Initializes a DSECS analaysis case from Swarm data.
+        Parameters
+        ----------
+        SwA, SwC : xarray
+            Swarm A and C datasets.
+        """
 
         # initialize grid
         grid = dsecsgrid()
@@ -1468,12 +1619,19 @@ class dsecsdata:
         SwA, SwC = trim_data(SwA, SwC)
 
         # create grid
-
+        self.test["swa"] = SwA
+        self.test["swc"] = SwC
         grid.create(SwA, SwC)
+
+        if grid.flag != 0:
+            logger.warn("Could not create grid. No analysis performed.")
+            self.flag = 1
+            return
 
         self.latB = np.concatenate((SwA["magLat"], SwC["magLat"]))
         self.lonB = np.concatenate((SwA["magLon"], SwC["magLon"]))
         self.apexlats = np.concatenate((SwA["ApexLatitude"], SwC["ApexLatitude"]))
+        self.QDlats = np.concatenate((SwA["QDLat"], SwC["QDLat"]))
         self.rB = np.concatenate((SwA["Radius"], SwC["Radius"])) * 1e-3
         B = np.concatenate((SwA["B_NEC_res"], SwC["B_NEC_res"]))
         self.Bt = -B[:, 0]
@@ -1489,61 +1647,69 @@ class dsecsdata:
 
         outproto = self.grid.out.magLat
         dataproto = self.latB
-        self.cf1dDipMagJp = np.empty_like(outproto)
-        self.cf1dDipMagJt = np.empty_like(outproto)
-        self.cf1dDipJr = np.empty_like(outproto)
-        self.cf1dDipBr = np.empty_like(dataproto)
-        self.cf1dDipMagBt = np.empty_like(dataproto)
-        self.cf1dDipMagBp = np.empty_like(dataproto)
-        self.cf1dDipBr = np.empty_like(dataproto)
-        self.cf1dDipMagBt = np.empty_like(dataproto)
-        self.cf1dDipMagBp = np.empty_like(dataproto)
-        self.cf2dDipMagJp = np.empty_like(outproto)
-        self.cf2dDipMagJt = np.empty_like(outproto)
-        self.cf2dDipJr = np.empty_like(outproto)
-        self.cf2dDipBr = np.empty_like(dataproto)
-        self.cf2dDipMagBt = np.empty_like(dataproto)
-        self.cf2dDipMagBp = np.empty_like(dataproto)
-        self.cf2dDipBr = np.empty_like(dataproto)
-        self.cf2dDipMagBt = np.empty_like(dataproto)
-        self.cf2dDipMagBp = np.empty_like(dataproto)
-        self.test = dict()
+        self.cf1dDipMagJp = 0 * np.empty_like(outproto)
+        self.cf1dDipMagJt = 0 * np.empty_like(outproto)
+        self.cf1dDipJr = 0 * np.empty_like(outproto)
+        self.cf1dDipBr = 0 * np.empty_like(dataproto)
+        self.cf1dDipMagBt = 0 * np.empty_like(dataproto)
+        self.cf1dDipMagBp = 0 * np.empty_like(dataproto)
+        self.cf1dDipBr = 0 * np.empty_like(dataproto)
+        self.cf1dDipMagBt = 0 * np.empty_like(dataproto)
+        self.cf1dDipMagBp = 0 * np.empty_like(dataproto)
+        self.cf2dDipMagJp = 0 * np.empty_like(outproto)
+        self.cf2dDipMagJt = 0 * np.empty_like(outproto)
+        self.cf2dDipJr = 0 * np.empty_like(outproto)
+        self.cf2dDipBr = 0 * np.empty_like(dataproto)
+        self.cf2dDipMagBt = 0 * np.empty_like(dataproto)
+        self.cf2dDipMagBp = 0 * np.empty_like(dataproto)
+        self.remoteCf2dDipMagBr = 0 * np.empty_like(dataproto)
+        self.remoteCf2dDipMagBt = 0 * np.empty_like(dataproto)
+        self.remoteCf2dDipMagBp = 0 * np.empty_like(dataproto)
+        self.remoteCf2dDipMagJp = 0 * np.empty_like(outproto)
+        self.remoteCf2dDipMagJt = 0 * np.empty_like(outproto)
+        self.remoteCf2dDipMagJr = 0 * np.empty_like(outproto)
+
+        self.exclusionmax, self.exclusionmin = get_exclusion_zone(SwA, SwC)
+        self.SwA = SwA
+        self.SwC = SwC
 
     def fit1D_df(self):
-        """1D divergence-free fit for data.
+        """1D divergence-free fitting."""
 
-        Returns
-        -------
-        _type_
-            _description_
-        """
-
-        self.matBr1D, self.matBt1D = SECS_1D_DivFree_magnetic(
+        self.matBr1Ddf, self.matBt1Ddf = SECS_1D_DivFree_magnetic(
             self.latB, self.grid.secs1Ddf.lat, self.rB, self.grid.Ri, 500
         )
 
         y = self.Bpara  # measurement, parallel magnetic field
 
-        self.matBpara1D = (self.matBr1D.T * self.uvR).T + (
-            self.matBt1D.T * self.uvT
+        self.matBpara1D = (self.matBr1Ddf.T * self.uvR).T + (
+            self.matBt1Ddf.T * self.uvT
         ).T  #
 
         regmat = self.grid.secs1Ddf.diff2  # regularization
         x = auto.sub_inversion(
             self.matBpara1D, regmat, self.epsSVD1Ddf, self.alpha1Ddf, y
         )
+        matJp = SECS_1D_DivFree_vector(
+            self.grid.out.magLat, self.grid.secs1Ddf.lat, self.grid.Ri
+        )
+        self.df1DJp = np.reshape(matJp @ x, self.grid.out.ggLat.shape)
+        self.df1dBr = self.matBr1Ddf @ x
+        self.df1dBt = self.matBt1Ddf @ x
         self.df1D = x
+
         return x, y, self.matBpara1D
 
     def fit2D_df(self):
-        """2D divergence-free fit for data."""
+        """2D divergence-free fitting."""
+
         # Calculate B-matrices and form the field-aligned matrix
         thetaB = (90 - self.latB) / 180 * np.pi
         phiB = self.lonB / 180 * np.pi
         theta2D = (90 - self.grid.secs2Ddf.magLat) / 180 * np.pi
         phi2D = self.grid.secs2Ddf.magLon / 180 * np.pi
 
-        matBr2D, matBt2D, self.matBp2Ddf = SECS_2D_DivFree_magnetic(
+        matBr2D, matBt2D, matBp2Ddf = SECS_2D_DivFree_magnetic(
             thetaB, phiB, theta2D, phi2D, self.rB, self.grid.Ri
         )
         # N2d = np.size(self.grid.secs2D.lat)
@@ -1551,10 +1717,11 @@ class dsecsdata:
         self.matBpara2D = (
             (matBr2D.T * self.uvR).T
             + (matBt2D.T * self.uvT).T
-            + (self.matBp2Ddf.T * self.uvP).T
+            + (matBp2Ddf.T * self.uvP).T
         )
 
         # Remove field explained by the 1D DF SECS (must have been fitted earlier).
+
         Bpara2D = self.Bpara - self.matBpara1D @ self.df1D
 
         regmat = self.grid.secs2Ddf.diff2lat2D  # regularization
@@ -1563,31 +1730,44 @@ class dsecsdata:
         )
 
         # Calculate the current produced by the 2D DF SECS.
-        thetaJ = (90 - self.grid.out.magLat.ravel()) / 180 * np.pi
-        phiJ = self.grid.out.magLon.ravel() / 180 * np.pi
+        thetaJ = (90 - self.grid.out.magLat.flatten()) / 180 * np.pi
+        phiJ = self.grid.out.magLon.flatten() / 180 * np.pi
         matJt, matJp = SECS_2D_DivFree_vector(
             thetaJ, phiJ, theta2D, phi2D, self.grid.Ri, self.grid.secs2Ddf.angle2D
         )
-        # df2dMagJt = np.reshape(matJt @ self.df2D, self.grid.out.magLat.shape)
-        # df2dMagJp = np.reshape(matJp @ self.df2D, self.grid.out.magLat.shape)
+        self.df2dMagJt = np.reshape(matJt @ self.df2D, self.grid.out.magLat.shape)
+        self.df2dMagJp = np.reshape(matJp @ self.df2D, self.grid.out.magLat.shape)
 
         # Calculate the magnetic field produced by the 2D DF SECS
-        df2dBr = matBr2D @ self.df2D
-        # df2dMagBt = matBt2D @ self.df2D
-        # df2dMagBp = self.matBp2Ddf @ self.df2D
-        # df2dBpara = self.matBpara2D @ self.df2D
+        # still split into SwA and SwC
+        self.df2dBr = matBr2D @ self.df2D
+        self.df2dBp = matBp2Ddf @ self.df2D
+        self.df2dBt = matBt2D @ self.df2D
+        self.matBr2Ddf = matBr2D
+        self.matBp2Ddf = matBp2Ddf
+        self.matBt2Ddf = matBt2D
+        # self.df2dBp np.ndarray([]) = self.matBp2Ddf @ self.df2D
+        self.df2dBpara = self.matBpara2D @ self.df2D
 
-        return self.df2D, Bpara2D, self.matBpara2D, df2dBr
+        return self.df2D, Bpara2D, self.matBpara2D, self.df2dBr
 
-    def fit1d_cf(self):
-        """1D curl-free fit for data."""
+    def analyze(self):
+        """Perform the DSECS analysis steps."""
+
+        self.fit1D_df()
+        self.fit2D_df()
+        self.fit1D_cf()
+        self.fit2D_cf()
+
+    def fit1D_cf(self):
+        """1D curl-free fitting."""
         # split data into hemispheres
         # ind = np.nonzero(.............)
-        indN = np.argwhere(self.apexlats > 0)
-        indRN = np.argwhere(self.grid.out.magLat > 0)
-        indS = np.argwhere(self.apexlats <= 0)
-        indRS = np.argwhere(self.grid.out.magLat <= 0)
-
+        indN = np.nonzero(self.apexlats > 0)
+        indRN = np.nonzero(self.grid.out.magLat > 0)
+        indS = np.nonzero(self.apexlats <= 0)
+        indRS = np.nonzero(self.grid.out.magLat <= 0)
+        Bp = self.magBp - self.df2dBp
         for ind, rind, gridhem in zip(
             [indN, indS],
             [indRN, indRS],
@@ -1595,12 +1775,11 @@ class dsecsdata:
         ):
             latB_hem = self.latB[ind]
             rB_hem = self.rB[ind]
-            Bp = self.magBp - self.matBp2Ddf @ self.df2D
-            Bphem = Bp[ind].ravel()
+
+            Bphem = Bp[ind].flatten()
             #        #Remove effect of 1D & 2D DF currents (must have been fitted earlier)
             # a=SwA.magBp(indA)-SwA.df1dMagBp(indA)-SwA.df2dMagBp(indA);
             # SwA.df1dMagBp = 0 by definition
-            Bp = self.magBp - self.matBp2Ddf @ self.df2D
             #        #Calculate the B-matrix that gives magnetic field at Swarm orbit from the SECS.
             # The symmetric system is a combination of northern and southern hemisphere systems.
             matBp = SECS_1D_CurlFree_magnetic(
@@ -1613,8 +1792,8 @@ class dsecsdata:
             cf1D = auto.sub_inversion(
                 matBp, regmat, self.epsSVD1Dcf, self.alpha1Dcf, Bphem
             )
-            #        #Calculate the theta-current (southward) produced by the 1D CF SECS.
-            latJ = self.grid.out.magLat.ravel()
+            # Calculate the theta-current (southward) produced by the 1D CF SECS.
+            latJ = self.grid.out.magLat.flatten()
             matJt = SECS_1D_CurlFree_vector(
                 latJ, gridhem.lat, self.grid.Ri
             ) - SECS_1D_CurlFree_vector(latJ, -gridhem.lat, self.grid.Ri)
@@ -1644,155 +1823,488 @@ class dsecsdata:
             self.cf1dDipJr[rind] = tmp[rind]
             #        #Calculate the magnetic field produced by the 1D CF SECS at the Swarm satellites.
             # There is only eastward field, so the other components remain zero (as formatted).
-            self.cf1dDipMagBp[ind] = (matBp @ cf1D).reshape((-1, 1))
+            # need to split into SwA and SwC
+            self.cf1dDipMagBp[ind] = matBp @ cf1D
         return cf1D, Bp, matBp, Bphem
 
+    def fit2D_cf(self):
+        """2D curl-free fitting."""
+        # grid generation (also remote grid) missing
+        # Fit is done to all components of the magnetic disturbance.
+        # Remove field explained by the 1D & 2D DF SECS and 1D CF SECS (dipolar)
+        Br = self.Br - self.df1dBr - self.df2dBr
+        Bt = self.magBt - self.df1dBt - self.df2dBt - self.cf1dDipMagBt
+        # df1dMagBp = 0 by definition
+        Bp = self.magBp - self.df2dBp - self.cf1dDipMagBp
 
-def fit2d_cf(self):
-    """2D curl-free fit for data."""
-    # Fit is done to all components of the magnetic disturbance.
-    # Remove field explained by the 1D & 2D DF SECS and 1D CF SECS (dipolar)
-    Br = self.Br - self.df1dBr - self.df2dBr - self.cf1dDipBr
-    Bt = self.magBt - self.df1dMagBt - self.df2dMagBt - self.cf1dDipMagBt
-    # df1dMagBp = 0 by definition
-    Bp = self.magBp - self.df2dMagBp - self.cf1dDipMagBp
+        thetaB = (90 - self.latB) / 180 * np.pi
+        phiB = self.lonB / 180 * np.pi
 
-    thetaB = (90 - self.latB) / 180 * np.pi
-    phiB = self.lonB / 180 * np.pi
+        indN = np.nonzero(self.apexlats > 0)
+        indRN = np.nonzero(self.grid.out.magLat > 0)
+        indS = np.nonzero(self.apexlats <= 0)
+        indRS = np.nonzero(self.grid.out.magLat <= 0)
 
-    for ind, rind, gridhem, remote_hem in zip(
-        [self.indN, self.indS],
-        [self.indRN, self.indRS],
-        [self.grid.secs2DcfNorth, self.grid.secs2DcfSouth],
-        [self.grid.secs2dcfRemoteNorth, self.grid.secs2dcfRemoteSouth],
-    ):
-        Br_hem = Br[ind]
-        Bt_hem = Bt[ind]
-        Bp_hem = Bp[ind]
-        thetaB_hem = thetaB[ind]
-        phiB_hem = phiB[ind]
-        rB_hem = self.rB[ind]
+        # add indN and indRN to class
+        for ind, rind, gridhem, remote_hem, label in zip(
+            [indN, indS],
+            [indRN, indRS],
+            [self.grid.secs2DcfNorth, self.grid.secs2DcfSouth],
+            [self.grid.secs2DcfRemoteNorth, self.grid.secs2DcfRemoteSouth],
+            ["north", "south"],
+        ):
+            # need to flatten these?
+            Br_hem = Br[ind]
+            Bt_hem = Bt[ind]
+            Bp_hem = Bp[ind]
+            thetaB_hem = thetaB[ind]
+            phiB_hem = phiB[ind]
+            rB_hem = self.rB[ind]
 
-        # Calculate B-matrices.
-        theta2D = (90 - gridhem.lat) / 180 * np.pi
-        phi2D = gridhem.lon / 180 * np.pi
+            # Calculate B-matrices.
+            theta2D = (90 - gridhem.magLat) / 180 * np.pi
+            phi2D = gridhem.magLon / 180 * np.pi
+            # should rename those to cf and df?
+            matBr2D, matBt2D, matBp2D = SECS_2D_CurlFree_antisym_magnetic(
+                thetaB_hem,
+                phiB_hem,
+                theta2D,
+                phi2D,
+                rB_hem,
+                self.grid.Ri,
+                gridhem.angle2D,
+            )
 
-        matBr2D, matBt2D, matBp2D = SECS_2D_CurlFree_antisym_magnetic(
-            thetaB_hem, phiB_hem, theta2D, phi2D, rB_hem, self.grid.Ri, gridhem.angle2D
-        )
+            # ask Heikki if we should keep this switch
+            # if result.remoteCFdip:
+            # if True:
+            # B-matrices for remote grid
+            # split remote grid into north and south
+            remoteTheta = (90 - remote_hem.magLat) / 180 * np.pi
+            remotePhi = remote_hem.magLon / 180 * np.pi
 
-        remoteTheta = (90 - remote_hem.lat) / 180 * np.pi
-        remotePhi = remote_hem.lon / 180 * np.pi
-        remoteMatBr2D, remoteMatBt2D, remoteMatBp2D = SECS_2D_CurlFree_antisym_magnetic(
+            (
+                remoteMatBr2D,
+                remoteMatBt2D,
+                remoteMatBp2D,
+            ) = SECS_2D_CurlFree_antisym_magnetic(
+                thetaB_hem,
+                phiB_hem,
+                remoteTheta,
+                remotePhi,
+                rB_hem,
+                self.grid.Ri,
+                remote_hem.angle2D,
+            )
+            # Fit scaling factors of the remote 2D CF SECS
+            remoteEps = 0.5
+
+            remoteIcf = auto.sub_inversion(
+                np.vstack((remoteMatBr2D, remoteMatBt2D, remoteMatBp2D)),
+                np.array([]),
+                remoteEps,
+                np.nan,
+                np.concatenate((Br_hem, Bt_hem, Bp_hem)).squeeze(),
+            )
+            self.test[label + "_dataremote"] = np.concatenate(
+                (Br_hem, Bt_hem, Bp_hem)
+            ).squeeze()
+            self.test[label + "_remotex"] = remoteIcf
+            self.test[label + "_remotefit"] = (
+                np.vstack((remoteMatBr2D, remoteMatBt2D, remoteMatBp2D)) @ remoteIcf
+            )
+
+            # Remove effect from the measured B
+
+            Br_hem = Br_hem.squeeze() - (remoteMatBr2D @ remoteIcf).squeeze()
+            Bt_hem = Bt_hem.squeeze() - (remoteMatBt2D @ remoteIcf).squeeze()
+            Bp_hem = Bp_hem.squeeze() - (remoteMatBp2D @ remoteIcf).squeeze()
+
+            # Fit the (local) 2D CF SECS. Use zero constraint on the 2nd latitudinal derivative.
+            regmat = gridhem.diff2lat2D  # regularization
+
+            Icf = auto.sub_inversion(
+                np.vstack((matBr2D, matBt2D, matBp2D)),
+                regmat,
+                self.epsSVD2dcf,
+                self.alpha2Dcf,
+                np.concatenate((Br_hem, Bt_hem, Bp_hem)).squeeze(),
+            )
+            self.test[label + "_data"] = np.concatenate(
+                (Br_hem, Bt_hem, Bp_hem)
+            ).squeeze()
+            # Calculate the horizontal current produced by the 2D CF SECS.
+            thetaJ = (90 - self.grid.out.magLat.flatten()) / 180 * np.pi
+            phiJ = self.grid.out.magLon.flatten() / 180 * np.pi
+            matJt, matJp = SECS_2D_CurlFree_antisym_vector(
+                thetaJ, phiJ, theta2D, phi2D, self.grid.Ri, gridhem.angle2D
+            )
+            tmp = np.reshape(matJt @ Icf, self.grid.out.magLat.shape)
+            self.cf2dDipMagJt[rind] = tmp[rind]
+            tmp = np.reshape(matJp @ Icf, self.grid.out.magLat.shape)
+            self.cf2dDipMagJp[rind] = tmp[rind]
+            self.test[label + "_x"] = Icf
+            self.test[label + "_fit"] = np.vstack((matBr2D, matBt2D, matBp2D)) @ Icf
+            self.test[label + "_matJp"] = matJp
+            self.test[label + "_matJt"] = matJt
+            self.test[label + "_matX"] = np.vstack((matBr2D, matBt2D, matBp2D))
+            self.test[label + "_remotematX"] = np.vstack(
+                (remoteMatBr2D, remoteMatBt2D, remoteMatBp2D)
+            )
+            self.test[label + "_difflat"] = regmat
+            self.test[label + "dats"] = [thetaB_hem, phiB_hem, theta2D, phi2D]
+            # Calculate the radial current produced by the 2D CF SECS using finite differences.
+            # For FAC we should scale by 1/sin(inclination).
+            thetaNorth = thetaJ - self.grid.dlatOut / 180 * np.pi
+            thetaSouth = thetaJ + self.grid.dlatOut / 180 * np.pi
+            matJtNorth, _ = SECS_2D_CurlFree_antisym_vector(
+                thetaNorth, phiJ, theta2D, phi2D, self.grid.Ri, gridhem.angle2D
+            )
+            matJtSouth, _ = SECS_2D_CurlFree_antisym_vector(
+                thetaSouth, phiJ, theta2D, phi2D, self.grid.Ri, gridhem.angle2D
+            )
+
+            phiEast = phiJ + self.grid.dlatOut / 180 * np.pi
+            phiWest = phiJ - self.grid.dlatOut / 180 * np.pi
+            _, matJpEast = SECS_2D_CurlFree_antisym_vector(
+                thetaJ, phiEast, theta2D, phi2D, self.grid.Ri, gridhem.angle2D
+            )
+            _, matJpWest = SECS_2D_CurlFree_antisym_vector(
+                thetaJ, phiWest, theta2D, phi2D, self.grid.Ri, gridhem.angle2D
+            )
+            aux1 = (
+                np.sin(thetaSouth) * (matJtSouth @ Icf)
+                - np.sin(thetaNorth) * (matJtNorth @ Icf)
+            ) / (thetaSouth - thetaNorth)
+            aux2 = ((matJpEast - matJpWest) @ Icf) / (phiEast - phiWest)
+            tmp = -(aux1 + aux2) / (
+                self.grid.Ri * np.sin(thetaJ)
+            )  # radial current = -div
+            tmp = np.reshape(
+                tmp * 1000, self.grid.out.magLat.shape
+            )  # A/km^2 --> nA/m^2
+            self.cf2dDipJr[rind] = tmp[rind]
+
+            # Calculate the magnetic field produced by the 2D CF SECS.
+
+            np.put(self.cf2dDipBr, ind, matBr2D @ Icf)
+            np.put(self.cf2dDipMagBt, ind, matBt2D @ Icf)
+            np.put(self.cf2dDipMagBp, ind, matBp2D @ Icf)
+
+            # keep this switch?
+            # if result.remoteCFdip:
+            # if True:
+            # Current produced by the remote SECS
+            remoteAngle = remote_hem.angle2D
+            matJt, matJp = SECS_2D_CurlFree_antisym_vector(
+                thetaJ, phiJ, remoteTheta, remotePhi, self.grid.Ri, remoteAngle
+            )
+            tmp = np.reshape(matJt @ remoteIcf, self.grid.out.magLat.shape)
+            self.remoteCf2dDipMagJt[rind] = tmp[rind]
+            tmp = np.reshape(matJp @ remoteIcf, self.grid.out.magLat.shape)
+            self.remoteCf2dDipMagJp[rind] = tmp[rind]
+            matJtNorth, _ = SECS_2D_CurlFree_antisym_vector(
+                thetaNorth, phiJ, remoteTheta, remotePhi, self.grid.Ri, remoteAngle
+            )
+            matJtSouth, _ = SECS_2D_CurlFree_antisym_vector(
+                thetaSouth, phiJ, remoteTheta, remotePhi, self.grid.Ri, remoteAngle
+            )
+            _, matJpEast = SECS_2D_CurlFree_antisym_vector(
+                thetaJ, phiEast, remoteTheta, remotePhi, self.grid.Ri, remoteAngle
+            )
+            _, matJpWest = SECS_2D_CurlFree_antisym_vector(
+                thetaJ, phiWest, remoteTheta, remotePhi, self.grid.Ri, remoteAngle
+            )
+            aux1 = (
+                np.sin(thetaSouth) * (matJtSouth @ remoteIcf)
+                - np.sin(thetaNorth) * (matJtNorth @ remoteIcf)
+            ) / (thetaSouth - thetaNorth)
+            aux2 = ((matJpEast - matJpWest) @ remoteIcf) / (phiEast - phiWest)
+            tmp = -(aux1 + aux2) / (self.grid.Ri * np.sin(thetaJ))
+            tmp = np.reshape(tmp * 1000, self.grid.out.magLat.shape)
+            self.remoteCf2dDipMagJr[rind] = tmp[rind]
+
+            self.test[label + "_lats"] = self.grid.out.magLat[rind]
+            self.test[label + "_rind"] = rind
+
+            # Then their magnetic field
+            np.put(self.remoteCf2dDipMagBr, ind, remoteMatBr2D @ remoteIcf)
+            np.put(self.remoteCf2dDipMagBt, ind, remoteMatBt2D @ remoteIcf)
+            np.put(self.remoteCf2dDipMagBp, ind, remoteMatBp2D @ remoteIcf)
+
+        return (
+            Br,
+            Bt,
+            Bp,
             thetaB_hem,
             phiB_hem,
-            remoteTheta,
-            remotePhi,
+            theta2D,
+            phi2D,
             rB_hem,
             self.grid.Ri,
-            remote_hem.angle2D,
-        )
-        # Fit scaling factors of the remote 2D CF SECS
-        remoteEps = 0.5
-        remoteIcf = auto.sub_inversion(
-            np.vstack((remoteMatBr2D, remoteMatBt2D, remoteMatBp2D)),
-            [],
-            remoteEps,
-            np.nan,
-            np.vstack((Br_hem, Bt_hem, Bp_hem)),
-        )
-        # Remove effect from the measured B
-        Br_hem = Br_hem - remoteMatBr2D @ remoteIcf
-        Bt_hem = Bt_hem - remoteMatBt2D @ remoteIcf
-        Bp_hem = Bp_hem - remoteMatBp2D @ remoteIcf
-
-        # Fit the (local) 2D CF SECS. Use zero constraint on the 2nd latitudinal derivative.
-        regmat = gridhem.diff2lat2D  # regularization
-        Icf = auto.sub_inversion(
+            gridhem.angle2D,
+            np.concatenate((Br_hem, Bt_hem, Bp_hem)).squeeze(),
             np.vstack((matBr2D, matBt2D, matBp2D)),
             regmat,
-            self.epsSVD2Dcf,
-            self.alpha2Dcf,
-            np.vstack((Br_hem, Bt_hem, Bp_hem)),
+        )  # no idea what we need to return from all of the above
+
+    def dump(self):
+        """Dump the currents to xarrays.
+        Returns
+        -------
+        dsmag : xarray of the results in the magnetic coordinate system.
+        dsgeo : xarray of the results in geographic coordinate system.
+        fitA : xarray with fitted magnetic field for Swarm A
+        fitC : xarray with fitted magnetic field for Swarm C
+        """
+
+        # Find the point where
+
+        MagJthetaDf = (
+            # self.cf1dDipMagJt
+            +self.df2dMagJt
+            # + self.cf2dDipMagJt
+            # + self.remoteCf2dDipMagJt
+        )
+        MagJphiDf = (
+            self.df1DJp
+            + self.df2dMagJp  # + self.cf2dDipMagJp + self.remoteCf2dDipMagJp
         )
 
-        # Calculate the horizontal current produced by the 2D CF SECS.
-        thetaJ = (90 - self.grid.out.magLat.ravel()) / 180 * np.pi
-        phiJ = self.grid.out.magLon.ravel() / 180 * np.pi
-        matJt, matJp = SECS_2D_CurlFree_antisym_vector(
-            thetaJ, phiJ, theta2D, phi2D, self.grid.Ri, gridhem.angle2D
+        MagJthetaCf = (
+            self.cf1dDipMagJt
+            # + self.df2dMagJt
+            + self.cf2dDipMagJt
+            + self.remoteCf2dDipMagJt
         )
-        tmp = np.reshape(matJt @ Icf, self.grid.out.magLat.shape)
-        self.cf2dDipMagJt[rind] = tmp[rind]
-        tmp = np.reshape(matJp @ Icf, self.grid.out.magLat.shape)
-        self.cf2dDipMagJp[rind] = tmp[rind]
-
-        # Calculate the radial current produced by the 2D CF SECS using finite differences.
-        # For FAC we should scale by 1/sin(inclination).
-        thetaNorth = thetaJ - self.dlatOut / 180 * np.pi
-        thetaSouth = thetaJ + self.dlatOut / 180 * np.pi
-        matJtNorth, _ = SECS_2D_CurlFree_antisym_vector(
-            thetaNorth, phiJ, theta2D, phi2D, self.Ri, gridhem.angle2D
-        )
-        matJtSouth, _ = SECS_2D_CurlFree_antisym_vector(
-            thetaSouth, phiJ, theta2D, phi2D, self.Ri, gridhem.angle2D
+        MagJphiCf = (
+            self.cf2dDipMagJp
+            + self.remoteCf2dDipMagJp
+            # self.df1DJp + #self.df2dMagJp + self.cf2dDipMagJp + self.remoteCf2dDipMagJp
         )
 
-        phiEast = phiJ + self.dlatOut / 180 * np.pi
-        phiWest = phiJ - self.dlatOut / 180 * np.pi
-        _, matJpEast = SECS_2D_CurlFree_antisym_vector(
-            thetaJ, phiEast, theta2D, phi2D, self.Ri, gridhem.angle2D
+        badlats = np.nonzero(
+            (self.grid.out.ggLat < self.exclusionmax)
+            & (self.grid.out.ggLat > self.exclusionmin)
         )
-        _, matJpWest = SECS_2D_CurlFree_antisym_vector(
-            thetaJ, phiWest, theta2D, phi2D, self.Ri, gridhem.angle2D
-        )
-        aux1 = (
-            np.sin(thetaSouth) * (matJtSouth @ Icf)
-            - np.sin(thetaNorth) * (matJtNorth @ Icf)
-        ) / (thetaSouth - thetaNorth)
-        aux2 = ((matJpEast - matJpWest) @ Icf) / (phiEast - phiWest)
-        tmp = -(aux1 + aux2) / (self.Ri * np.sin(thetaJ))  # radial current = -div
-        tmp = np.reshape(tmp * 1000, self.grid.out.magLat.shape)  # A/km^2 --> nA/m^2
-        self.cf2dDipJr[rind] = tmp[rind]
 
-        # Calculate the magnetic field produced by the 2D CF SECS.
-        # cf2dDipBr = matBr2D @ Icf
-        # cf2dDipMagBt = matBt2D @ Icf
-        # cf2dDipMagBp = matBp2D @ Icf
+        MagJphiCf[badlats] = np.nan
+        MagJthetaCf[badlats] = np.nan
 
-        # Current produced by the remote SECS
-        remoteAngle = remote_hem.angle2D
-        matJt, matJp = SECS_2D_CurlFree_antisym_vector(
-            thetaJ, phiJ, remoteTheta, remotePhi, self.Ri, remoteAngle
-        )
-        tmp = np.reshape(matJt @ remoteIcf, self.grid.out.magLat.shape)
-        # remoteCf2dDipMagJt[rind] = tmp[rind]
-        tmp = np.reshape(matJp @ remoteIcf, self.grid.out.magLat.shape)
-        self.remoteCf2dDipMagJp[rind] = tmp[rind]
-        matJtNorth, _ = SECS_2D_CurlFree_antisym_vector(
-            thetaNorth, phiJ, remoteTheta, remotePhi, self.Ri, remoteAngle
-        )
-        matJtSouth, _ = SECS_2D_CurlFree_antisym_vector(
-            thetaSouth, phiJ, remoteTheta, remotePhi, self.Ri, remoteAngle
-        )
-        _, matJpEast = SECS_2D_CurlFree_antisym_vector(
-            thetaJ, phiEast, remoteTheta, remotePhi, self.Ri, remoteAngle
-        )
-        _, matJpWest = SECS_2D_CurlFree_antisym_vector(
-            thetaJ, phiWest, remoteTheta, remotePhi, self.Ri, remoteAngle
-        )
-        aux1 = (
-            np.sin(thetaSouth) * (matJtSouth @ remoteIcf)
-            - np.sin(thetaNorth) * (matJtNorth @ remoteIcf)
-        ) / (thetaSouth - thetaNorth)
-        aux2 = ((matJpEast - matJpWest) @ remoteIcf) / (phiEast - phiWest)
-        tmp = -(aux1 + aux2) / (self.Ri * np.sin(thetaJ))
-        tmp = np.reshape(tmp * 1000, self.grid.out.magLat.shape)
-        self.remoteCf2dDipJr[rind] = tmp[rind]
+        # MagJtheta = (
+        #    self.cf1dDipMagJt
+        #    + self.df2dMagJt
+        #    + self.cf2dDipMagJt
+        #    + self.remoteCf2dDipMagJt
+        # )
+        # MagJphi = (
+        #    self.df1DJp + self.df2dMagJp + self.cf2dDipMagJp + self.remoteCf2dDipMagJp
+        # )
 
-        # Then their magnetic field
-        self.remoteCf2dDipBr = remoteMatBr2D @ remoteIcf
-        self.remoteCf2dDipMagBt = remoteMatBt2D @ remoteIcf
-        self.remoteCf2dDipMagBp = remoteMatBp2D @ remoteIcf
+        # MagJtheta = MagJthetaCf + MagJthetaDf
+        # MagJphi = MagJphiDf + MagJphiCf
 
-    return
+        Brfit = self.df1dBr + self.df2dBr + self.cf2dDipBr + self.remoteCf2dDipMagBr
+        Btfit = self.df1dBt + self.df2dBt + self.cf2dDipMagBt + self.remoteCf2dDipMagBt
+        Bpfit = (
+            self.df2dBp
+            + self.cf1dDipMagBp
+            + self.cf2dDipMagBt
+            + self.remoteCf2dDipMagBp
+        )
+
+        _, _, geoJthetaDf, geoJphiDf = sph2sph(
+            self.grid.poleLat,
+            0,
+            self.grid.out.magLat,
+            self.grid.out.magLon,
+            MagJthetaDf,
+            MagJphiDf,
+        )
+
+        _, _, geoJthetaCf, geoJphiCf = sph2sph(
+            self.grid.poleLat,
+            0,
+            self.grid.out.magLat,
+            self.grid.out.magLon,
+            MagJthetaCf,
+            MagJphiCf,
+        )
+
+        geoJtheta = geoJthetaCf + geoJthetaDf
+        geoJphi = geoJphiDf + geoJphiCf
+
+        Jr = self.cf1dDipJr + self.cf2dDipJr + self.remoteCf2dDipMagJr
+        Jr[badlats] = np.nan
+        dsmag = xr.Dataset(
+            data_vars=dict(
+                JphiDf=(["x", "y"], MagJphiDf),
+                JthetaDf=(["x", "y"], MagJthetaDf),
+                Jr=(["x", "y"], Jr),
+                JphiCf=(["x", "y"], MagJphiCf),
+                JthetaCf=(["x", "y"], MagJthetaCf),
+            ),
+            coords=dict(
+                Latitude=(["x", "y"], self.grid.out.magLon),
+                Longitude=(["x", "y"], self.grid.out.magLat),
+            ),
+            attrs={
+                "description": "DSECS result mag",
+                "Ionospheric height (km)": self.grid.Ri,
+            },
+        )
+
+        dsgeo = xr.Dataset(
+            data_vars=dict(
+                JEastDf=(
+                    ["x", "y"],
+                    geoJphiDf,
+                    {
+                        "unit": "A/km",
+                        "description": "Div free Eastward current densoty",
+                    },
+                ),
+                JNorthDf=(
+                    ["x", "y"],
+                    -geoJthetaDf,
+                    {
+                        "unit": "A/km",
+                        "description": "Div free Northward current density",
+                    },
+                ),
+                Jr=(
+                    ["x", "y"],
+                    Jr,
+                    {"unit": "nA/m^2", "description": "Radial current density"},
+                ),
+                JEastCf=(
+                    ["x", "y"],
+                    geoJphiCf,
+                    {
+                        "unit": "A/km",
+                        "description": "Curl free Eastward current density",
+                    },
+                ),
+                JNorthCf=(
+                    ["x", "y"],
+                    -geoJthetaCf,
+                    {
+                        "unit": "A/km",
+                        "description": "Curl free Northward current density",
+                    },
+                ),
+                JEastTotal=(
+                    ["x", "y"],
+                    geoJphi,
+                    {"unit": "A/km", "description": "Total Eastward current density"},
+                ),
+                JNorthTotal=(
+                    ["x", "y"],
+                    -geoJtheta,
+                    {"unit": "A/km", "description": "Total Northward current density"},
+                ),
+            ),
+            coords=dict(
+                Longitude=(["x", "y"], self.grid.out.ggLon, {"unit": "deg"}),
+                Latitude=(["x", "y"], self.grid.out.ggLat, {"unit": "deg"}),
+            ),
+            attrs={
+                "description": "DSECS result geographic coordinates",
+                "ionospheric height (km)": self.grid.Ri,
+                "Time interval": np.datetime_as_string(self.SwA.Timestamp[0])
+                + " - "
+                + np.datetime_as_string(self.SwA.Timestamp[-1]),
+                "Mean time": np.datetime_as_string(np.mean(self.SwA.Timestamp)),
+            },
+        )
+
+        Brfit = self.df1dBr + self.df2dBr + self.cf2dDipBr + self.remoteCf2dDipMagBr
+        Btfit = self.df1dBt + self.df2dBt + self.cf2dDipMagBt + self.remoteCf2dDipMagBt
+        Bpfit = (
+            self.df2dBp
+            + self.cf1dDipMagBp
+            + self.cf2dDipMagBp
+            + self.remoteCf2dDipMagBp
+        )
+
+        geoObsLat, geoObsLon, geoBtfit, geoBpfit = sph2sph(
+            self.grid.poleLat,
+            0,
+            self.latB,
+            self.lonB,
+            Btfit,
+            Bpfit,
+        )
+
+        Na = len(self.SwA.Latitude)
+        BrFitA = Brfit[:Na]
+        BtFitA = geoBtfit[:Na]
+        BpFitA = geoBpfit[:Na]
+        BrFitC = Brfit[Na:]
+        BtFitC = geoBtfit[Na:]
+        BpFitC = geoBpfit[Na:]
+
+        B_NEC_FitA = np.array([-BtFitA, BpFitA, -BrFitA]).T
+        B_NEC_FitC = np.array([-BtFitC, BpFitC, -BrFitC]).T
+
+        fitA = xr.Dataset(
+            data_vars=dict(
+                B_NEC_fit=(["Timestamp", "NEC"], B_NEC_FitA, {"unit": "nT"}),
+                B_NEC_data=(
+                    ["Timestamp", "NEC"],
+                    self.SwA["B_NEC_res"].data,
+                    {"unit": "nT"},
+                ),
+                Longitude=(["Timestamp"], self.SwA.Longitude.data, {"unit": "deg"}),
+                Latitude=(["Timestamp"], self.SwA.Latitude.data, {"unit": "deg"}),
+                Radius=(["Timestamp"], self.SwA.Radius.data, {"unit": "m"}),
+            ),
+            coords=dict(
+                Timestamp=(
+                    ["Timestamp"],
+                    self.SwA.Timestamp.data,
+                    {"description": "UTC time"},
+                ),
+                NEC=(
+                    ["NEC"],
+                    ["N", "E", "C"],
+                    {"description": "North East Center frame"},
+                ),
+            ),
+            attrs={
+                "description": "DSECS magnetic field fit.",
+                "satellite": "Swarm Alpha",
+            },
+        )
+
+        fitC = xr.Dataset(
+            data_vars=dict(
+                B_NEC_fit=(["Timestamp", "NEC"], B_NEC_FitC, {"unit": "nT"}),
+                B_NEC_data=(
+                    ["Timestamp", "NEC"],
+                    self.SwC["B_NEC_res"].data,
+                    {"unit": "nT"},
+                ),
+                Longitude=(["Timestamp"], self.SwC.Longitude.data, {"unit": "deg"}),
+                Latitude=(["Timestamp"], self.SwC.Latitude.data, {"unit": "deg"}),
+                Radius=(["Timestamp"], self.SwC.Radius.data, {"unit": "m"}),
+            ),
+            coords=dict(
+                Timestamp=(
+                    ["Timestamp"],
+                    self.SwA.Timestamp.data,
+                    {"description": "UTC time"},
+                ),
+                NEC=(
+                    ["NEC"],
+                    ["N", "E", "C"],
+                    {"description": "North East Center frame"},
+                ),
+            ),
+            attrs={
+                "description": "DSECS magnetic field fit.",
+                "satellite": "Swarm Charlie",
+            },
+        )
+
+        return dsmag, dsgeo, fitA, fitC
