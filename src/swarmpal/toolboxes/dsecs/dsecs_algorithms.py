@@ -866,10 +866,12 @@ def _calc_root(x, y, z):
 
 def getUnitVectors(SwA, SwC):
     """Calculates the magnetic unit vectors.
+
     Parameters
     ----------
     SwA, SwC : xarray
         Swarm A and C datasets.
+
     Returns
     -------
     SwA, SwC : xarray
@@ -904,6 +906,7 @@ class grid2D:
 
     def __init__(self, origin="geo"):
         """Initializes the grid.
+
         Parameters
         ----------
         origin : str
@@ -924,6 +927,7 @@ class grid2D:
         self, lat1, lon1, lat2, lon2, dlat, lonRat, extLat, extLon, poleLat, poleLon
     ):
         """Initializes the 2D grid from Swarm data.
+
         Parameters
         ----------
         lat1, lat2 : ndarray
@@ -972,6 +976,7 @@ class grid1D:
 
     def create(self, lat1, lat2, dlat, extLat):
         """Initializes the 1D grid from Swarm data.
+
         Parameters
         ----------
         lat1, lat2 : ndarray
@@ -1019,6 +1024,7 @@ class dsecsgrid:
 
     def FindPole(self, SwA):
         """Finds the best location for a local magnetic dipole pole based on Swarm measurements.
+
         Parameters
         ----------
         SwA : xarray
@@ -1082,6 +1088,7 @@ class dsecsgrid:
 
     def create(self, SwA, SwC):
         """Initializes the 1D and 2D grids from Swarm data.
+
         Parameters
         ----------
         SwA, SwC : xarray
@@ -1284,6 +1291,7 @@ class dsecsgrid:
 
 def getLocalDipoleFPtrack1D(latB, rB, Ri):
     """Finds the local dipole footpoints for the 1D curl-free grid creation.
+
     Parameters
     ----------
     latB : ndarrar
@@ -1292,6 +1300,7 @@ def getLocalDipoleFPtrack1D(latB, rB, Ri):
         Geocentric radius of the satellite, [km].
     Ri : int or float
         Assumed radius of the spherical shell where the currents flow, [km].
+
     Returns
     -------
     track : ndarray
@@ -1313,6 +1322,7 @@ def getLocalDipoleFPtrack1D(latB, rB, Ri):
 
 def getLocalDipoleFPtrack2D(latB, lonB, rB, Ri):
     """Finds the local dipole footpoints for the 2D curl-free grid creation.
+
     Parameters
     ----------
     latB : ndarray
@@ -1323,6 +1333,7 @@ def getLocalDipoleFPtrack2D(latB, lonB, rB, Ri):
         Geocentric radius of the satellite, [km].
     Ri : int or float
         Assumed radius of the spherical shell where the currents flow, [km].
+
     Returns
     -------
     latFP, lonFP : ndarray
@@ -1362,12 +1373,14 @@ def getLocalDipoleFPtrack2D(latB, lonB, rB, Ri):
 
 def mag_transform_dsecs(SwA, SwC, pole_lat, pole_lon):
     """Rotates the data to a magnetic coordinate systems.
+
     Parameters
     ----------
     SwA, SwC : xarray
         Swarm A and C datasets.
     pole_lat, pole_lon : float
         Latitude and longitude of the new pole in the old coordinates, [degree].
+
     Returns
     -------
     SwA, SwC : xarray
@@ -1437,10 +1450,12 @@ def mag_transform_dsecs(SwA, SwC, pole_lat, pole_lon):
 
 def trim_data(SwA, SwC):
     """Finds a period with suitable spaceraft velocity for analysis.
+
     Parameters
     ----------
     SwA, SwC : xarray
         Swarm A and C datasets.
+
     Returns
     -------
     SwA, SwC : xarray
@@ -1564,6 +1579,7 @@ class dsecsdata:
 
     def populate(self, SwA, SwC):
         """Initializes a DSECS analaysis case from Swarm data.
+
         Parameters
         ----------
         SwA, SwC : xarray
@@ -2014,12 +2030,17 @@ class dsecsdata:
 
     def dump(self):
         """Dump the currents to xarrays.
+
         Returns
         -------
-        dsmag : xarray of the results in the magnetic coordinate system.
-        dsgeo : xarray of the results in geographic coordinate system.
-        fitA : xarray with fitted magnetic field for Swarm A
-        fitC : xarray with fitted magnetic field for Swarm C
+        dsmag :
+            xarray of the results in the magnetic coordinate system.
+        dsgeo :
+            xarray of the results in geographic coordinate system.
+        fitA :
+            xarray with fitted magnetic field for Swarm A
+        fitC :
+            xarray with fitted magnetic field for Swarm C
         """
 
         # Find the point where

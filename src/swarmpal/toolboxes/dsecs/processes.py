@@ -8,16 +8,7 @@ from swarmpal.toolboxes.dsecs.dsecs_algorithms import _DSECS_steps
 
 
 class DSECS_Process(PalProcess):
-    """Provides the process for the DSECS algorithm for Alpha-Charlie
-
-    Notes
-    -----
-    Expected config parameters:
-    dataset_alpha
-    dataset_charlie
-    model_varname
-    measurement_varname
-    """
+    """Provides the process for the DSECS algorithm for Alpha-Charlie"""
 
     @property
     def process_name(self):
