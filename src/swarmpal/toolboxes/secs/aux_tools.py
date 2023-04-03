@@ -158,7 +158,6 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
         sysMat = secsMat
         dataVec = magVec
     else:
-
         sysMat = np.concatenate((secsMat, alpha * regMat))
 
         dataVec = np.concatenate((magVec, np.zeros(regMat.shape[0])))
@@ -431,7 +430,6 @@ def get_eq(ds, lat_filter_max=60, ovals=None):
     # return ovals,ds
     out = []
     for d in ovals:
-
         out.append(ds.isel(Timestamp=d))
         out[-1] = out[-1].assign(unit_B_NEC_Model=_normalizev(out[-1]["B_NEC_Model"]))
         out[-1] = out[-1].assign(

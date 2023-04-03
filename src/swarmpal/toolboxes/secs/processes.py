@@ -2,7 +2,6 @@ from apexpy import Apex
 from datatree import DataTree
 from numpy import cos, deg2rad, sin
 from pyproj import CRS, Transformer
-from xarray import Dataset
 
 from swarmpal.io import PalProcess
 from swarmpal.toolboxes.secs.dsecs_algorithms import _DSECS_steps

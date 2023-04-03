@@ -6,6 +6,7 @@ Adapted from MatLab code by Heikki Vanhamäki.
 
 
 import logging
+
 import apexpy
 import numpy as np
 import pandas
@@ -45,7 +46,6 @@ def _DSECS_steps(SwAin, SwCin):
     out = []
 
     try:
-
         for SwA, SwC in zip(SwA_list, SwC_list):
             case = dsecsdata()
             logger.info("Populating data object.")
@@ -1385,7 +1385,6 @@ def getLocalDipoleFPtrack2D(latB, lonB, rB, Ri):
     lonFP = lonFP[sorted]
     # probe which hemisphere is being processed
     if np.mean(latB) > 0:
-
         inds = latFP > 0
         latFP = latFP[inds]
         lonFP = lonFP[inds]
@@ -1502,7 +1501,6 @@ def trim_data(SwA, SwC):
 
 
 def get_exclusion_zone(SwA, SwC):
-
     apexcrossing_a = np.where(
         np.sign(SwA.ApexLatitude)[:-1].data != np.sign(SwA.ApexLatitude)[1:].data
     )[0][0]
