@@ -4,9 +4,7 @@ from numpy import cos, deg2rad, sin
 from pyproj import CRS, Transformer
 
 from swarmpal.io import PalProcess
-from swarmpal.toolboxes.secs.dsecs_algorithms import _DSECS_steps
-
-# from swarmpal.toolboxes.secs.dsecs_algorithms import dsecsdata
+from swarmpal.toolboxes.dsecs.dsecs_algorithms import _DSECS_steps
 
 
 class DSECS_Process(PalProcess):

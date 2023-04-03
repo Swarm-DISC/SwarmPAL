@@ -12,9 +12,8 @@ import numpy as np
 import pandas
 import xarray as xr
 
-import swarmpal.toolboxes.secs.aux_tools as auto
-from swarmpal.toolboxes.secs import SecsInputs
-from swarmpal.toolboxes.secs.aux_tools import (
+import swarmpal.toolboxes.dsecs.aux_tools as auto
+from swarmpal.toolboxes.dsecs.aux_tools import (
     sph2sph,
     sub_FindLongestNonZero,
     sub_Swarm_grids,
@@ -863,41 +862,6 @@ def _calc_root(x, y, z):
     root = tt * tt * tt
 
     return root
-
-
-def get_data(
-    t1,
-    t2,
-    model="IGRF",
-):
-    """Fetches Swarm data.
-    Parameters
-    ----------
-    t1 : datetime
-        Start date
-    t2 : datetime
-        End date
-    model : str, optional
-        Magnetic field model, by default 'IGRF'
-    Returns
-    -------
-    SwA, SwC : xarray
-        Swarm A and C data as xarray returned from Vires.
-    """
-
-    inputs = SecsInputs(
-        start_time=t1,
-        end_time=t2,
-        model=model,
-    )
-
-    # SwA = auto.get_eq(inputs.s1.xarray)
-
-    # SwC = auto.get_eq(inputs.s2.xarray)
-
-    # SwA,SwC = getUnitVectors(SwA,SwC)
-
-    return inputs.s1.xarray, inputs.s2.xarray
 
 
 def getUnitVectors(SwA, SwC):
