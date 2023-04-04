@@ -13,7 +13,7 @@ FLAG_THRESHOLDS = {
     "F": {"flag_name": "Flags_F", "max_val": 63},
     "E_NEC": {"flag_name": "Flags_TII", "max_val": 23},
     "n": {"flag_name": "Flags_LP", "max_val": 63},
-    "Bubble_Probability": {"flagn_ame": "Flags_F", "max_val": 1000},
+    "Bubble_Probability": {"flag_name": "Flags_F", "max_val": 1000},
     "FAC": {"flag_name": "Flags_F", "max_val": 1000},
     "EEF": {"flag_name": "Flags", "max_val": 1000},
     "Eh_XYZ": {"flag_name": "Quality_flags", "max_val": 0},
@@ -22,22 +22,7 @@ FLAG_THRESHOLDS = {
 
 
 class Preprocess(PalProcess):
-    """
-
-    Notes
-    -----
-    Required config parameters:
-    dataset
-    active_variable
-    Optional config parameters:
-    remove_model
-    model
-    convert_to_mfa
-    clean_by_flags
-    clean_varname
-    clean_flagname
-    clean_maxval
-    """
+    """Prepare data for input to other TFA tools"""
 
     @property
     def process_name(self) -> str:
@@ -58,6 +43,46 @@ class Preprocess(PalProcess):
         flagclean_flagname: str = "",
         flagclean_maxval: int | None = None,
     ) -> None:
+        """Set the process configuration
+
+        Parameters
+        ----------
+        dataset : str
+            Selects this dataset from the datatree
+        active_variable : str
+            Selects the variable to use from within the dataset
+        active_component : int, optional
+            Selects the component to use (if active_variable is a vector)
+        sampling_rate : float, optional
+            Identify the sampling rate of the data input (in Hz), by default 1
+        remove_model : bool, optional
+            Remove a magnetic model prediction or not, by default False
+        model : str, optional
+            The name of the model
+        convert_to_mfa : bool, optional
+            Rotate B to mean-field aligned (MFA) coordinates, by default False
+        use_magnitude : bool, optional
+            Use the magnitude of a vector instead, by default False
+        clean_by_flags : bool, optional
+            Whether to apply additional flag cleaning or not, by default False
+        flagclean_varname : str, optional
+            Name of the variable to clean
+        flagclean_flagname : str, optional
+            Name of the flag to use to clean by
+        flagclean_maxval : int, optional
+            Maximum allowable flag value
+
+        Notes
+        -----
+        Some special ``active_variable`` names exist which are added to the dataset on-the-fly:
+
+        * "B_NEC_res_Model"
+            where a model prediction must be available in the data, like ``"B_NEC_<Model>"``, and ``remove_model`` has been set. The name of the model can be set with, for example, ``model="CHAOS"``.
+        * "B_MFA"
+            when ``convert_to_mfa`` has been set.
+        * "Eh_XYZ" and "Ev_XYZ"
+            when using the TCT datasets, with vectors defined in ``("Ehx", "Ehy", "Ehz")`` and ``("Evx", "Evy", "Evz")`` respectively.
+        """
         self.config = dict(
             dataset=dataset,
             active_variable=active_variable,
@@ -247,6 +272,17 @@ class Clean(PalProcess):
         method: str = "iqr",
         multiplier: float = 0.5,
     ) -> None:
+        """Set the process configuration
+
+        Parameters
+        ----------
+        window_size : int, optional
+            The size (number of points) of the rolling window, by default 10
+        method : str, optional
+            "normal" or "iqr", by default "iqr"
+        multiplier : float, optional
+            Indicates the spread of the zone of accepted values, by default 0.5
+        """
         self.config = dict(
             window_size=window_size,
             method=method,
@@ -291,7 +327,7 @@ class Clean(PalProcess):
 
 
 class Filter(PalProcess):
-    """Filtering"""
+    """High-pass filter the TFA_Variable, using the SciPy Chebysev Type II filter"""
 
     @property
     def process_name(self) -> str:
@@ -299,31 +335,31 @@ class Filter(PalProcess):
 
     def set_config(
         self,
-        sampling_rate: float | None = None,
         cutoff_frequency: float = 20 / 1000,
     ) -> None:
+        """Set the process configuration
+
+        Parameters
+        ----------
+        cutoff_frequency : float, optional
+            The cutoff frequency (in Hz), by default 20/1000
+        """
         self.config = dict(
-            sampling_rate=sampling_rate,
             cutoff_frequency=cutoff_frequency,
         )
 
     def _call(self, datatree) -> DataTree:
-        self._configure(datatree)
         # Identify the DataArray to modify
         subtree = _get_tfa_active_subtree(datatree)
         target_var = subtree["TFA_Variable"]
         # Apply filtering routine inplace
-        target_var = self._filter(target_var)
+        target_var = self._filter(target_var, _get_sampling_rate(datatree))
         return datatree
 
-    def _configure(self, datatree):
-        if self.config["sampling_rate"] is None:
-            self.config["sampling_rate"] = _get_sampling_rate(datatree)
-
-    def _filter(self, target_var) -> DataArray:
+    def _filter(self, target_var, sampling_rate) -> DataArray:
         target_var.data = tfalib.filter(
             target_var.data,
-            self.config.get("sampling_rate"),
+            sampling_rate,
             self.config.get("cutoff_frequency"),
         )
         return target_var
@@ -338,15 +374,28 @@ class Wavelet(PalProcess):
 
     def set_config(
         self,
-        sampling_rate: float | None = None,
         min_frequency: float | None = None,
         max_frequency: float | None = None,
         min_scale: float | None = None,
         max_scale: float | None = None,
         dj: float = 0.1,
     ) -> None:
+        """Set the process configuration
+
+        Parameters
+        ----------
+        min_frequency : float | None, optional
+            _description_, by default None
+        max_frequency : float | None, optional
+            _description_, by default None
+        min_scale : float | None, optional
+            _description_, by default None
+        max_scale : float | None, optional
+            _description_, by default None
+        dj : float, optional
+            _description_, by default 0.1
+        """
         self.config = dict(
-            sampling_rate=sampling_rate,
             min_frequency=min_frequency,
             max_frequency=max_frequency,
             min_scale=min_scale,
@@ -374,8 +423,9 @@ class Wavelet(PalProcess):
         if self.config["min_scale"] is None:
             self.config["min_scale"] = 1 / self.config["max_frequency"]
             self.config["max_scale"] = 1 / self.config["min_frequency"]
-        if self.config["sampling_rate"] is None:
-            self.config["sampling_rate"] = _get_sampling_rate(datatree)
+        self.config["sampling_rate"] = self.config.get(
+            "sampling_rate", _get_sampling_rate(datatree)
+        )
 
     def _wavelets(self, target_var: DataArray):
         scale = tfalib.wavelet_scales(
@@ -418,7 +468,7 @@ class WaveDetection(PalProcess):
         ...
 
     def _call(self, datatree):
-        ...
+        raise NotImplementedError
 
     def _attach_ibi(self):
         ...
