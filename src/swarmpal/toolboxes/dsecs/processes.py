@@ -4,26 +4,16 @@ from numpy import cos, deg2rad, sin
 from pyproj import CRS, Transformer
 
 from swarmpal.io import PalProcess
-from swarmpal.toolboxes.secs.dsecs_algorithms import _DSECS_steps
+from swarmpal.toolboxes.dsecs.dsecs_algorithms import _DSECS_steps
+from swarmpal.utils.exceptions import PalError
 
-# from swarmpal.toolboxes.secs.dsecs_algorithms import dsecsdata
 
-
-class DSECS_Process(PalProcess):
-    """Provides the process for the DSECS algorithm for Alpha-Charlie
-
-    Notes
-    -----
-    Expected config parameters:
-    dataset_alpha
-    dataset_charlie
-    model_varname
-    measurement_varname
-    """
+class Preprocess(PalProcess):
+    """Prepare data for input to DSECS analysis"""
 
     @property
     def process_name(self):
-        return "DSECS_Process"
+        return "DSECS_Preprocess"
 
     def set_config(
         self,
@@ -44,36 +34,16 @@ class DSECS_Process(PalProcess):
         # Append ApexLatitude and ApexLongitude
         ds_alpha = self._append_apex_coords(ds_alpha)
         ds_charlie = self._append_apex_coords(ds_charlie)
-        # Prepare for input to DSECS tools
-
-        dsecs_output = _DSECS_steps(ds_alpha, ds_charlie)
-        # SwA_list = get_eq(ds_alpha)  # lists of suitable segments
-        # SwC_list = get_eq(ds_charlie)
-        # Apply DSECS algorithm to each segment in turn
-        # for SwA, SwC in zip(SwA_list, SwC_list):
-        #    case = dsecsdata()
-        #    case.populate(SwA, SwC)
-        #    res, data, mapping = case.fit1D_df()
-        #    break
-        # Store outputs into the datatree
-        for i, output in enumerate(dsecs_output):
-            if output["current_densities"] is not None:
-                datatree["output_" + str(i)] = DataTree(
-                    data=output["current_densities"]
-                )
-                datatree["Fit_Alpha_" + str(i)] = DataTree(
-                    data=output["magnetic_fit_Alpha"]
-                )
-                datatree["Fit_Charlie_" + str(i)] = DataTree(
-                    data=output["magnetic_fit_Charlie"]
-                )
+        # Update datatree with the updated datasets
+        datatree[_alpha] = datatree[_alpha].assign(ds_alpha)
+        datatree[_charlie] = datatree[_charlie].assign(ds_charlie)
         return datatree
 
     @staticmethod
     def _append_apex_coords(ds):
         date = ds["Timestamp"].data[0].astype("M8[ms]").astype("O")
         # Evaluate apex coordinates
-        mlat, mlon = DSECS_Process._calc_apex_coords(
+        mlat, mlon = Preprocess._calc_apex_coords(
             date,
             ds["Latitude"].data,
             ds["Longitude"].data,
@@ -147,8 +117,52 @@ class DSECS_Process(PalProcess):
             Magnetic apex longitude (degrees)
         """
         A = Apex(date)
-        geod_lat, lon, height = DSECS_Process._spherical_geocentric_to_geodetic(
+        geod_lat, lon, height = Preprocess._spherical_geocentric_to_geodetic(
             lat, lon, rad
         )
         mlat, mlon = A.convert(geod_lat, lon, "geo", "apex", height=height / 1e3)
         return mlat, mlon
+
+
+def _get_dsecs_active_subtrees(datatree):
+    """Returns the relevant subtrees (i.e. Alpha, Charlie)"""
+    # Scan the tree based on previous preprocess application
+    pal_processes_meta = datatree.swarmpal.pal_meta.get(".", {})
+    dsecs_preprocess_meta = pal_processes_meta.get("DSECS_Preprocess")
+    if not dsecs_preprocess_meta:
+        raise PalError("Must first run dsecs.processes.Preprocess")
+    _alpha = dsecs_preprocess_meta.get("dataset_alpha")
+    _charlie = dsecs_preprocess_meta.get("dataset_charlie")
+    return datatree[_alpha], datatree[_charlie]
+
+
+class Analysis(PalProcess):
+    """Run the DSECS analysis"""
+
+    @property
+    def process_name(self):
+        return "DSECS_Analysis"
+
+    def set_config(self):
+        self._config = dict()
+
+    def _call(self, datatree):
+        # Identify inputs for algorithm
+        dt_alpha, dt_charlie = _get_dsecs_active_subtrees(datatree)
+        ds_alpha = dt_alpha.ds
+        ds_charlie = dt_charlie.ds
+        # Apply analysis
+        dsecs_output = _DSECS_steps(ds_alpha, ds_charlie)
+        # Store outputs into the datatree
+        for i, output in enumerate(dsecs_output):
+            if output["current_densities"] is not None:
+                datatree[f"DSECS_output/{i}/currents"] = DataTree(
+                    data=output["current_densities"]
+                )
+                datatree[f"DSECS_output/{i}/Fit_Alpha"] = DataTree(
+                    data=output["magnetic_fit_Alpha"]
+                )
+                datatree[f"DSECS_output/{i}/Fit_Charlie"] = DataTree(
+                    data=output["magnetic_fit_Charlie"]
+                )
+        return datatree
