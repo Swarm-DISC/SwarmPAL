@@ -20,7 +20,7 @@ changelog
 :caption: Toolbox Introductions
 
 guides/fac/intro_fac
-guides/secs/intro_dsecs
+guides/dsecs/intro_dsecs
 guides/tfa/intro_tfa
 ```
 

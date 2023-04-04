@@ -200,6 +200,7 @@ def sub_inversion(secsMat, regMat, epsSVD, alpha, magVec):
 def sub_LonInterp(lat, lon, intLat, method, ekstra=np.nan):
     """Robust interpolation of longitude by interpolating the sine and cosine
     of the angle. This way a 360 degree jump does not matter.
+
     Parameters
     ----------
     lat, lon : ndarray
@@ -208,6 +209,7 @@ def sub_LonInterp(lat, lon, intLat, method, ekstra=np.nan):
         Latitudes where original longitudes are interpolated to, [degree].
     method : str
         Interpolation method. Same as for scipy.interpolate.interp1d.
+
     Returns
     -------
     intLon : ndarray
@@ -233,6 +235,7 @@ def sub_LonInterp(lat, lon, intLat, method, ekstra=np.nan):
 
 def sub_Swarm_grids_1D(lat1, lat2, Dlat1D, ExtLat1D):
     """Creates 1D grid around the two Swarm satellite paths.
+
     Parameters
     ----------
     lat1, lat2 : ndarray
@@ -242,6 +245,7 @@ def sub_Swarm_grids_1D(lat1, lat2, Dlat1D, ExtLat1D):
     ExtLat1D : int
         Number of points to extend the 1D grid outside the data area in latitudinal
         direction.
+
     Returns
     -------
     lat1D : ndarray
@@ -273,6 +277,7 @@ def sub_Swarm_grids_1D(lat1, lat2, Dlat1D, ExtLat1D):
 
 def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D):
     """Creates 2D grids around the two Swarm satellite paths.
+
     Parameters
     ----------
     lat1, lat2 : ndarray
@@ -293,8 +298,8 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
     lat2D, lon2D : ndarray
         Geographic latitudes and longitudes of the 2D grid, [degree].
     angle2D : ndarray
-         Half-angle of such a spherical cap that has the same area as the 2D grid
-         cell, [radian].
+        Half-angle of such a spherical cap that has the same area as the 2D grid
+        cell, [radian].
     mat2DsecondLat : ndarray
         Second gradient matrix in latitude.
     """
@@ -404,6 +409,7 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
 
 def get_eq(ds, lat_filter_max=60, ovals=None):
     """Splits data into a list of pieces suitable for DSECS analysis based on latitude.
+
     Parameters
     ----------
     ds : xarray
