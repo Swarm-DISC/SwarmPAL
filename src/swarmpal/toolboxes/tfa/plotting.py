@@ -38,7 +38,9 @@ def _get_active_dataset_window(datatree, meta=None, clip_times=True, tlims=None)
     return subset_ds
 
 
-def _add_secondary_x_axes(dataset=None, ax=None, varnames=("Latitude", "Longitude")):
+def _add_secondary_x_axes(
+    dataset=None, ax=None, varnames=("Latitude", "Longitude"), timevar="Timestamp"
+):
     """Add a number of secondary x-axes at the top of the plot"""
     # Restrict to those which are available in the data
     varnames_available = set(varnames).intersection(set(dataset.data_vars))
@@ -51,7 +53,7 @@ def _add_secondary_x_axes(dataset=None, ax=None, varnames=("Latitude", "Longitud
     t = mdt.num2date(ax.get_xticks())
     t = [_t.replace(tzinfo=None) for _t in t]
 
-    def add_xaxis(varname="Latitude", timevar="Timestamp", yposition=1.0):
+    def add_xaxis(varname="Latitude", timevar=timevar, yposition=1.0):
         # Identify and format the variable value at the tick locations
         x = dataset[varname].sel({timevar: t}, method="nearest").data
         x = [f"{_x:.1f}" for _x in x]
@@ -121,6 +123,7 @@ def time_series(
     """
     # Extract relevant DataArray (da) and info
     meta = _get_tfa_meta(datatree)
+    timevar = meta["TFA_Preprocess"]["timevar"]
     ds = _get_active_dataset_window(
         datatree, meta=meta, clip_times=clip_times, tlims=tlims
     )
@@ -135,11 +138,11 @@ def time_series(
     units = ds[da_origin_name].attrs.get("units")
     # Build figure
     fig, ax = (None, ax) if ax else plt.subplots(1, 1)
-    timevar = "TFA_Time" if "TFA_Time" in da.coords else "Timestamp"
-    da.plot.line(x=timevar, ax=ax, **kwargs)
+    mainvar_timevar = "TFA_Time" if "TFA_Time" in da.coords else timevar
+    da.plot.line(x=mainvar_timevar, ax=ax, **kwargs)
     # Add the extra x-axes as required
     if extra_x:
-        ax = _add_secondary_x_axes(ds, ax, varnames=extra_x)
+        ax = _add_secondary_x_axes(ds, ax, varnames=extra_x, timevar=timevar)
     # Adjust axes
     da_label = f"|{da_origin_name}|" if use_magnitude else da_origin_name
     ytext = f"TFA: {da_label}"
@@ -185,6 +188,7 @@ def spectrum(
     """
     # Extract relevant DataArray (da) and info
     meta = _get_tfa_meta(datatree)
+    timevar = meta["TFA_Preprocess"]["timevar"]
     ds = _get_active_dataset_window(
         datatree, meta=meta, clip_times=clip_times, tlims=tlims
     )
@@ -221,7 +225,7 @@ def spectrum(
     )
     # Add the extra x-axes as required
     if extra_x:
-        ax = _add_secondary_x_axes(ds, ax, varnames=extra_x)
+        ax = _add_secondary_x_axes(ds, ax, varnames=extra_x, timevar=timevar)
     # Adjust axes
     ax.set_xlabel("Time")
     return fig, ax
@@ -263,6 +267,7 @@ def wave_index(
     """
     # Extract relevant DataArray (da) and info
     meta = _get_tfa_meta(datatree)
+    timevar = meta["TFA_Preprocess"]["timevar"]
     ds = _get_active_dataset_window(
         datatree, meta=meta, clip_times=clip_times, tlims=tlims
     )
@@ -273,7 +278,7 @@ def wave_index(
     ax.grid()
     # Add the extra x-axes as required
     if extra_x:
-        ax = _add_secondary_x_axes(ds, ax, varnames=extra_x)
+        ax = _add_secondary_x_axes(ds, ax, varnames=extra_x, timevar=timevar)
     return fig, ax
 
 

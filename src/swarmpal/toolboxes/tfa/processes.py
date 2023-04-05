@@ -31,6 +31,7 @@ class Preprocess(PalProcess):
     def set_config(
         self,
         dataset: str = "",
+        timevar: str = "Timestamp",
         active_variable: str = "",
         active_component: int | None = None,
         sampling_rate: float = 1,
@@ -49,6 +50,8 @@ class Preprocess(PalProcess):
         ----------
         dataset : str
             Selects this dataset from the datatree
+        timevar : str
+            Identifies the name of the time variable, usually "Timestamp" or "Time"
         active_variable : str
             Selects the variable to use from within the dataset
         active_component : int, optional
@@ -85,6 +88,7 @@ class Preprocess(PalProcess):
         """
         self.config = dict(
             dataset=dataset,
+            timevar=timevar,
             active_variable=active_variable,
             active_component=active_component,
             sampling_rate=sampling_rate,
@@ -125,7 +129,7 @@ class Preprocess(PalProcess):
             da = (ds[self.active_variable] ** 2).sum(axis=1).pipe(np.sqrt)
         else:
             da = ds[self.active_variable].copy(deep=True)
-        da = da.rename({"Timestamp": "TFA_Time"})
+        da = da.rename({self.config["timevar"]: "TFA_Time"})
         da = self._constant_cadence(da)
         ds = ds.assign({"TFA_Variable": da, "TFA_Time": da["TFA_Time"]})
         # Assign dataset back into the datatree to return
@@ -139,11 +143,14 @@ class Preprocess(PalProcess):
         active_variable = self.config.get("active_variable")
         active_component = self.config.get("active_component")
         use_magnitude = self.config.get("use_magnitude")
+        timevar = self.config.get("timevar")
         if not all((dataset, active_variable)):
             raise PalError("TFA Preprocess: dataset and/or active_variable not set")
+        if timevar not in datatree[dataset].coords:
+            raise PalError(f"TFA Preprocess: {timevar=} not available in dataset")
         # Catch the cases with special names that aren't initially available in the dataset (they are set later)
         if any(x in active_variable for x in ("B_NEC_res_", "MFA", "Eh_XYZ", "Ev_XYZ")):
-            target_shape = (len(datatree[dataset]["Timestamp"]), 3)
+            target_shape = (len(datatree[dataset][timevar]), 3)
         else:
             target_shape = datatree[dataset][active_variable].shape
         # Check if active_component is set appropriately, according to the shape of the active_variable
@@ -160,9 +167,13 @@ class Preprocess(PalProcess):
         """Subtract model and/or rotate to MFA"""
         remove_model = self.config.get("remove_model", False)
         convert_to_mfa = self.config.get("convert_to_mfa", False)
+        timevar = self.config.get("timevar")
         # Identify model name from config or from PAL meta
         model = self.config.get("model", "")
-        model = model if model else self.subtree.swarmpal.magnetic_model_name
+        try:
+            model = model if model else self.subtree.swarmpal.magnetic_model_name
+        except PalError:
+            model = ""
         # Optionally assign residuals to dataset
         if remove_model:
             ds = ds.assign(
@@ -177,7 +188,7 @@ class Preprocess(PalProcess):
             else:
                 B_MFA = tfalib.mfa(ds["B_NEC"].data, ds[f"B_NEC_{model}"].data)
             ds = ds.assign_coords({"MFA": [0, 1, 2]})
-            ds = ds.assign({"B_MFA": (("Timestamp", "MFA"), B_MFA)})
+            ds = ds.assign({"B_MFA": ((timevar, "MFA"), B_MFA)})
             ds["B_MFA"].attrs = {
                 "units": "nT",
                 "description": "Magnetic field in Mean-field aligned coordinates",
@@ -187,6 +198,7 @@ class Preprocess(PalProcess):
     def _prep_efi_expt_data(self, ds: Dataset) -> Dataset:
         """Assign the Eh_XYZ or Ev_XYZ vector data variable"""
         # Validate input data
+        timevar = self.config.get("timevar")
         available_vars = set(ds.data_vars)
         vectors = {
             "Eh_XYZ": ("Ehx", "Ehy", "Ehz"),
@@ -199,7 +211,7 @@ class Preprocess(PalProcess):
         # Create and assign the vector parameter
         E_XYZ = np.vstack([ds[i] for i in vectors]).T
         ds = ds.assign_coords({"XYZ": ["X", "Y", "Z"]})
-        ds = ds.assign({self.active_variable: (("Timestamp", "XYZ"), E_XYZ)})
+        ds = ds.assign({self.active_variable: ((timevar, "XYZ"), E_XYZ)})
         return ds
 
     def _flag_cleaning(self, ds):
