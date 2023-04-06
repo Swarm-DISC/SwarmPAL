@@ -43,6 +43,10 @@ extensions = [
     "sphinx.ext.viewcode",
 ]
 
+myst_enable_extensions = [
+    "colon_fence",
+]
+
 # Increase allowed notebook run time
 nb_execution_timeout = 300
 # Fix execution of notebooks with different kernel names

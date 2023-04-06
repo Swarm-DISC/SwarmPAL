@@ -129,9 +129,12 @@ class Preprocess(PalProcess):
             da = (ds[self.active_variable] ** 2).sum(axis=1).pipe(np.sqrt)
         else:
             da = ds[self.active_variable].copy(deep=True)
+        # Rename (Timestamp/Time) to TFA_Time to avoid collision
         da = da.rename({self.config["timevar"]: "TFA_Time"})
         da = self._constant_cadence(da)
         ds = ds.assign({"TFA_Variable": da, "TFA_Time": da["TFA_Time"]})
+        # Remove attrs, because .to_netcdf() is failing when blank units are set here
+        ds["TFA_Time"].attrs = {}
         # Assign dataset back into the datatree to return
         self.subtree = self.subtree.assign(ds.copy())
         self.subtree.parent = datatree

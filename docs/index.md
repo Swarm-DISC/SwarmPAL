@@ -1,6 +1,5 @@
-# Introduction
-
-This project is in active development. See <https://github.com/Swarm-DISC/SwarmPAL>
+```{include} ../README.md
+```
 
 ```{toctree}
 :hidden:
@@ -8,7 +7,7 @@ This project is in active development. See <https://github.com/Swarm-DISC/SwarmP
 :caption: Getting Started
 
 installation
-quickstart
+guides/quickstart
 acknowledgements
 contributing
 changelog
