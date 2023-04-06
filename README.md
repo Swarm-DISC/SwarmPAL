@@ -1,7 +1,5 @@
 # SwarmPAL
 
-⚠️ Warning: This package is under construction! ⚠️
-
 ---
 [![Documentation](https://img.shields.io/badge/docs-online-success)][rtd-link]
 [![GitHub Discussion][github-discussions-badge]][github-discussions-link]
@@ -26,7 +24,5 @@
 [pypi-version]:             https://badge.fury.io/py/swarmpal.svg
 [rtd-badge]:                https://img.shields.io/badge/docs-online-success
 [rtd-link]:                 https://swarmpal.readthedocs.io/
-
-## Development
 
 See the [SwarmPAL development guide on HackMD](https://hackmd.io/@swarm/dev/%2Ff6YIHfqxT9yL0giWJzhr_Q)

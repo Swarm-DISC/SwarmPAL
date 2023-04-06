@@ -1,5 +1,3 @@
-# Introduction
-
 ```{include} ../README.md
 ```
 
@@ -8,7 +6,6 @@
 :maxdepth: 2
 :caption: Getting Started
 
-self
 installation
 guides/quickstart
 acknowledgements
