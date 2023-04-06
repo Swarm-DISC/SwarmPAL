@@ -1,14 +1,16 @@
 # Introduction
 
-This project is in active development. See <https://github.com/Swarm-DISC/SwarmPAL>
+```{include} ../README.md
+```
 
 ```{toctree}
 :hidden:
 :maxdepth: 2
 :caption: Getting Started
 
+self
 installation
-quickstart
+guides/quickstart
 acknowledgements
 contributing
 changelog
