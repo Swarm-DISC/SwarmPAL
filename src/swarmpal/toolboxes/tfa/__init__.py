@@ -1,8 +1,7 @@
-from swarmpal.toolboxes.tfa import plotting, processes, tfa_processor, tfalib
+from swarmpal.toolboxes.tfa import plotting, processes, tfalib
 
 __all__ = (
     "plotting",
     "processes",
-    "tfa_processor",
     "tfalib",
 )

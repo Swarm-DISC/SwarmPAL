@@ -42,7 +42,6 @@ guides/tfa/tfa_Cluster
 :caption: For developers
 
 guides/shared/paldata
-guides/shared/data_io
 ```
 
 ```{toctree}

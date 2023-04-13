@@ -11,15 +11,6 @@ swarmpal.toolboxes.tfa.processes
     :inherited-members:
     :show-inheritance:
 
-swarmpal.toolboxes.tfa.tfa_processor
-************************************
-
-.. automodule:: swarmpal.toolboxes.tfa.tfa_processor
-    :members:
-    :undoc-members:
-    :inherited-members:
-    :show-inheritance:
-
 swarmpal.toolboxes.tfa.tfalib
 *****************************
 
