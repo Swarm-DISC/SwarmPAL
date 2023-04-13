@@ -6,6 +6,7 @@
 1. Join the mailing list at <https://groups.io/g/swarm-dev>
 1. Join a meeting at <https://hackmd.io/@swarm/meetings>
 1. Found something to improve? [Open an Issue on GitHub](https://github.com/Swarm-DISC/SwarmPAL/issues) or get in touch otherwise
+1. Have other ideas / requests for help? [Start a Discussion on GitHub](https://github.com/Swarm-DISC/SwarmPAL/discussions)
 
 ## Development
 

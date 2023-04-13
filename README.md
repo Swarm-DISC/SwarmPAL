@@ -30,6 +30,7 @@
 [rtd-badge]:                https://img.shields.io/badge/docs-online-success
 [rtd-link]:                 https://swarmpal.readthedocs.io/
 
+![SwarmPAL diagram](https://swarmpal-benchmarks.netlify.app/swarmpal-diagram.png)
+
 For more information see:
-- https://swarmpal.readthedocs.io/
-- https://swarmdisc.org/lab/
+- <https://swarmdisc.org/lab/>
