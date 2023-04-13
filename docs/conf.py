@@ -15,9 +15,9 @@ from viresclient import set_token
 
 # -- Project information -----------------------------------------------------
 
-project = "swarmpal"
-copyright = "2022, Ashley Smith"
-author = "Ashley Smith"
+project = "SwarmPAL"
+copyright = "2023, The SwarmPAL developers"
+author = "The SwarmPAL developers"
 
 
 # -- VirES access config -----------------------------------------------------
@@ -43,6 +43,17 @@ extensions = [
     "sphinx.ext.viewcode",
 ]
 
+myst_enable_extensions = [
+    "colon_fence",
+]
+
+# Increase allowed notebook run time
+nb_execution_timeout = 300
+# Fix execution of notebooks with different kernel names
+nb_kernel_rgx_aliases = {".*": "python3"}
+# Temporarily disable notebook execution while working on docs (default is "auto")
+# nb_execution_mode = "off"
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
 
@@ -65,10 +76,14 @@ html_baseurl = "https://swarmpal.readthedocs.io/en/latest/"
 
 html_theme_options = {
     "home_page_in_toc": True,
-    "repository_url": "https://github.com/Swarm-DISC/swarmpal",
+    "repository_url": "https://github.com/Swarm-DISC/SwarmPAL",
     "use_repository_button": True,
     "use_issues_button": True,
     "use_edit_page_button": True,
+    "announcement": (
+        "WARNING! THIS PACKAGE IS IN ACTIVE DEVELOPMENT AND IS NOT YET STABLE!<br>"
+        "<button><a href='https://vre.vires.services/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2Fsmithara%2Fswarmpal-demo&amp;urlpath=lab%2Ftree%2Fswarmpal-demo%2FREADME.ipynb&amp;branch=main'>Click here to try SwarmPAL in the Virtual Research Environment</a></button>"
+    ),
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

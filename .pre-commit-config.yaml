@@ -1,17 +1,19 @@
+exclude: ^(.*/data/.*)
+
 repos:
 - repo: https://github.com/psf/black
-  rev: 22.3.0
+  rev: 23.1.0
   hooks:
   - id: black-jupyter
 
 - repo: https://github.com/kynan/nbstripout
-  rev: "0.5.0"
+  rev: "0.6.1"
   hooks:
     - id: nbstripout
       args: ["--extra-keys", "metadata.kernelspec metadata.language_info.version"]
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.1.0
+  rev: v4.4.0
   hooks:
   - id: check-added-large-files
   - id: check-case-conflict
@@ -25,7 +27,7 @@ repos:
   - id: trailing-whitespace
 
 - repo: https://github.com/pre-commit/pygrep-hooks
-  rev: v1.9.0
+  rev: v1.10.0
   hooks:
   - id: python-check-blanket-noqa
   # - id: python-check-blanket-type-ignore
@@ -36,13 +38,13 @@ repos:
   - id: rst-inline-touching-normal
 
 - repo: https://github.com/PyCQA/isort
-  rev: 5.10.1
+  rev: 5.12.0
   hooks:
   - id: isort
     # args: ["-a", "from __future__ import annotations"]  # Python 3.7+
 
 - repo: https://github.com/asottile/pyupgrade
-  rev: v2.31.1
+  rev: v3.3.1
   hooks:
   - id: pyupgrade
     args: ["--py37-plus"]
@@ -54,7 +56,7 @@ repos:
 #     args: [--config=pyproject.toml]
 
 - repo: https://github.com/asottile/yesqa
-  rev: v1.3.0
+  rev: v1.4.0
   hooks:
   - id: yesqa
     exclude: docs/conf.py
@@ -63,7 +65,7 @@ repos:
       - flake8-print
 
 - repo: https://github.com/pycqa/flake8
-  rev: 4.0.1
+  rev: 6.0.0
   hooks:
   - id: flake8
     exclude: docs/conf.py
@@ -77,12 +79,12 @@ repos:
 #     args: [--show-error-codes]
 
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.1.0
+  rev: v2.2.2
   hooks:
   - id: codespell
 
 - repo: https://github.com/shellcheck-py/shellcheck-py
-  rev: v0.8.0.4
+  rev: v0.9.0.2
   hooks:
   - id: shellcheck
 

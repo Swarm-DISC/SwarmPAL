@@ -1,8 +1,34 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
 cff-version: 1.2.0
-message: If you use this software, please cite it using these metadata.
-title: Swarm-DISC/SwarmPAL
+title: SwarmPAL
+message: >-
+  Please cite the specific version of SwarmPAL used  during
+  a research project.
+type: software
 authors:
-  - family-names: Smith
-    given-names: Ashley R. A.
-    orcid: https://orcid.org/0000-0001-5198-9574
-repository-code: "https://github.com/Swarm-DISC/SwarmPAL"
+  - given-names: Ashley R. A.
+    family-names: Smith
+    email: ashley.smith@ed.ac.uk
+    orcid: 'https://orcid.org/0000-0001-5198-9574'
+  - given-names: Sebastian
+    family-names: Käki
+    orcid: 'https://orcid.org/0000-0001-7212-5791'
+  - given-names: Theresa
+    family-names: Hoppe
+    orcid: 'https://orcid.org/0009-0000-7108-5468'
+  - given-names: Heikki
+    family-names: Vanhamäki
+    orcid: 'https://orcid.org/0000-0002-3454-0350'
+  - given-names: Constantinos
+    family-names: Papadimitriou
+    orcid: 'https://orcid.org/0000-0002-5191-0149'
+  - given-names: Georgios
+    family-names: Balasis
+    orcid: 'https://orcid.org/0000-0001-7342-0557'
+repository-code: 'https://github.com/Swarm-DISC/SwarmPAL'
+abstract: >-
+  The Swarm Product Algorithm Laboratory: A Python toolbox
+  for ESA's Swarm mission
+license: MIT
