@@ -191,7 +191,21 @@ class PalDataItem:
     def from_vires(**params) -> PalDataItem:
         """Create PalDataItem from VirES source
 
-        TODO: Detail params given by swarmpal.io.datafetchers.ViresParameters
+        Parameters
+        ----------
+        collection : str
+        measurements : list[str]
+        start_time : str | datetime
+        end_time : str | datetime
+        models : list[str]
+        auxiliaries : list[str]
+        sampling_step : str
+        filters : list[str]
+        options : dict
+        server_url : str
+            defaults to "https://vires.services/ows"
+        pad_times : tuple[timedelta]
+            This is handled specially by SwarmPAL and not passed to viresclient
         """
         params, analysis_window = PalDataItem._pad_times(params)
         fetcher = get_fetcher("vires")(**params)
@@ -204,7 +218,16 @@ class PalDataItem:
     def from_hapi(**params) -> PalDataItem:
         """Create PalDataItem from HAPI source
 
-        TODO: Detail params given by swarmpal.io.datafetchers.HapiParameters
+        Parameters
+        ----------
+        server : str
+        dataset : str
+        parameters : str
+        start : str
+        stop : str
+        options : dict
+        pad_times : tuple[timedelta]
+            This is handled specially by SwarmPAL and not passed to hapiclient
         """
         params, analysis_window = PalDataItem._pad_times(params)
         fetcher = get_fetcher("hapi")(**params)
