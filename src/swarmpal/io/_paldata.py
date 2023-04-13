@@ -256,60 +256,6 @@ class PalDataItem:
         return PalDataItem(fetcher)
 
 
-class PalData:
-    """Holds an Xarray DataTree of PAL inputs and outputs
-
-    - PalData can be created from PalDataItem objects passed to .set_inputs.
-    - PalData can be created from existing datatree (e.g. stored on disk)
-        See https://xarray-datatree.readthedocs.io/en/latest/io.html
-    - The data is stored within the .datatree property.
-
-    Parameters
-    ----------
-    name: str
-        Provide a name to label the datatree
-    datatree: DataTree
-        Provide an existing DataTree directly instead
-
-    Examples
-    --------
-    >>> from swarmpal.io import PalData, PalDataItem
-    >>>
-    >>> params = dict(
-    >>>     collection="SW_OPER_MAGA_LR_1B",
-    >>>     measurements=["F", "B_NEC"],
-    >>>     start_time="2016-01-01T00:00:00",
-    >>>     end_time="2016-01-02T00:00:00",
-    >>>     server_url="https://vires.services/ows",
-    >>> )
-    >>> my_pal = PalData(name="trial")
-    >>> my_pal.set_inputs(
-    >>>     SwarmAlpha=PalDataItem.from_vires(**params)
-    >>> )
-    >>> # Access data directly through the datatree
-    >>> my_pal.datatree["inputs/SwarmAlpha"]
-    """
-
-    def __init__(self, name: str | None = None, datatree: DataTree | None = None):
-        self.datatree = datatree if datatree else DataTree(name=name)
-
-    def set_inputs(self, **paldataitems: PalDataItem):
-        """Supply named input datasets through PalDataItem
-
-        Parameters
-        ----------
-        **paldataitems_kw: PalDataItem
-            Provide instances of PalDataItem as keyword arguments
-        """
-        if self.datatree:
-            logger.warn(" Resetting contents of PalData")
-            self.datatree = DataTree(name=self.datatree.name)
-        for name, item in paldataitems.items():
-            # Use paldataitems to populate the DataTree; triggers download
-            self.datatree[f"inputs/{name}"] = DataTree(item.xarray)
-            # TODO: Validate and extract PAL meta as a property
-
-
 class PalMeta:
     @staticmethod
     def serialise(meta: dict) -> str:

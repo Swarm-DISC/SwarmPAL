@@ -26,13 +26,14 @@ guides/tfa/intro_tfa
 ```{toctree}
 :hidden:
 :maxdepth: 2
-:caption: TFA Toolbox (old form)
+:caption: TFA Toolbox
 
-guides/tfa/using_tfa
-guides/tfa/using_tfa_1
-guides/tfa/using_tfa_2
-guides/tfa/using_tfa_3
-guides/tfa/using_tfa_4
+guides/tfa/tfa_background
+guides/tfa/tfa_MAGx_LR
+guides/tfa/tfa_MAGx_HR
+guides/tfa/tfa_EFIx_TCT
+guides/tfa/tfa_AUX_OBS
+guides/tfa/tfa_Cluster
 ```
 
 ```{toctree}
@@ -41,7 +42,6 @@ guides/tfa/using_tfa_4
 :caption: For developers
 
 guides/shared/paldata
-guides/shared/data_io
 ```
 
 ```{toctree}
