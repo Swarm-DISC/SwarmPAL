@@ -6,10 +6,10 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "swarmpal"
 authors = [
-    { name = "Ashley Smith", email = "ashley.smith@magneticearth.org" },
+    { name = "Ashley Smith", email = "ashley.smith@ed.ac.uk" },
 ]
 maintainers = [
-    { name = "Ashley Smith", email = "ashley.smith@magneticearth.org" },
+    { name = "Ashley Smith", email = "ashley.smith@ed.ac.uk" },
 ]
 license = { file = "LICENSE" }
 
@@ -30,14 +30,14 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
-    "Development Status :: 1 - Planning",
+    "Development Status :: 4 - Beta",
 ]
 
 dynamic = ["version"]
 
 dependencies = [
     "hapiclient >= 0.2.3",
-    "numpy >= 1.22",
+    "numpy >= 1.21",
     "matplotlib >= 3.5",
     "scipy >= 1.8",
     "viresclient >= 0.11",

@@ -3,7 +3,7 @@
 If you make use of this package in a publication, please cite the following:
 
 ```raw
-[Pending Zenodo link and update of https://github.com/Swarm-DISC/SwarmPAL/blob/main/CITATION.cff]
+[Pending Zenodo link - for now, just reference the GitHub repo]
 ```
 
 ## Funding

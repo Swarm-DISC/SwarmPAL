@@ -1,8 +1,13 @@
 # SwarmPAL
 
 ---
+[![Swarm-VRE](https://img.shields.io/badge/%F0%9F%9A%80%20launch-Swarm--VRE-blue)](https://vre.vires.services/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2Fsmithara%2Fswarmpal-demo&urlpath=lab%2Ftree%2Fswarmpal-demo%2FREADME.ipynb&branch=main)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/smithara/swarmpal-demo/HEAD)
+
+[![PyPI](https://img.shields.io/pypi/v/swarmpal)]( https://pypi.org/project/swarmpal/)
 [![Documentation](https://img.shields.io/badge/docs-online-success)][rtd-link]
 [![GitHub Discussion][github-discussions-badge]][github-discussions-link]
+
 [![Actions Status][actions-badge]][actions-link]
 [![Code style: black][black-badge]][black-link]
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
@@ -25,4 +30,7 @@
 [rtd-badge]:                https://img.shields.io/badge/docs-online-success
 [rtd-link]:                 https://swarmpal.readthedocs.io/
 
-See the [SwarmPAL development guide on HackMD](https://hackmd.io/@swarm/dev/%2Ff6YIHfqxT9yL0giWJzhr_Q)
+![SwarmPAL diagram](https://swarmpal-benchmarks.netlify.app/swarmpal-diagram.png)
+
+For more information see:
+- <https://swarmdisc.org/lab/>

@@ -73,7 +73,9 @@ def _add_secondary_x_axes(
     # Place the first secondary x-axis
     ax_new = add_xaxis(varname=varnames[0], yposition=1.02)
     # Find the height of the placed labels, in figure coordinates
-    bbox = ax_new.get_xticklabels()[0].get_window_extent()
+    bbox = ax_new.get_xticklabels()[0].get_window_extent(
+        renderer=ax.figure.canvas.get_renderer()
+    )
     bbox = bbox.transformed(ax.figure.dpi_scale_trans.inverted())
     label_height = bbox.height
     # Recalculate that height as a fraction of main axes height

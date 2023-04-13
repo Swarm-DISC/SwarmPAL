@@ -1,18 +1,16 @@
 # Installation
 
-## ESA Virtual Research Environment
+## Swarm Virtual Research Environment
 
-> To be updated
+The easiest way to use SwarmPAL is in the Swarm Virtual Research Environment (read more [here](https://notebooks.vires.services/)). To get started with the SwarmPAL demo tool (which includes the examples given on these pages, as interactive notebooks), follow this link: [![Swarm-VRE](https://img.shields.io/badge/%F0%9F%9A%80%20launch-Swarm--VRE-blue)](https://vre.vires.services/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2Fsmithara%2Fswarmpal-demo&urlpath=lab%2Ftree%2Fswarmpal-demo%2FREADME.ipynb&branch=main)
 
 ## Install latest release
 
-> To be updated
-
-<!-- The package is available from PyPI:
+The package is available from PyPI:
 
 ```bash
 pip install swarmpal
-``` -->
+```
 
 :::{admonition} New to Python?
 :class: note
