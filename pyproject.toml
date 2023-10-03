@@ -35,7 +35,10 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
+    "cartopy >= 0.22",
     "hapiclient >= 0.2.3",
+    "ipython",
+    "ipywidgets",
     "numpy >= 1.21",
     "matplotlib >= 3.5",
     "scipy >= 1.8",
