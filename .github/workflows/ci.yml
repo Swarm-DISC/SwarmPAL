@@ -3,7 +3,7 @@ name: CI
 on:
   workflow_dispatch:
   pull_request:
-    branches: [ staging ]
+    branches: [ main, staging ]
 
 jobs:
   pre-commit:
