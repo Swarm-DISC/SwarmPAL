@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 import logging
 from contextlib import contextmanager
 
@@ -44,6 +45,15 @@ def _get_dsecs_meta(datatree, check_analysis=False):
     return pal_processes_meta
 
 
+def _get_dsecs_pass_time_interval(datatree, pass_no=0):
+    """Extract time start and end of a given pass"""
+    s = datatree[f"DSECS_output/{pass_no}"]["currents"].attrs["Time interval"]
+    t1, t2 = s.split(" - ")
+    t1 = dt.datetime.fromisoformat(t1.split(".")[0])
+    t2 = dt.datetime.fromisoformat(t2.split(".")[0])
+    return t1, t2
+
+
 def plot_analysed_pass(datatree, pass_no=0):
     """Plot a figure showing currents from one orbital pass
 
@@ -61,10 +71,10 @@ def plot_analysed_pass(datatree, pass_no=0):
 
     # Select the inputs we'll need for the figure
     pal_processes_meta = _get_dsecs_meta(datatree, check_analysis=True)
-    datasat_name_alpha = pal_processes_meta["DSECS_Preprocess"]["dataset_alpha"]
-    datasat_name_charlie = pal_processes_meta["DSECS_Preprocess"]["dataset_charlie"]
-    data_a = datatree[datasat_name_alpha]
-    data_c = datatree[datasat_name_charlie]
+    dataset_name_alpha = pal_processes_meta["DSECS_Preprocess"]["dataset_alpha"]
+    dataset_name_charlie = pal_processes_meta["DSECS_Preprocess"]["dataset_charlie"]
+    data_a = datatree[dataset_name_alpha]
+    data_c = datatree[dataset_name_charlie]
     data_currents = datatree[f"DSECS_output/{pass_no}/currents"]
 
     # Create a figure and axes with an orthographic projection
@@ -147,6 +157,13 @@ def plot_analysed_pass(datatree, pass_no=0):
         norm=norm,
     )
     axes[2].set_title("Radial current")
+
+    # Add time start and end of pass, and dataset sources
+    # TODO: Add product version numbers
+    title_text = f"{dataset_name_alpha}\n{dataset_name_charlie}"
+    t1, t2 = _get_dsecs_pass_time_interval(datatree, pass_no=pass_no)
+    title_text += f"\nStart: {t1.isoformat()}\nEnd: {t2.isoformat()}"
+    fig.suptitle(title_text, x=0.9, ha="right", va="bottom")
 
     return fig, axes
 
