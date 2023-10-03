@@ -16,7 +16,7 @@ license = { file = "LICENSE" }
 description = "Toolbox for ESA's Swarm mission"
 readme = "README.md"
 
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 
 classifiers = [
     "License :: OSI Approved :: MIT License",
@@ -27,7 +27,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Development Status :: 4 - Beta",
@@ -50,8 +49,8 @@ dsecs = [
     "apexpy>=1.1.0",
     "pyproj>=3",
 ]
-dsecs_cp38_manylinux = [
-    "apexpy @ https://github.com/smithara/apexpy/releases/download/v1.1.0-binaries/apexpy-1.1.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+dsecs_cp39_manylinux = [
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v2.0.1-binaries/apexpy-2.0.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
     "pyproj>=3"
 ]
 test = [
