@@ -50,7 +50,7 @@ myst_enable_extensions = [
 # Increase allowed notebook run time
 # 15 minutes max per cell
 # (should change this to use per-cell metadata instead)
-nb_execution_timeout = 900  
+nb_execution_timeout = 900
 # Fix execution of notebooks with different kernel names
 nb_kernel_rgx_aliases = {".*": "python3"}
 # Temporarily disable notebook execution while working on docs (default is "auto")
