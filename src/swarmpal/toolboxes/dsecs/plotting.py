@@ -3,9 +3,11 @@ from __future__ import annotations
 import datetime as dt
 import logging
 from contextlib import contextmanager
+from functools import wraps
 
 import cartopy.crs as ccrs
 import ipywidgets as widgets
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from IPython.display import clear_output, display
@@ -36,6 +38,21 @@ def _disable_mpl_interactive_mode():
             plt.ioff()  # Restore interactive mode if it was initially off
 
 
+def _turn_off_interactive_mode(func):
+    """Used to temporarily disable interactive plotting mode"""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        initially_interactive = mpl.is_interactive()
+        plt.ioff()  # Turn off interactive mode before calling the function
+        result = func(*args, **kwargs)
+        if initially_interactive:
+            plt.ion()  # Turn interactive mode back on after the function call
+        return result
+
+    return wrapper
+
+
 def _get_dsecs_meta(datatree, check_analysis=False):
     pal_processes_meta = datatree.swarmpal.pal_meta.get(".", {})
     if not pal_processes_meta.get("DSECS_Preprocess"):
@@ -54,7 +71,8 @@ def _get_dsecs_pass_time_interval(datatree, pass_no=0):
     return t1, t2
 
 
-def plot_analysed_pass(datatree, pass_no=0):
+@_turn_off_interactive_mode
+def plot_analysed_pass(datatree, pass_no=0, extent="global"):
     """Plot a figure showing currents from one orbital pass
 
     Parameters
@@ -63,10 +81,12 @@ def plot_analysed_pass(datatree, pass_no=0):
         A datatree processed with the DSECS toolbox
     pass_no : int
         A number between 0 and x, specifying the pass to plot
+    extent : str | tuple, default "global"
+        "global" or "automatic", or a tuple to be provided to ax.set_extent()
 
     Returns
     -------
-    fig, axes
+    matplotlib.figure.Figure
     """
 
     # Select the inputs we'll need for the figure
@@ -93,7 +113,14 @@ def plot_analysed_pass(datatree, pass_no=0):
     )
     # Set common view on each subplot, with spacecraft tracks
     for ax in axes:
-        ax.set_global()
+        if extent == "global":
+            ax.set_global()
+        elif extent == "automatic":
+            min_lon = data_currents["Longitude"].min() - 10
+            max_lon = data_currents["Longitude"].max() + 10
+            ax.set_extent([min_lon, max_lon, -50, 50])
+        else:
+            ax.set_extent(extent)
         ax.coastlines(color="purple", alpha=0.5)
         ax.scatter(
             data_a["Longitude"],
@@ -124,10 +151,13 @@ def plot_analysed_pass(datatree, pass_no=0):
             current_slice["JEastDf"],
             current_slice["JNorthDf"],
             transform=ccrs.PlateCarree(),
-            scale=1000,
-            color="blue",
             pivot="tail",
-            width=0.0005,
+            angles="uv",
+            scale=0.0001,
+            scale_units="xy",
+            width=10000,
+            units="xy",
+            color="blue",
         )
         axes[0].set_title("Horizontal DF current")
         axes[1].quiver(
@@ -136,10 +166,13 @@ def plot_analysed_pass(datatree, pass_no=0):
             current_slice["JEastCf"],
             current_slice["JNorthCf"],
             transform=ccrs.PlateCarree(),
-            scale=1000,
-            color="blue",
             pivot="tail",
-            width=0.0005,
+            angles="uv",
+            scale=0.0001,
+            scale_units="xy",
+            width=10000,
+            units="xy",
+            color="blue",
         )
         axes[1].set_title("Horizontal CF current")
 
@@ -165,20 +198,25 @@ def plot_analysed_pass(datatree, pass_no=0):
     title_text += f"\nStart: {t1.isoformat()}\nEnd: {t2.isoformat()}"
     fig.suptitle(title_text, x=0.9, ha="right", va="bottom")
 
-    return fig, axes
+    plt.close()
+
+    return fig
 
 
-def quicklook(datatree, show_now=True):
-    """Returns a dict of figures overviewing the outputs of the analysis
+@_turn_off_interactive_mode
+def quicklook(datatree, frame_select="all"):
+    """Returns figures overviewing the outputs of the analysis
 
     Parameters
     ----------
     datatree : DataTree
         A datatree from the DSECS toolbox
+    frame_select : str, default "all"
+        "all", "odd", "even" to limit the frame numbers displayed
 
     Returns
     -------
-    dict[int, [fig, axes]]
+    dict[int, matplotlib.figure.Figure]
     """
 
     try:
@@ -188,28 +226,41 @@ def quicklook(datatree, show_now=True):
 
     # Identify number of analysed passes and generate a fig for each one
     num_passes = len(datatree["DSECS_output"].children)
-    fig_collection = {i: plot_analysed_pass(datatree, i) for i in range(num_passes)}
+    # Config to select which frames to generate
+    if frame_select == "all":
+        frames = range(num_passes)
+    elif frame_select == "odd":
+        frames = [i for i in range(num_passes) if i % 2 != 0]
+    elif frame_select == "even":
+        frames = [i for i in range(num_passes) if i % 2 == 0]
+    else:
+        raise ValueError("frame_select should be 'all', 'odd', or 'even'")
+
+    fig_collection = {}
+    for i in frames:
+        fig_collection[i] = plot_analysed_pass(datatree, i)
 
     return fig_collection
 
 
-def quicklook_animated(datatree):
+@_turn_off_interactive_mode
+def quicklook_animated(datatree, frame_select="all"):
     """Creates an animation of quicklook plots, using ipywidgets
 
     Parameters
     ----------
     datatree : DataTree
         A datatree from the DSECS toolbox
+    frame_select : str, default "all"
+        "all", "odd", "even" to limit the frame numbers displayed
     """
 
-    # Identify number of analysed passes and prerender the figures for each
-    num_passes = len(datatree["DSECS_output"].children)
-    with _disable_mpl_interactive_mode():
-        fig_collection = quicklook(datatree)
+    # Prerender the figures for each frame
+    fig_collection = quicklook(datatree, frame_select=frame_select)
 
     # Get the figure associated with a particular pass
     def get_pass_figure(pass_no):
-        fig, _ = fig_collection.get(pass_no)
+        fig = fig_collection.get(pass_no)
         return fig
 
     # Generate widgets to use for the output and control
@@ -220,21 +271,29 @@ def quicklook_animated(datatree):
             clear_output(wait=True)
             display(get_pass_figure(frame))
 
+    # Select frames according to odd/even
+    frames = tuple(fig_collection.keys())
+    frame_start = frames[0]
+    frame_end = frames[-1]
+    frame_step = frames[1] - frames[0]
+    slider = widgets.IntSlider(
+        value=frame_start, min=frame_start, max=frame_end, step=frame_step
+    )
     play = widgets.Play(
-        value=0,
-        min=0,
-        max=num_passes - 1,
-        step=1,
-        interval=1000,
+        value=frame_start,
+        min=frame_start,
+        max=frame_end,
+        step=frame_step,
+        interval=1200,
         description="Press play",
         disabled=False,
         playing=False,
         repeat=True,
     )
-    slider = widgets.IntSlider(value=0, min=0, max=num_passes - 1)
     # Link the widgets and create the display
     widgets.jslink((play, "value"), (slider, "value"))
     play.observe(lambda change: update_figure(change["new"]), "value")
+
     return widgets.VBox(
         (
             widgets.HBox([play, slider]),
