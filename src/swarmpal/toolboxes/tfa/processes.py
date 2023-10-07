@@ -154,6 +154,8 @@ class Preprocess(PalProcess):
         # Catch the cases with special names that aren't initially available in the dataset (they are set later)
         if any(x in active_variable for x in ("B_NEC_res_", "MFA", "Eh_XYZ", "Ev_XYZ")):
             target_shape = (len(datatree[dataset][timevar]), 3)
+        elif "F_res" in active_variable:
+            target_shape = datatree[dataset][timevar].shape
         else:
             target_shape = datatree[dataset][active_variable].shape
         # Check if active_component is set appropriately, according to the shape of the active_variable
@@ -168,6 +170,7 @@ class Preprocess(PalProcess):
 
     def _prep_magnetic_data(self, ds: Dataset) -> Dataset:
         """Subtract model and/or rotate to MFA"""
+        active_variable = self.config.get("active_variable")
         remove_model = self.config.get("remove_model", False)
         convert_to_mfa = self.config.get("convert_to_mfa", False)
         timevar = self.config.get("timevar")
@@ -180,7 +183,7 @@ class Preprocess(PalProcess):
         # Optionally assign residuals to dataset
         if remove_model:
             ds = ds.assign(
-                {"B_NEC_res_Model": self.subtree.swarmpal.magnetic_residual(model)},
+                {f"{active_variable}": self.subtree.swarmpal.magnetic_residual(model)},
             )
         # Optionally rotate to MFA (Mean-field aligned coordinates)
         if convert_to_mfa:

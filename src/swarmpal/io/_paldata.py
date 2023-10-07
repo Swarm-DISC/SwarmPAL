@@ -343,12 +343,22 @@ class PalDataTreeAccessor:
             raise PalError("This is not a leaf node")
         if not model:
             model = self.magnetic_model_name
-        try:
-            B_NEC = self._datatree["B_NEC"]
-            B_NEC_mod = self._datatree[f"B_NEC_{model}"]
-        except KeyError:
-            raise PalError(f"One of B_NEC or B_NEC_{model} is not available")
-        residual = B_NEC - B_NEC_mod
+        if "B_NEC" in self._datatree:
+            try:
+                B_NEC = self._datatree["B_NEC"]
+                B_NEC_mod = self._datatree[f"B_NEC_{model}"]
+            except KeyError:
+                raise PalError(f"One of B_NEC or B_NEC_{model} is not available")
+            residual = B_NEC - B_NEC_mod
+        elif "F" in self._datatree:
+            try:
+                F = self._datatree["F"]
+                F_mod = self._datatree[f"F_{model}"]
+            except KeyError:
+                raise PalError(f"One of F or F_{model} is not available")
+            residual = F - F_mod
+        else:
+            raise PalError(f"Magnetic Field variable or {model} is not available")
         residual.attrs = {
             "units": "nT",
             "description": "Magnetic field vector data-model residual, NEC frame",
