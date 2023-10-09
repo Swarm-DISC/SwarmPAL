@@ -115,6 +115,8 @@ class Preprocess(PalProcess):
         self._validate_inputs(datatree)
         # Select the datatree to work on
         self.subtree = datatree[self.config.get("dataset")]
+        # Replace zero magn. field values with NaNs
+        ds = self._set_zero_field_values_to_NaN(self.subtree.ds)
         # Prepare data depending on the content
         if self.active_variable in ("Eh_XYZ", "Ev_XYZ"):
             ds = self._prep_efi_expt_data(self.subtree.ds)
@@ -168,7 +170,16 @@ class Preprocess(PalProcess):
             raise PalError("TFA Preprocess: active_component not set")
         if (len(target_shape) == 1) and (active_component is not None):
             raise PalError("TFA Preprocess: active_component set, but no vector found")
-
+    
+    def _set_zero_field_values_to_NaN(self, ds: Dataset) -> Dataset:
+        """Replace zero magnetic field values with NaNs"""
+        if "F" in ds:
+            ds["F"][ds["F"] == 0] = np.NaN
+        if "B_NEC" in ds:
+            for i in range(3):
+                ds["B_NEC"][ds["B_NEC"][:,i] == 0, i] = np.NaN
+        return ds
+    
     def _prep_magnetic_data(self, ds: Dataset) -> Dataset:
         """Subtract model and/or rotate to MFA"""
         active_variable = self.config.get("active_variable")
@@ -181,6 +192,8 @@ class Preprocess(PalProcess):
             model = model if model else self.subtree.swarmpal.magnetic_model_name
         except PalError:
             model = ""
+        # Remove values where the magnetic field = 0 (set to NaN)
+        # ds[f""]
         # Optionally assign residuals to dataset
         if remove_model:
             ds = ds.assign(
