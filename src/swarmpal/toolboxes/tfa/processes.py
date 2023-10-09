@@ -9,6 +9,7 @@ from swarmpal.toolboxes.tfa import tfalib
 from swarmpal.utils.exceptions import PalError
 
 FLAG_THRESHOLDS = {
+    "B_MFA": {"flag_name": "Flags_B", "max_val": 30},
     "B_NEC": {"flag_name": "Flags_B", "max_val": 30},
     "F": {"flag_name": "Flags_F", "max_val": 63},
     "E_NEC": {"flag_name": "Flags_TII", "max_val": 23},
@@ -199,6 +200,7 @@ class Preprocess(PalProcess):
                 "units": "nT",
                 "description": "Magnetic field in Mean-field aligned coordinates",
             }
+            self.config["active_variable"] = "B_MFA"
         return ds
 
     def _prep_efi_expt_data(self, ds: Dataset) -> Dataset:
