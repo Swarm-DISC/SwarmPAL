@@ -227,6 +227,8 @@ class Preprocess(PalProcess):
         max_val = self.config.get("flagclean_maxval", None)
         # Use default parameters if none given in config
         varname = varname if varname else self.active_variable
+        # active_variable may have the _res_Model part, so remove it first
+        if "res_Model" in varname: varname = varname[:-10]
         flagname = flagname if flagname else FLAG_THRESHOLDS[varname]["flag_name"]
         max_val = max_val if max_val else FLAG_THRESHOLDS[varname]["max_val"]
         # Set flagged values to NaN
