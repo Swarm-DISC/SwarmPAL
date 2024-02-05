@@ -4,7 +4,6 @@ Adapted from MatLab code by Heikki Vanhamäki.
 
 """
 
-
 import logging
 
 import apexpy

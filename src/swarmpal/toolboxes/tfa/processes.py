@@ -479,11 +479,9 @@ class WaveDetection(PalProcess):
 
     def set_config(
         self,
-    ):
-        ...
+    ): ...
 
     def _call(self, datatree):
         raise NotImplementedError
 
-    def _attach_ibi(self):
-        ...
+    def _attach_ibi(self): ...

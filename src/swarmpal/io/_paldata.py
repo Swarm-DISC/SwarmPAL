@@ -1,6 +1,7 @@
 """
 PalData tools for containing data
 """
+
 from __future__ import annotations
 
 import json
@@ -466,5 +467,4 @@ class PalProcess(ABC):
         return datatree
 
     @abstractmethod
-    def _call(self, datatree) -> DataTree:
-        ...
+    def _call(self, datatree) -> DataTree: ...

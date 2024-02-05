@@ -1,6 +1,7 @@
 """
 Tools to connect to the outside world and get/create xarray Datasets
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -55,8 +56,7 @@ class FileParameters(Parameters):
 
 
 @dataclass
-class ManualParameters(Parameters):
-    ...
+class ManualParameters(Parameters): ...
 
 
 class DataFetcherBase(ABC):

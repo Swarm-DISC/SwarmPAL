@@ -7,7 +7,6 @@ Adapted from code by Ask Neve Gamby (https://github.com/Swarm-DISC/SwarmPyFAC)
 
 """
 
-
 from __future__ import annotations
 
 from numpy import (

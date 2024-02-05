@@ -64,8 +64,7 @@ class FAC_singlesat(PalProcess):
         subtree["output"] = DataTree(data=ds_out)
         return datatree
 
-    def _validate(self):
-        ...
+    def _validate(self): ...
 
     def _get_time(self, dataset):
         return dataset.get("Timestamp").data.astype("datetime64[ns]")
