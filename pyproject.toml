@@ -86,6 +86,8 @@ filterwarnings = [
     # Ignore warnings raised by apexpy (temporarily?)
     "ignore::RuntimeWarning",
     "ignore::UserWarning",
+    # Ignore warning from pandas
+    "ignore:(\nPyarrow will become a required dependency of pandas):DeprecationWarning",
 ]
 testpaths = [
     "tests",
