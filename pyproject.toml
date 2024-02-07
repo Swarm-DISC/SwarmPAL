@@ -49,8 +49,8 @@ dsecs = [
     "apexpy>=1.1.0",
     "pyproj>=3",
 ]
-dsecs_cp39_manylinux = [
-    "apexpy @ https://github.com/smithara/apexpy/releases/download/v2.0.1-binaries/apexpy-2.0.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+dsecs_cp311_manylinux = [
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v2.0.1-binaries/apexpy-2.0.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
     "pyproj>=3"
 ]
 test = [

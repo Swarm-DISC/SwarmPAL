@@ -13,9 +13,9 @@ sphinx:
 formats: []
 
 build:
-  os: ubuntu-20.04
+  os: ubuntu-22.04
   tools:
-    python: "3.8"
+    python: "3.11"
 
 python:
   install:
@@ -23,4 +23,4 @@ python:
       path: .
       extra_requirements:
         - docs
-        - dsecs_cp38_manylinux
+        - dsecs_cp311_manylinux
