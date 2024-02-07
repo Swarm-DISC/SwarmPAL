@@ -19,8 +19,8 @@ build:
 
 python:
   install:
-  - method: pip
-    path: .
-    extra_requirements:
-    - docs
-    - dsecs_cp38_manylinux
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
+        - dsecs_cp38_manylinux

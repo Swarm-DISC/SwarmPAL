@@ -3,10 +3,10 @@ from __future__ import annotations
 import logging
 
 import matplotlib.dates as mdt
-import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from matplotlib import gridspec
 
 from swarmpal.utils.exceptions import PalError
 
@@ -45,7 +45,7 @@ def _add_secondary_x_axes(
     # Restrict to those which are available in the data
     varnames_available = set(varnames).intersection(set(dataset.data_vars))
     for x in set(varnames).difference(varnames_available):
-        logger.warn(f" Skipping {x}: not available in data")
+        logger.warning(f" Skipping {x}: not available in data")
     varnames = [v for v in varnames if v in varnames_available]
     if len(varnames) == 0:
         return ax

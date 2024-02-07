@@ -146,10 +146,10 @@ class PalDataItem:
         Accounts for difference between VirES ("start_time", "end_time"),
         and HAPI ("start", "stop")
         """
-        if "start_time" in params.keys():
+        if "start_time" in params:
             start = params["start_time"]
             end = params["end_time"]
-        elif "start" in params.keys():
+        elif "start" in params:
             start = params["start"]
             end = params["stop"]
         return PalDataItem._ensure_datetime((start, end))
@@ -157,10 +157,10 @@ class PalDataItem:
     @staticmethod
     def _update_start_end_times(params: dict, start: str, end: str):
         """Update the job parameters with new (start, end) times"""
-        if "start_time" in params.keys():
+        if "start_time" in params:
             params["start_time"] = start
             params["end_time"] = end
-        elif "start" in params.keys():
+        elif "start" in params:
             params["start"] = start
             params["stop"] = end
         return params
@@ -454,7 +454,7 @@ class PalProcess(ABC):
         procname = self.process_name
         subtree_root_pal_meta = subtree.swarmpal.pal_meta["."]
         if procname in subtree_root_pal_meta.keys():
-            logger.warn(f" Rerunning {procname}: May overwrite existing data")
+            logger.warning(f" Rerunning {procname}: May overwrite existing data")
         # Apply process to create updated datatree
         subtree = self._call(subtree)
         # Update metadata with details of the applied process

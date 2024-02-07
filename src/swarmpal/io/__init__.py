@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from swarmpal.io._paldata import (
     PalDataItem,
     PalDataTreeAccessor,

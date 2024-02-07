@@ -3,18 +3,21 @@ name: CI
 on:
   workflow_dispatch:
   pull_request:
-    branches: [ main, staging ]
+    branches: [main, staging]
+  schedule:
+    # Weekly on Sunday
+    - cron: "0 1 * * 0"
 
 jobs:
   pre-commit:
     name: Format
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-python@v2
-    - uses: pre-commit/action@v3.0.0
-      with:
-        extra_args: --hook-stage manual --all-files
+      - uses: actions/checkout@v1
+      - uses: actions/setup-python@v2
+      - uses: pre-commit/action@v3.0.0
+        with:
+          extra_args: --hook-stage manual --all-files
 
   checks:
     name: Check Python ${{ matrix.python-version }} on ${{ matrix.runs-on }}
@@ -30,42 +33,40 @@ jobs:
         #   runs-on: ubuntu-latest
 
     steps:
+      - name: Fix install of gfortran (on macOS)
+        if: runner.os == 'macOS'
+        run: brew reinstall gfortran
+        shell: bash
 
-    - name: Fix install of gfortran (on macOS)
-      if: runner.os == 'macOS'
-      run: brew reinstall gfortran
-      shell: bash
+      - uses: actions/checkout@v2
 
-    - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Install package (On Windows; Exclude DSECS (apexpy))
+        if: runner.os == 'Windows'
+        run: |
+          python -m pip install .[test]
 
-    - name: Install package (On Windows; Exclude DSECS (apexpy))
-      if: runner.os == 'Windows'
-      run: |
-        python -m pip install .[test]
+      - name: Install package (On Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          export SETUPTOOLS_USE_DISTUTILS=stdlib  # temporary fix for apexpy
+          python -m pip install .[test,dsecs]
 
-    - name: Install package (On Linux / macOS)
-      if: runner.os != 'Windows'
-      run: |
-        export SETUPTOOLS_USE_DISTUTILS=stdlib  # temporary fix for apexpy
-        python -m pip install .[test,dsecs]
+      - name: Configure token access
+        run: |
+          viresclient set_token "https://vires.services/ows" ${{ secrets.VIRES_TOKEN }}
+          viresclient set_default_server https://vires.services/ows
 
-    - name: Configure token access
-      run: |
-        viresclient set_token "https://vires.services/ows" ${{ secrets.VIRES_TOKEN }}
-        viresclient set_default_server https://vires.services/ows
+      - name: Test package (On Windows; Exclude DSECS)
+        if: runner.os == 'Windows'
+        run: python -m pytest -ra -m "not dsecs"
 
-    - name: Test package (On Windows; Exclude DSECS)
-      if: runner.os == 'Windows'
-      run: python -m pytest -ra -m "not dsecs"
-
-    - name: Test package (On Linux / macOS)
-      if: runner.os != 'Windows'
-      run: python -m pytest -ra
-
+      - name: Test package (On Linux / macOS)
+        if: runner.os != 'Windows'
+        run: python -m pytest -ra
 
   # dist:
   #   name: Distribution build

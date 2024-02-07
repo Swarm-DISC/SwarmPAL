@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 from xarray import Dataset
 
@@ -11,7 +13,7 @@ def test_get_fetcher():
     get_fetcher("manual")
 
 
-@pytest.mark.remote
+@pytest.mark.remote()
 def test_vires_fetcher():
     params = dict(
         collection="SW_OPER_MAGA_LR_1B",
@@ -31,7 +33,7 @@ def test_vires_fetcher():
     assert isinstance(vires_dataset, Dataset)
 
 
-@pytest.mark.remote
+@pytest.mark.remote()
 def test_hapi_fetcher():
     params = dict(
         dataset="SW_OPER_MAGA_LR_1B",
