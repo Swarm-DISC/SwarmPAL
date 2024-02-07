@@ -8,9 +8,16 @@ The easiest way to use SwarmPAL is in the Swarm Virtual Research Environment (re
 
 The package is available from PyPI:
 
+If you *do not need* the DSECS toolbox:
 ```bash
 pip install swarmpal
 ```
+
+If you *do need* the DSECS toolbox:
+```bash
+pip install swarmpal[dsecs]
+```
+which includes [apexpy](https://github.com/aburrell/apexpy), which is needed for the DSECS toolbox. There can be some trouble installing this so you might need to manually install apexpy first.
 
 :::{admonition} New to Python?
 :class: note
