@@ -61,10 +61,10 @@ dev = [
     "nox >=2022",
 ]
 docs = [
-    "Sphinx==4.5",
-    "myst-nb==0.17.1",
-    "sphinx-book-theme==0.3.3",
-    "sphinx_copybutton==0.5.1",
+    "Sphinx==7.2",
+    "myst-nb==1.0",
+    "sphinx-book-theme==1.1",
+    "sphinx_copybutton==0.5",
     "matplotlib==3.6",
     "ipywidgets==8.0",
     "ipython!=8.7.0",

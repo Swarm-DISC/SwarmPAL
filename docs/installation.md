@@ -28,10 +28,11 @@ which includes [apexpy](https://github.com/aburrell/apexpy), which is needed for
 the DSECS toolbox. There can be some trouble installing this so you might need
 to manually install apexpy first.
 
-:::{admonition} New to Python? :class: note
+:::{admonition} New to Python?
 
 To setup Python on your system, check guidance on the
 [viresclient installation notes](https://viresclient.readthedocs.io/en/latest/installation.html#recommended-setup-if-starting-without-python-already)
+
 :::
 
 ## Install latest development version
@@ -44,7 +45,7 @@ latest development version from the `staging` branch with:
 pip install git+https://github.com/Swarm-DISC/SwarmPAL@staging#egg=swarmpal[dsecs]
 ```
 
-:::{admonition} Fotran compiler? :class: note
+:::{admonition} Fortran compiler?
 
 If you are using conda, you can get one from:
 
