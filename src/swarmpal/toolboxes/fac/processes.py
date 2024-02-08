@@ -35,12 +35,14 @@ class FAC_singlesat(PalProcess):
         model_varname: str = "B_NEC_CHAOS",
         measurement_varname: str = "B_NEC",
         inclination_limit: float = 30,
+        time_jump_limit: int = 1,
     ) -> None:
         self.config = dict(
             dataset=dataset,
             model_varname=model_varname,
             measurement_varname=measurement_varname,
             inclination_limit=inclination_limit,
+            time_jump_limit=time_jump_limit,
         )
 
     def _call(self, datatree):
@@ -54,6 +56,7 @@ class FAC_singlesat(PalProcess):
             B_res=self._get_B_res(dataset),
             B_model=self._get_B_model(dataset),
             inclination_limit=self.config.get("inclination_limit"),
+            time_jump_limit=self.config.get("time_jump_limit"),
         )
         # Insert a new output dataset with these results
         ds_out = Dataset(
@@ -113,4 +116,5 @@ class PalFacDataTreeAccessor:
         axes[0].set_xlabel("")
         axes[0].grid()
         axes[1].grid()
+        fig.suptitle(f"{dataset}")
         return fig, axes
