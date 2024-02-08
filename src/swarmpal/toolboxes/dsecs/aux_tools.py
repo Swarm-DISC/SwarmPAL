@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 
 import numpy as np
@@ -376,7 +374,7 @@ def sub_Swarm_grids(lat1, lon1, lat2, lon2, Dlat2D, LonRatio, ExtLat2D, ExtLon2D
         )
 
     # Make 2D second gradient matrix in latitude.
-    # NOTE: it might be more accurate to make the gradient matrix in along-track direction, not latitude.
+    # NOTE: it might be more accurate to make the gradient matric in along-track direction, not latitude.
     # Here we assume that poles are listed along latitude at each longitude.
     # i.e. [(lat1,lon1) (lat2,lon1) ... (latN,lon1) (lat1,lon2) ...]
     # This corresponds to lat2D(:) according to the above construction

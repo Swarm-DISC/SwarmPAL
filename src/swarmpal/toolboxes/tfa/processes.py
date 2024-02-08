@@ -228,7 +228,7 @@ class Preprocess(PalProcess):
         max_val = max_val if max_val else FLAG_THRESHOLDS[varname]["max_val"]
         # Set flagged values to NaN
         inds_to_remove = ds[flagname] > max_val
-        ds[varname][inds_to_remove, ...] = np.nan
+        ds[varname][inds_to_remove, ...] = np.NaN
         return ds
 
     def _constant_cadence(self, da):
@@ -320,7 +320,7 @@ class Clean(PalProcess):
             method=self.config.get("method"),
             multiplier=self.config.get("multiplier"),
         )
-        target_var.data[inds] = np.nan
+        target_var.data[inds] = np.NaN
         # Interpolate over gaps
         s = target_var.data.shape
         if len(s) == 1:

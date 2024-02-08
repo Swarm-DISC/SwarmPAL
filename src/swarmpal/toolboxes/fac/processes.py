@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import matplotlib.pyplot as plt
 from datatree import DataTree, register_datatree_accessor
 from numpy import stack

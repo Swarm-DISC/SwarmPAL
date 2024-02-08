@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from apexpy import Apex
 from datatree import DataTree
 from numpy import cos, deg2rad, sin

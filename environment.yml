@@ -31,7 +31,7 @@ dependencies:
   - viresclient
   - xarray
   - pip:
-      - apexpy
-      - hapiclient
-      # This package
-      - -e .[test,dev,docs,dsecs]
+    - apexpy
+    - hapiclient
+    # This package
+    - -e .[test,dev,docs,dsecs]
