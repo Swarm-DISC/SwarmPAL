@@ -394,7 +394,7 @@ def outliers(x, window_size, method="iqr", multiplier=np.nan):
     >>> plt.show()
     """
 
-    if not (type(multiplier) == list or type(multiplier) == np.ndarray):
+    if not isinstance(multiplier, (list, np.ndarray)):
         multiplier = [multiplier, multiplier]
 
     inds = np.full(x.shape, False)
