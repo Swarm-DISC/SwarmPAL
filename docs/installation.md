@@ -8,14 +8,21 @@ The easiest way to use SwarmPAL is in the Swarm Virtual Research Environment (re
 
 The package is available from PyPI:
 
+If you *do not need* the DSECS toolbox:
 ```bash
 pip install swarmpal
 ```
 
+If you *do need* the DSECS toolbox:
+```bash
+pip install swarmpal[dsecs]
+```
+which includes [apexpy](https://github.com/aburrell/apexpy), which is needed for the DSECS toolbox. There can be some trouble installing this so you might need to manually install apexpy first.
+
 :::{admonition} New to Python?
-:class: note
 
 To setup Python on your system, check guidance on the [viresclient installation notes](https://viresclient.readthedocs.io/en/latest/installation.html#recommended-setup-if-starting-without-python-already)
+
 :::
 
 ## Install latest development version
@@ -26,13 +33,13 @@ Assuming you have a compatible system with git, a fortran compiler, and a Python
 pip install git+https://github.com/Swarm-DISC/SwarmPAL@staging#egg=swarmpal[dsecs]
 ```
 
-:::{admonition} Fotran compiler?
-:class: note
+:::{admonition} Fortran compiler?
 
 If you are using conda, you can get one from:
 ``` bash
 conda install conda-forge::fortran-compiler
 ```
+
 :::
 
 The fortran compiler is required in order to install the dependency, apexpy. It may be better to try installing apexpy first and debugging that if you run into trouble.
