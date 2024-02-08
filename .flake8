@@ -1,7 +1,0 @@
-[flake8]
-extend-ignore = E203, E501, E722, B950, W503, B907
-select = C,E,F,W,T,B,I
-per-file-ignores =
-    tests/*: T
-    noxfile.py: T
-    __init__.py:F401

@@ -9,8 +9,8 @@
 [![GitHub Discussion][github-discussions-badge]][github-discussions-link]
 
 [![Actions Status][actions-badge]][actions-link]
-[![Code style: black][black-badge]][black-link]
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
+[![Code style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/format.json)](https://github.com/astral-sh/ruff)
 
 ---
 
@@ -30,7 +30,7 @@
 [rtd-badge]:                https://img.shields.io/badge/docs-online-success
 [rtd-link]:                 https://swarmpal.readthedocs.io/
 
-![SwarmPAL diagram](https://swarmpal-benchmarks.netlify.app/swarmpal-diagram.png)
+![SwarmPAL diagram](https://swarmdisc.org/wp-content/uploads/2024/02/SwarmPAL-diagrams-overview.png)
 
 For more information see:
 - <https://swarmdisc.org/lab/>

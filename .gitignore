@@ -141,4 +141,8 @@ cython_debug/
 src/*/_version.py
 
 # VSCode
-.vscode/*
+.vscode
+
+# Other dev tool junk
+.ruff_cache
+node_modules
