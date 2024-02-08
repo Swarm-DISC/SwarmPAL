@@ -173,7 +173,7 @@ class HapiDataFetcher(DataFetcherBase):
         ds = Dataset(
             data_vars={
                 timevar: (timevar, tdata),
-                **{_name: (_dim, data[_name]) for _name, _dim, in zip(varnames, dims)},
+                **{_name: (_dim, data[_name]) for _name, _dim in zip(varnames, dims)},
             }
         )
         # Assign metadata for each data variable
