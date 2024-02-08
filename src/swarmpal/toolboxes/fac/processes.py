@@ -40,19 +40,20 @@ class FAC_singlesat(PalProcess):
             dataset=dataset,
             model_varname=model_varname,
             measurement_varname=measurement_varname,
+            inclination_limit=inclination_limit,
         )
 
     def _call(self, datatree):
         # Identify inputs for algorithm
         subtree = datatree[self.config.get("dataset")]
         dataset = subtree.ds
-        time = self._get_time(dataset)
-        positions = self._get_positions(dataset)
-        B_res = self._get_B_res(dataset)
-        B_model = self._get_B_model(dataset)
         # Apply algorithm
         fac_results = fac_single_sat_algo(
-            time=time, positions=positions, B_res=B_res, B_model=B_model
+            time=self._get_time(dataset),
+            positions=self._get_positions(dataset),
+            B_res=self._get_B_res(dataset),
+            B_model=self._get_B_model(dataset),
+            inclination_limit=self.config.get("inclination_limit"),
         )
         # Insert a new output dataset with these results
         ds_out = Dataset(
