@@ -9,25 +9,17 @@ from swarmpal.io import PalProcess
 from swarmpal.toolboxes.fac.fac_algorithms import fac_single_sat_algo
 
 __all__ = (
-    "FAC_singlesat",
+    "FAC_single_sat",
     "PalFacDataTreeAccessor",
 )
 
 
-class FAC_singlesat(PalProcess):
-    """Provides the process for the classic single-satellite FAC algorithm
-
-    Notes
-    -----
-    Expected config parameters:
-    dataset
-    model_varname
-    measurement_varname
-    """
+class FAC_single_sat(PalProcess):
+    """Provides the process for the classic single-satellite FAC algorithm"""
 
     @property
     def process_name(self):
-        return "FAC_singlesat"
+        return "FAC_single_sat"
 
     def set_config(
         self,
@@ -37,6 +29,21 @@ class FAC_singlesat(PalProcess):
         inclination_limit: float = 30,
         time_jump_limit: int = 1,
     ) -> None:
+        """Configures the process
+
+        Parameters
+        ----------
+        dataset : str, optional
+            Dataset to use, by default "SW_OPER_MAGA_LR_1B"
+        model_varname : str, optional
+            Name of the magnetic model predictions, by default "B_NEC_CHAOS"
+        measurement_varname : str, optional
+            Name of the measurements, by default "B_NEC"
+        inclination_limit : float, optional
+            Limit of inclination for FAC validity (in degrees), by default 30
+        time_jump_limit : int, optional
+            Maximum allowable time step in data for FAC validity (in seconds), by default 1
+        """
         self.config = dict(
             dataset=dataset,
             model_varname=model_varname,
