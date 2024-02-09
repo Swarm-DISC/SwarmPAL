@@ -33,14 +33,11 @@ def fac_single_sat(
     Returns
     -------
     DataTree
-        _description_
 
     Raises
     ------
     PalError
-        _description_
-    PalError
-        _description_
+        When inputs are invalid
     """
     try:
         input_dataset = SPACECRAFT_TO_MAGLR_DATASET[spacecraft]
@@ -65,7 +62,7 @@ def fac_single_sat(
         options=dict(asynchronous=False, show_progress=False),
     )
     data = create_paldata(PalDataItem.from_vires(**data_params))
-    process = fac.processes.FAC_singlesat(
+    process = fac.processes.FAC_single_sat(
         config={
             "dataset": input_dataset,
             "model_varname": "B_NEC_CHAOS",
@@ -74,7 +71,5 @@ def fac_single_sat(
     )
     data = process(data)
     if to_cdf_file:
-        data.swarmpal.to_cdf(
-            file_name=to_cdf_file, leaf=f"{input_dataset}/PAL:FAC_output"
-        )
+        data.swarmpal.to_cdf(file_name=to_cdf_file, leaf="PAL_FAC_single_sat")
     return data

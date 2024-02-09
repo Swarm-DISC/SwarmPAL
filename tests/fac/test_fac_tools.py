@@ -29,7 +29,7 @@ def test_fac_singlesat_swarm():
         "inclination_limit": 30,
         "time_jump_limit": 6,
     }
-    process = fac.processes.FAC_singlesat(config=process_config)
+    process = fac.processes.FAC_single_sat(config=process_config)
     data = process(data)
-    assert "IRC" in data["SW_OPER_MAGA_LR_1B/PAL:FAC_output"]
-    assert "FAC" in data["SW_OPER_MAGA_LR_1B/PAL:FAC_output"]
+    assert "IRC" in data["PAL_FAC_single_sat"]
+    assert "FAC" in data["PAL_FAC_single_sat"]
