@@ -10,10 +10,13 @@ For information about the algorithm, see https://doi.org/10.5047/eps.2013.09.006
 
 from __future__ import annotations
 
+import logging
+
 from numpy import (
     abs,
     apply_along_axis,
     arctan2,
+    array,
     cos,
     deg2rad,
     diff,
@@ -25,6 +28,8 @@ from numpy import (
 )
 from numpy.linalg import norm
 from scipy.interpolate import splev, splrep
+
+logger = logging.getLogger(__name__)
 
 MU_0 = 4.0 * pi * 10 ** (-7)
 
@@ -117,6 +122,9 @@ def fac_single_sat_algo(
         {"time": array_like, "fac": array_like, "irc": array_like}
         FAC (field-aligned current) and IRC (radial current) estimates
     """
+    if len(time) == 0:
+        logger.warning("Empty data")
+        return {"time": array([]), "fac": array([]), "irc": array([])}
     # Convert time (datetime64[ns]) to seconds
     time_seconds = time.astype(float) / 1e9
     # Array of positions accounting for local time
