@@ -10,6 +10,7 @@ from datetime import datetime
 from os import PathLike
 from re import match as regex_match
 
+from cdflib.xarray import xarray_to_cdf
 from datatree import DataTree, register_datatree_accessor
 from pandas import to_datetime as to_pandas_datetime
 from xarray import DataArray, Dataset
@@ -354,6 +355,18 @@ class PalDataTreeAccessor:
             "description": "Magnetic field vector data-model residual, NEC frame",
         }
         return residual
+
+    def to_cdf(self, file_name: str, leaf: str) -> None:
+        """Write one leaf of the datatree to a CDF file
+
+        Parameters
+        ----------
+        file_name : str
+            Name of the file to create
+        leaf : str
+            Location within the datatree
+        """
+        xarray_to_cdf(xarray_dataset=self._datatree[leaf].ds, file_name=file_name)
 
 
 def create_paldata(
