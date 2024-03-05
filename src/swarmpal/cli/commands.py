@@ -1,44 +1,42 @@
 from __future__ import annotations
 
+import click
 from datatree import DataTree
 
-from swarmpal.express._configs import SPACECRAFT_TO_MAGLR_DATASET
+from swarmpal.cli._configs import SPACECRAFT_TO_MAGLR_DATASET
 from swarmpal.io import PalDataItem, create_paldata
 from swarmpal.toolboxes import fac
 from swarmpal.utils.exceptions import PalError
 
 
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+def spacecraft():
+    """List names of available spacecraft"""
+    spacecraft = list(SPACECRAFT_TO_MAGLR_DATASET.keys())
+    click.echo("\n".join(spacecraft))
+
+
+@cli.command(add_help_option=True)
+@click.option(
+    "--spacecraft", required=True, help="Check available with: swarmpal spacecraft"
+)
+@click.option("--grade", required=True, help="'OPER' or 'FAST'")
+@click.option("--time_start", required=True, help="ISO 8601 time")
+@click.option("--time_end", required=True, help="ISO 8601 time")
+@click.option("--output", required=True, help="Output CDF file")
 def fac_single_sat(
     spacecraft: str,
+    grade: str,
     time_start: str,
     time_end: str,
-    grade: str = "OPER",
-    to_cdf_file: str | None = None,
+    output: str,
 ) -> DataTree:
-    """Execute FAC single-satellite processor
-
-    Parameters
-    ----------
-    spacecraft : str
-        Spacecraft to use
-    time_start : str
-        Starting time of the analysis
-    time_end : str
-        Ending time of the analysis
-    grade : str, optional
-        OPER or FAST processing chain, by default "OPER""
-    to_cdf_file : str | None, optional
-        Path for CDF file to generate, by default None
-
-    Returns
-    -------
-    DataTree
-
-    Raises
-    ------
-    PalError
-        When inputs are invalid
-    """
+    """Execute FAC single-satellite processor"""
     try:
         input_dataset = SPACECRAFT_TO_MAGLR_DATASET[spacecraft]
     except KeyError:
@@ -70,6 +68,6 @@ def fac_single_sat(
         },
     )
     data = process(data)
-    if to_cdf_file:
-        data.swarmpal.to_cdf(file_name=to_cdf_file, leaf="PAL_FAC_single_sat")
+    if output:
+        data.swarmpal.to_cdf(file_name=output, leaf="PAL_FAC_single_sat")
     return data

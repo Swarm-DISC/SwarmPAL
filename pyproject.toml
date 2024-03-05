@@ -35,6 +35,7 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
+    "click >= 8.1",
     "hapiclient >= 0.2.3",
     "numpy >= 1.21",
     "matplotlib >= 3.5",
@@ -70,6 +71,8 @@ docs = [
     "ipython!=8.7.0",
 ]
 
+[project.scripts]
+swarmpal = "swarmpal.cli.commands:cli"
 
 [project.urls]
 homepage = "https://github.com/Swarm-DISC/SwarmPAL"
