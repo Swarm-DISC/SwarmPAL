@@ -47,8 +47,9 @@ guides/shared/paldata
 ```{toctree}
 :hidden:
 :maxdepth: 2
-:caption: API
+:caption: Reference
 
+api/cli
 api/io
 api/fac
 api/dsecs
