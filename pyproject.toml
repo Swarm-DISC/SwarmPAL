@@ -65,6 +65,7 @@ docs = [
     "Sphinx==7.2",
     "myst-nb==1.0",
     "sphinx-book-theme==1.1",
+    "sphinx_click==5.0",
     "sphinx_copybutton==0.5",
     "matplotlib==3.6",
     "ipywidgets==8.0",
