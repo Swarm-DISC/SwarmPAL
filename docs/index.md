@@ -49,9 +49,9 @@ guides/shared/paldata
 :maxdepth: 2
 :caption: Reference
 
-api/cli
 api/io
 api/fac
 api/dsecs
 api/tfa
+api/cli
 ```
