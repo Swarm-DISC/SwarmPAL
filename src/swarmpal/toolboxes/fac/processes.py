@@ -115,6 +115,7 @@ class FAC_single_sat(PalProcess):
 
     def _append_aux(self, ds_in, ds_out):
         """Extract auxiliary information from inputs and add to output dataset"""
+        # Identify available auxiliaries that can be added
         aux_in = set(ds_in.data_vars)
         aux_desired = {
             "Latitude",
@@ -127,10 +128,17 @@ class FAC_single_sat(PalProcess):
         aux_matched = aux_desired.intersection(aux_in)
         aux_missing = aux_desired.difference(aux_in)
         logging.warning(f"Missing auxiliaries: {aux_missing}")
+        # FAC time series is shorter than the inputs, so need to interpolate
+        # Subset only the ones we want to append
         ds_in_interpd = ds_in[list(aux_matched)].interp_like(ds_out, method="nearest")
+        # Convert data types back to the source data (interpolation changes it to float64)
+        for aux in aux_matched:
+            ds_in_interpd[aux] = ds_in_interpd[aux].astype(ds_in[aux].dtype)
+        # Attach the subselected data variables
         ds_out = ds_out.assign(
             {aux_name: ds_in_interpd[aux_name] for aux_name in aux_matched}
         )
+        ds_out.attrs["Sources"] = ds_in_interpd.attrs["Sources"]
         return ds_out
 
 

@@ -3,6 +3,8 @@ PalData tools for containing data
 """
 from __future__ import annotations
 
+import datetime as dt
+import importlib.metadata as packages_metadata
 import json
 import logging
 from abc import ABC, abstractmethod
@@ -366,7 +368,22 @@ class PalDataTreeAccessor:
         leaf : str
             Location within the datatree
         """
-        xarray_to_cdf(xarray_dataset=self._datatree[leaf].ds, file_name=file_name)
+        # Identify dataset to use
+        ds = self._datatree[leaf].ds.copy()
+        # Adjust metadata (CDF global attrs)
+        # Extra PAL_meta from the parent node
+        pal_meta = self._datatree[leaf].parent.swarmpal.pal_meta["."]
+        versions = f"swarmpal-{packages_metadata.version('swarmpal')} [cdflib-{packages_metadata.version('cdflib')}]"
+        ds.attrs.update(
+            {
+                "CREATOR": versions,
+                "CREATED": dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "TITLE": file_name,
+                "PAL_meta": PalMeta.serialise(pal_meta),
+            }
+        )
+        # NB: cdflib will write Timestamp as type CDF_TT2000 not CDF_EPOCH
+        xarray_to_cdf(xarray_dataset=ds, file_name=file_name)
 
 
 def create_paldata(
