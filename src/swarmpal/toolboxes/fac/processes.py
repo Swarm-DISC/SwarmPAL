@@ -130,7 +130,12 @@ class FAC_single_sat(PalProcess):
         logging.warning(f"Missing auxiliaries: {aux_missing}")
         # FAC time series is shorter than the inputs, so need to interpolate
         # Subset only the ones we want to append
-        ds_in_interpd = ds_in[list(aux_matched)].interp_like(ds_out, method="nearest")
+        if len(ds_in["Timestamp"]) > 0:
+            ds_in_interpd = ds_in[list(aux_matched)].interp_like(
+                ds_out, method="nearest"
+            )
+        else:
+            ds_in_interpd = ds_in.copy()
         # Convert data types back to the source data (interpolation changes it to float64)
         for aux in aux_matched:
             ds_in_interpd[aux] = ds_in_interpd[aux].astype(ds_in[aux].dtype)
