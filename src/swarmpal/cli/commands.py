@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import click
 
-from swarmpal.toolboxes.fac.presets import fac_single_sat as preset_fac_single_sat
+from swarmpal.toolboxes.fac.presets import fac_single_sat as _fac_single_sat
 from swarmpal.utils.configs import SPACECRAFT_TO_MAGLR_DATASET
+from swarmpal.utils.queries import last_available_time as _last_available_time
 
 
 @click.group()
@@ -33,4 +34,13 @@ def fac_single_sat(
     time_end: str,
     output: str,
 ):
-    return preset_fac_single_sat(spacecraft, grade, time_start, time_end, output)
+    """Execute FAC single-satellite processor"""
+    return _fac_single_sat(spacecraft, grade, time_start, time_end, output)
+
+
+@cli.command(add_help_option=True)
+@click.argument("collection")
+def last_available_time(collection):
+    """UTC of last available data for a collection, e.g. SW_FAST_MAGA_LR_1B"""
+    time = _last_available_time(collection)
+    click.echo(time.isoformat())

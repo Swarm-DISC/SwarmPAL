@@ -127,7 +127,8 @@ class FAC_single_sat(PalProcess):
         }
         aux_matched = aux_desired.intersection(aux_in)
         aux_missing = aux_desired.difference(aux_in)
-        logging.warning(f"Missing auxiliaries: {aux_missing}")
+        if aux_missing:
+            logging.warning(f"Missing auxiliaries: {aux_missing}")
         # FAC time series is shorter than the inputs, so need to interpolate
         # Subset only the ones we want to append
         if len(ds_in["Timestamp"]) > 0:

@@ -31,7 +31,7 @@ def fac_single_sat(
     # Fetch data and apply process
     data_params = dict(
         collection=input_dataset,
-        measurements=["B_NEC"],
+        measurements=["B_NEC", "Flags_F", "Flags_B", "Flags_q"],
         models=["CHAOS"],
         start_time=time_start,
         end_time=time_end,

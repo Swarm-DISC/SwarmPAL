@@ -8,7 +8,7 @@ import importlib.metadata as packages_metadata
 import json
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import date, datetime
 from os import PathLike
 from re import match as regex_match
 
@@ -115,7 +115,7 @@ class PalDataItem:
 
     def _serialise_pal_metadata(self):
         def _format_handler(x):
-            if isinstance(x, datetime):
+            if isinstance(x, (datetime, date)):
                 return x.isoformat()
             raise TypeError("Unknown type")
 
@@ -286,7 +286,7 @@ class PalMeta:
     @staticmethod
     def serialise(meta: dict) -> str:
         def _format_handler(x):
-            if isinstance(x, datetime):
+            if isinstance(x, (datetime, date)):
                 return x.isoformat()
             raise TypeError("Unknown type")
 
@@ -358,7 +358,7 @@ class PalDataTreeAccessor:
         }
         return residual
 
-    def to_cdf(self, file_name: str, leaf: str) -> None:
+    def to_cdf(self, file_name: str, leaf: str, istp_check: bool = False) -> None:
         """Write one leaf of the datatree to a CDF file
 
         Parameters
@@ -383,7 +383,7 @@ class PalDataTreeAccessor:
             }
         )
         # NB: cdflib will write Timestamp as type CDF_TT2000 not CDF_EPOCH
-        xarray_to_cdf(xarray_dataset=ds, file_name=file_name)
+        xarray_to_cdf(xarray_dataset=ds, file_name=file_name, istp=istp_check)
 
 
 def create_paldata(
