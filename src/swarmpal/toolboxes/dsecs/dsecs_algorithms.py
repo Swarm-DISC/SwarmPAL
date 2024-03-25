@@ -3,6 +3,7 @@
 Adapted from MatLab code by Heikki Vanhamäki.
 
 """
+
 from __future__ import annotations
 
 import logging
