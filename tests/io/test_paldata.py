@@ -11,7 +11,7 @@ from xarray import Dataset, open_dataset
 from swarmpal.io._paldata import PalDataItem, create_paldata
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_paldataitem_vires():
     params = dict(
         collection="SW_OPER_MAGA_LR_1B",
@@ -32,8 +32,8 @@ def test_paldataitem_vires():
     return item.xarray
 
 
-@pytest.mark.remote()
-@pytest.fixture()
+@pytest.mark.remote
+@pytest.fixture
 def xarray_data_file(tmp_path):
     ds = test_paldataitem_vires()
     target_output = join_path(tmp_path, "test_data.nc")
@@ -41,7 +41,7 @@ def xarray_data_file(tmp_path):
     return target_output
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_paldataitem_hapi():
     params = dict(
         dataset="SW_OPER_MAGA_LR_1B",
@@ -71,7 +71,7 @@ def test_paldataitem_manual(xarray_data_file):
     assert isinstance(item.xarray, Dataset)
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_time_pad_vires():
     start_time = datetime(2016, 1, 1, 0, 0, 0)
     end_time = datetime(2016, 1, 1, 0, 0, 10)
@@ -97,7 +97,7 @@ def test_time_pad_vires():
     # assert pdi.xarray.attrs["PAL_meta"]["analysis_window"][1] == end_time.isoformat()
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_time_pad_hapi():
     start_time = datetime(2016, 1, 1, 0, 0, 0)
     end_time = datetime(2016, 1, 1, 0, 0, 10)
@@ -121,8 +121,8 @@ def test_time_pad_hapi():
     # assert pdi.xarray.attrs["PAL_meta"]["analysis_window"][1] == end_time.isoformat()
 
 
-@pytest.mark.remote()
-@pytest.fixture()
+@pytest.mark.remote
+@pytest.fixture
 def paldata_item_MAGA():
     data_params = dict(
         collection="SW_OPER_MAGA_LR_1B",
@@ -138,8 +138,8 @@ def paldata_item_MAGA():
     return pdi
 
 
-@pytest.mark.remote()
-@pytest.fixture()
+@pytest.mark.remote
+@pytest.fixture
 def paldata_item_MAGB():
     data_params = dict(
         collection="SW_OPER_MAGB_LR_1B",
@@ -155,7 +155,7 @@ def paldata_item_MAGB():
     return pdi
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_create_paldata(paldata_item_MAGA, paldata_item_MAGB):
     # Test basic paldata
     data = create_paldata(paldata_item_MAGA)
