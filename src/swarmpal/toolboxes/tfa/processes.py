@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from datatree import DataTree
-from xarray import DataArray, Dataset
+from xarray import DataArray, Dataset, DataTree
 
 from swarmpal.io import PalProcess
 from swarmpal.toolboxes.tfa import tfalib
