@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from apexpy import Apex
-from datatree import DataTree
 from numpy import cos, deg2rad, sin
 from pyproj import CRS, Transformer
+from xarray import DataTree
 
 from swarmpal.io import PalProcess
 from swarmpal.toolboxes.dsecs.dsecs_algorithms import _DSECS_steps

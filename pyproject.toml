@@ -36,12 +36,11 @@ dynamic = ["version"]
 
 dependencies = [
     "hapiclient >= 0.2.3",
-    "numpy >= 1.21",
+    "numpy >= 2.0.0",
     "matplotlib >= 3.5",
     "scipy >= 1.8",
     "viresclient >= 0.11",
-    "xarray >= 0.21",
-    "xarray-datatree >= 0.0.11",
+    "xarray >= 2024.10.0",
 ]
 
 [project.optional-dependencies]
@@ -59,6 +58,7 @@ test = [
 dev = [
     "pytest >=6",
     "nox >=2022",
+    "pre-commit",
 ]
 docs = [
     "Sphinx==7.2",
@@ -96,7 +96,6 @@ markers = [
     "remote",
     "dsecs",
 ]
-
 
 [tool.pycln]
 all = true

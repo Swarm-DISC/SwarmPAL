@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datatree import DataTree
+from xarray import DataTree
 
 from swarmpal.express._configs import SPACECRAFT_TO_MAGLR_DATASET
 from swarmpal.io import PalDataItem, create_paldata

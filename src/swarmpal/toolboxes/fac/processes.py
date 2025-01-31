@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
-from datatree import DataTree, register_datatree_accessor
 from numpy import stack
-from xarray import Dataset
+from xarray import Dataset, DataTree, register_datatree_accessor
 
 from swarmpal.io import PalProcess
 from swarmpal.toolboxes.fac.fac_algorithms import fac_single_sat_algo
@@ -75,7 +74,7 @@ class FAC_single_sat(PalProcess):
         )
         ds_out["FAC"].attrs = {"units": "uA/m2"}
         ds_out["IRC"].attrs = {"units": "uA/m2"}
-        datatree["PAL_FAC_single_sat"] = DataTree(data=ds_out)
+        datatree["PAL_FAC_single_sat"] = DataTree(dataset=ds_out)
         return datatree
 
     def _validate(self):
