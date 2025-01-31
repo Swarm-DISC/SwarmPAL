@@ -53,8 +53,11 @@ nb_execution_timeout = 300
 nb_kernel_rgx_aliases = {".*": "python3"}
 # Temporarily disable notebook execution while working on docs (default is "auto")
 # nb_execution_mode = "off"
-nb_execution_allow_errors = True
-nb_execution_raise_on_error = True
+# Errors in notebooks will only trigger a warning
+# Use sphinx option "--fail-on-warning" to make the build report as failure
+# This allows readthedocs to report failure in CI, while still displaying the docs
+nb_execution_allow_errors = False
+nb_execution_raise_on_error = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
