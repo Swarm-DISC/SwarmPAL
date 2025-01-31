@@ -8,6 +8,7 @@ version: 2
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
   configuration: docs/conf.py
+  fail_on_warning: true
 
 # Don't build other formats because it is slow to execute notebooks again
 formats: []
@@ -16,7 +17,6 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
-  fail_on_warning: true
 
 python:
   install:
