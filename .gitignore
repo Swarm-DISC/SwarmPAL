@@ -146,3 +146,8 @@ src/*/_version.py
 # Other dev tool junk
 .ruff_cache
 node_modules
+
+# Data
+*.nc4
+*.nc
+*.h5

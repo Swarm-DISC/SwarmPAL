@@ -16,7 +16,7 @@ license = { file = "LICENSE" }
 description = "Toolbox for ESA's Swarm mission"
 readme = "README.md"
 
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 classifiers = [
     "License :: OSI Approved :: MIT License",
@@ -59,6 +59,7 @@ dev = [
     "pytest >=6",
     "nox >=2022",
     "pre-commit",
+    "pooch",
 ]
 docs = [
     "Sphinx==7.2",
@@ -95,6 +96,7 @@ testpaths = [
 markers = [
     "remote",
     "dsecs",
+    "cached",
 ]
 
 [tool.pycln]

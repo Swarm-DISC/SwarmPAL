@@ -264,7 +264,10 @@ class PalDataItem:
         if group:
             params["group"] = group
         fetcher = get_fetcher("file")(**params)
-        return PalDataItem(fetcher)
+        pdi = PalDataItem(fetcher)
+        pdi.dataset_name = params.get("dataset_name", group)
+        pdi.initialise()
+        return pdi
 
     @staticmethod
     def from_manual(xarray_dataset: Dataset | None = None, **params) -> PalDataItem:
@@ -282,7 +285,9 @@ class PalDataItem:
         if xarray_dataset:
             params["xarray_dataset"] = xarray_dataset
         fetcher = get_fetcher("manual")(**params)
-        return PalDataItem(fetcher)
+        pdi = PalDataItem(fetcher)
+        pdi.dataset_name = "manual"
+        return pdi
 
 
 class PalMeta:
