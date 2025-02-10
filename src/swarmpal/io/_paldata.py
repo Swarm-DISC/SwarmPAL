@@ -13,7 +13,6 @@ from os import PathLike
 from re import match as regex_match
 
 from cdflib.xarray import xarray_to_cdf
-from datatree import DataTree, register_datatree_accessor
 from pandas import to_datetime as to_pandas_datetime
 from xarray import DataArray, Dataset, DataTree, register_datatree_accessor
 from xarray.core.extension_array import PandasExtensionArray

@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 __all__ = (
     "FAC_single_sat",
-    "FAC_single_sat",
     "PalFacDataTreeAccessor",
 )
 
@@ -23,7 +22,6 @@ class FAC_single_sat(PalProcess):
 
     @property
     def process_name(self):
-        return "FAC_single_sat"
         return "FAC_single_sat"
 
     def set_config(
@@ -77,9 +75,6 @@ class FAC_single_sat(PalProcess):
         # Insert a new output dataset with these results
         ds_out = Dataset(
             data_vars={
-                "Timestamp": ("Timestamp", fac_results["time"]),
-                "FAC": ("Timestamp", fac_results["fac"]),
-                "IRC": ("Timestamp", fac_results["irc"]),
                 "Timestamp": ("Timestamp", fac_results["time"]),
                 "FAC": ("Timestamp", fac_results["fac"]),
                 "IRC": ("Timestamp", fac_results["irc"]),
