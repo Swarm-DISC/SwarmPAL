@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datatree import DataTree
+from xarray import DataTree
 
 from swarmpal.io import PalDataItem, create_paldata
 from swarmpal.toolboxes import fac
