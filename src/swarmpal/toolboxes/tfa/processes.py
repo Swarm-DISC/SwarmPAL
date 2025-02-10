@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from datatree import DataTree
-from xarray import DataArray, Dataset
+from xarray import DataArray, Dataset, DataTree
 
 from swarmpal.io import PalProcess
 from swarmpal.toolboxes.tfa import tfalib
@@ -137,7 +136,7 @@ class Preprocess(PalProcess):
         ds["TFA_Time"].attrs = {}
         # Assign dataset back into the datatree to return
         self.subtree = self.subtree.assign(ds.copy())
-        self.subtree.parent = datatree
+        datatree[self.config.get("dataset")] = self.subtree
         return datatree
 
     def _validate_inputs(self, datatree):
@@ -420,18 +419,20 @@ class Wavelet(PalProcess):
 
     def _call(self, datatree: DataTree) -> DataTree:
         self._configure(datatree)
-        # Identify the DataArray to modify
+        # Identify the DataArray to use
         subtree = _get_tfa_active_subtree(datatree)
-        target_var = subtree["TFA_Variable"]
+        ds = subtree.to_dataset()
+        target_var = ds["TFA_Variable"]
         # Apply wavelet routine
         norm, scale = self._wavelets(target_var)
         # Assign new array to dataset
-        subtree = subtree.assign_coords({"scale": scale})
-        subtree["wavelet_power"] = DataArray(
+        ds = ds.assign_coords({"scale": scale})
+        ds["wavelet_power"] = DataArray(
             data=norm,
             dims=("scale", "TFA_Time"),
         )
-        subtree.parent = datatree
+        # Return datatree containing the updated dataset
+        datatree[subtree.name] = DataTree(dataset=ds)
         return datatree
 
     def _configure(self, datatree):

@@ -15,7 +15,8 @@ from re import match as regex_match
 from cdflib.xarray import xarray_to_cdf
 from datatree import DataTree, register_datatree_accessor
 from pandas import to_datetime as to_pandas_datetime
-from xarray import DataArray, Dataset
+from xarray import DataArray, Dataset, DataTree, register_datatree_accessor
+from xarray.core.extension_array import PandasExtensionArray
 
 from swarmpal.io._datafetchers import DataFetcherBase, get_fetcher
 from swarmpal.utils.exceptions import PalError
@@ -79,8 +80,8 @@ class PalDataItem:
 
     @property
     def datatree(self) -> DataTree:
-        """A datatree containing the dataset labelled with the dataset name"""
-        return DataTree(data=self.xarray, name=self.dataset_name)
+        """Create a new datatree containing only this dataset; labelled with the dataset name."""
+        return DataTree(dataset=self.xarray, name=self.dataset_name)
 
     @property
     def analysis_window(self) -> tuple[datetime]:
@@ -129,6 +130,11 @@ class PalDataItem:
         """Trigger the fetching of the data and attach PAL metadata"""
         self.xarray = self._fetcher.fetch_data()
         self.xarray.attrs["PAL_meta"] = self._serialise_pal_metadata()
+        # HOTFIX for https://github.com/ESA-VirES/VirES-Python-Client/issues/112
+        # Convert all instances of xarray.core.extension_array.PandasExtentionArray to numpy.ndarray
+        for var in self.xarray.variables:
+            if isinstance(self.xarray[var].data, PandasExtensionArray):
+                self.xarray[var].data = self.xarray[var].data.to_numpy()
 
     @staticmethod
     def _ensure_datetime(times: tuple[datetime | str]) -> tuple[datetime]:
@@ -420,17 +426,22 @@ def create_paldata(
     >>>     two=PalDataItem.from_vires(**data_params),
     >>> )
     """
+    children = {}
     # Assign each PalDataItem.datatree as a child in the tree
-    fulltree = DataTree(name="paldata")
     names = [pdi.dataset_name for pdi in paldataitems]
     if len(set(names)) != len(names):
         raise PalError("Duplicate dataset names found; use kwargs instead")
     for item in paldataitems:
         subtree = item.datatree
-        subtree.parent = fulltree
+        children[item.dataset_name] = subtree
     # Assign each PalDataItem.datatree in user-specified location
     for name, item in paldataitems_kw.items():
-        fulltree[f"{name}"] = item.datatree
+        children[f"{name}"] = item.datatree
+    # DataTree(children={'a/b': ...}) causes an infinite loop, but from_dict seems to work.
+    # See https://github.com/pydata/xarray/issues/9978
+    # fulltree = DataTree(name="paldata", children=children)
+    fulltree = DataTree.from_dict(children)
+    fulltree.name = "paldata"
     return fulltree
 
 

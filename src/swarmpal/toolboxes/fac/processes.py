@@ -3,9 +3,8 @@ from __future__ import annotations
 import logging
 
 import matplotlib.pyplot as plt
-from datatree import DataTree, register_datatree_accessor
 from numpy import stack
-from xarray import Dataset
+from xarray import Dataset, DataTree, register_datatree_accessor
 
 from swarmpal.io import PalProcess
 from swarmpal.toolboxes.fac.fac_algorithms import fac_single_sat_algo
@@ -13,6 +12,7 @@ from swarmpal.toolboxes.fac.fac_algorithms import fac_single_sat_algo
 logger = logging.getLogger(__name__)
 
 __all__ = (
+    "FAC_single_sat",
     "FAC_single_sat",
     "PalFacDataTreeAccessor",
 )
@@ -23,6 +23,7 @@ class FAC_single_sat(PalProcess):
 
     @property
     def process_name(self):
+        return "FAC_single_sat"
         return "FAC_single_sat"
 
     def set_config(
@@ -79,13 +80,16 @@ class FAC_single_sat(PalProcess):
                 "Timestamp": ("Timestamp", fac_results["time"]),
                 "FAC": ("Timestamp", fac_results["fac"]),
                 "IRC": ("Timestamp", fac_results["irc"]),
+                "Timestamp": ("Timestamp", fac_results["time"]),
+                "FAC": ("Timestamp", fac_results["fac"]),
+                "IRC": ("Timestamp", fac_results["irc"]),
             }
         )
         ds_out["FAC"].attrs = {"units": "uA/m2"}
         ds_out["IRC"].attrs = {"units": "uA/m2"}
         if self.config.get("include_auxiliaries"):
             ds_out = self._append_aux(dataset_in, ds_out)
-        datatree["PAL_FAC_single_sat"] = DataTree(data=ds_out)
+        datatree["PAL_FAC_single_sat"] = DataTree(dataset=ds_out)
         return datatree
 
     def _validate(self):
