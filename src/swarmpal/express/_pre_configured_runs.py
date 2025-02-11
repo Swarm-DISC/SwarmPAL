@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from xarray import DataTree
 
-from swarmpal.express._configs import SPACECRAFT_TO_MAGLR_DATASET
+from swarmpal.utils.configs import SPACECRAFT_TO_MAGLR_DATASET
 from swarmpal.io import PalDataItem, create_paldata
 from swarmpal.toolboxes import fac
 from swarmpal.utils.exceptions import PalError
