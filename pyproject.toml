@@ -38,6 +38,8 @@ dependencies = [
     "cartopy >= 0.22",
     "click >= 8.1",
     "hapiclient >= 0.2.3",
+    "ipython",
+    "ipywidgets",
     "numpy >= 2.0.0",
     "matplotlib >= 3.5",
     "scipy >= 1.8",
