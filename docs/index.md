@@ -54,6 +54,7 @@ api/io
 api/fac
 api/dsecs
 api/tfa
+api/utils
 ```
 
 ```{toctree}
