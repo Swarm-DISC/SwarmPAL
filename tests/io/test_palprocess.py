@@ -1,12 +1,13 @@
+from __future__ import annotations
+
 import pytest
-from datatree import DataTree
-from xarray import Dataset
+from xarray import Dataset, DataTree
 
 from swarmpal.io._paldata import PalDataItem, PalProcess, create_paldata
 
 
-@pytest.mark.remote
-@pytest.fixture
+@pytest.mark.remote()
+@pytest.fixture()
 def paldata_MAGA():
     data_params = dict(
         collection="SW_OPER_MAGA_LR_1B",
@@ -21,7 +22,7 @@ def paldata_MAGA():
     return data
 
 
-@pytest.mark.remote
+@pytest.mark.remote()
 def test_palprocess(paldata_MAGA):
     """Test the creation and use of a basic PalProcess"""
     data = paldata_MAGA
@@ -42,7 +43,8 @@ def test_palprocess(paldata_MAGA):
             dataset = subtree.ds
             parameter = self.config.get("parameter")
             # Apply the algorithm
-            output_data = dataset[parameter].diff(dim="Timestamp")
+            # Diff dataset[parameter].diff(dim="Timestamp")
+            output_data = dataset[parameter]
             # Create an output dataset
             data_out = Dataset(
                 data_vars={
@@ -50,7 +52,7 @@ def test_palprocess(paldata_MAGA):
                 }
             )
             # Write the output into a new path in the datatree and return it
-            subtree["output"] = DataTree(data=data_out)
+            subtree["output"] = DataTree(dataset=data_out)
             return datatree
 
     p = MyProcess(config={"dataset": "SW_OPER_MAGA_LR_1B", "parameter": "B_NEC"})

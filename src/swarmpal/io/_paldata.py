@@ -3,16 +3,19 @@ PalData tools for containing data
 """
 from __future__ import annotations
 
+import datetime as dt
+import importlib.metadata as packages_metadata
 import json
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import date, datetime
 from os import PathLike
 from re import match as regex_match
 
-from datatree import DataTree, register_datatree_accessor
+from cdflib.xarray import xarray_to_cdf
 from pandas import to_datetime as to_pandas_datetime
-from xarray import DataArray, Dataset
+from xarray import DataArray, Dataset, DataTree, register_datatree_accessor
+from xarray.core.extension_array import PandasExtensionArray
 
 from swarmpal.io._datafetchers import DataFetcherBase, get_fetcher
 from swarmpal.utils.exceptions import PalError
@@ -76,8 +79,8 @@ class PalDataItem:
 
     @property
     def datatree(self) -> DataTree:
-        """A datatree containing the dataset labelled with the dataset name"""
-        return DataTree(data=self.xarray, name=self.dataset_name)
+        """Create a new datatree containing only this dataset; labelled with the dataset name."""
+        return DataTree(dataset=self.xarray, name=self.dataset_name)
 
     @property
     def analysis_window(self) -> tuple[datetime]:
@@ -112,7 +115,7 @@ class PalDataItem:
 
     def _serialise_pal_metadata(self):
         def _format_handler(x):
-            if isinstance(x, datetime):
+            if isinstance(x, (datetime, date)):
                 return x.isoformat()
             raise TypeError("Unknown type")
 
@@ -126,6 +129,11 @@ class PalDataItem:
         """Trigger the fetching of the data and attach PAL metadata"""
         self.xarray = self._fetcher.fetch_data()
         self.xarray.attrs["PAL_meta"] = self._serialise_pal_metadata()
+        # HOTFIX for https://github.com/ESA-VirES/VirES-Python-Client/issues/112
+        # Convert all instances of xarray.core.extension_array.PandasExtentionArray to numpy.ndarray
+        for var in self.xarray.variables:
+            if isinstance(self.xarray[var].data, PandasExtensionArray):
+                self.xarray[var].data = self.xarray[var].data.to_numpy()
 
     @staticmethod
     def _ensure_datetime(times: tuple[datetime | str]) -> tuple[datetime]:
@@ -283,7 +291,7 @@ class PalMeta:
     @staticmethod
     def serialise(meta: dict) -> str:
         def _format_handler(x):
-            if isinstance(x, datetime):
+            if isinstance(x, (datetime, date)):
                 return x.isoformat()
             raise TypeError("Unknown type")
 
@@ -355,6 +363,33 @@ class PalDataTreeAccessor:
         }
         return residual
 
+    def to_cdf(self, file_name: str, leaf: str, istp_check: bool = False) -> None:
+        """Write one leaf of the datatree to a CDF file
+
+        Parameters
+        ----------
+        file_name : str
+            Name of the file to create
+        leaf : str
+            Location within the datatree
+        """
+        # Identify dataset to use
+        ds = self._datatree[leaf].ds.copy()
+        # Adjust metadata (CDF global attrs)
+        # Extra PAL_meta from the parent node
+        pal_meta = self._datatree[leaf].parent.swarmpal.pal_meta["."]
+        versions = f"swarmpal-{packages_metadata.version('swarmpal')} [cdflib-{packages_metadata.version('cdflib')}]"
+        ds.attrs.update(
+            {
+                "CREATOR": versions,
+                "CREATED": dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "TITLE": file_name,
+                "PAL_meta": PalMeta.serialise(pal_meta),
+            }
+        )
+        # NB: cdflib will write Timestamp as type CDF_TT2000 not CDF_EPOCH
+        xarray_to_cdf(xarray_dataset=ds, file_name=file_name, istp=istp_check)
+
 
 def create_paldata(
     *paldataitems: PalDataItem, **paldataitems_kw: PalDataItem
@@ -390,17 +425,22 @@ def create_paldata(
     >>>     two=PalDataItem.from_vires(**data_params),
     >>> )
     """
+    children = {}
     # Assign each PalDataItem.datatree as a child in the tree
-    fulltree = DataTree(name="paldata")
     names = [pdi.dataset_name for pdi in paldataitems]
     if len(set(names)) != len(names):
         raise PalError("Duplicate dataset names found; use kwargs instead")
     for item in paldataitems:
         subtree = item.datatree
-        subtree.parent = fulltree
+        children[item.dataset_name] = subtree
     # Assign each PalDataItem.datatree in user-specified location
     for name, item in paldataitems_kw.items():
-        fulltree[f"{name}"] = item.datatree
+        children[f"{name}"] = item.datatree
+    # DataTree(children={'a/b': ...}) causes an infinite loop, but from_dict seems to work.
+    # See https://github.com/pydata/xarray/issues/9978
+    # fulltree = DataTree(name="paldata", children=children)
+    fulltree = DataTree.from_dict(children)
+    fulltree.name = "paldata"
     return fulltree
 
 

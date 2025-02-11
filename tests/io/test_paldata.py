@@ -1,15 +1,17 @@
+from __future__ import annotations
+
 from datetime import datetime, timedelta
 from os.path import join as join_path
 
+import numpy as np
 import pytest
-from datatree import DataTree
 from pandas import to_datetime as to_pandas_datetime
-from xarray import Dataset, open_dataset
+from xarray import Dataset, DataTree, open_dataset
 
 from swarmpal.io._paldata import PalDataItem, create_paldata
 
 
-@pytest.mark.remote
+@pytest.mark.remote()
 def test_paldataitem_vires():
     params = dict(
         collection="SW_OPER_MAGA_LR_1B",
@@ -25,13 +27,37 @@ def test_paldataitem_vires():
     )
     item = PalDataItem.from_vires(**vires_params)
     item.initialise()
+    # Type checks
     assert isinstance(item.xarray, Dataset)
     assert isinstance(item.datatree, DataTree)
+    assert isinstance(item.dataset_name, str)
+    # Sanity checks
+    # Collection
+    assert item.dataset_name == "SW_OPER_MAGA_LR_1B"
+    # Do we have all the expected variables?
+    assert len(item.xarray.keys()) == 8
+    assert "B_NEC_IGRF" in item.xarray
+    assert "Timestamp" in item.xarray
+    assert "Longitude" in item.xarray
+    assert "Latitude" in item.xarray
+    assert "Radius" in item.xarray
+    assert "B_NEC" in item.xarray
+    assert "NEC" in item.xarray
+    assert "F" in item.xarray
+    # Time interval matches [start,end]_time
+    assert item.xarray["Timestamp"].to_numpy()[0] >= np.datetime64(
+        "2016-01-01T00:00:00"
+    )
+    assert item.xarray["Timestamp"].to_numpy()[-1] <= np.datetime64(
+        "2016-01-01T00:00:10"
+    )
+    # Every entry in 'Spacecraft' should be 'A'
+    assert np.all(np.unique(item.xarray["Spacecraft"]) == ["A"])
     return item.xarray
 
 
-@pytest.mark.remote
-@pytest.fixture
+@pytest.mark.remote()
+@pytest.fixture()
 def xarray_data_file(tmp_path):
     ds = test_paldataitem_vires()
     target_output = join_path(tmp_path, "test_data.nc")
@@ -39,7 +65,7 @@ def xarray_data_file(tmp_path):
     return target_output
 
 
-@pytest.mark.remote
+@pytest.mark.remote()
 def test_paldataitem_hapi():
     params = dict(
         dataset="SW_OPER_MAGA_LR_1B",
@@ -54,8 +80,24 @@ def test_paldataitem_hapi():
     )
     item = PalDataItem.from_hapi(**hapi_params)
     item.initialise()
+    # Type checks
     assert isinstance(item.xarray, Dataset)
     assert isinstance(item.datatree, DataTree)
+    assert isinstance(item.dataset_name, str)
+    # Sanity checks
+    # Collection
+    assert item.dataset_name == "SW_OPER_MAGA_LR_1B"
+    # Do we have all the expected variables?
+    assert len(item.xarray.keys()) == 2
+    assert "B_NEC" in item.xarray
+    assert "F" in item.xarray
+    # Time interval matches [start,end]_time
+    assert item.xarray["Timestamp"].to_numpy()[0] >= np.datetime64(
+        "2016-01-01T00:00:00"
+    )
+    assert item.xarray["Timestamp"].to_numpy()[-1] <= np.datetime64(
+        "2016-01-01T00:00:10"
+    )
 
 
 def test_paldataitem_file(xarray_data_file):
@@ -69,7 +111,7 @@ def test_paldataitem_manual(xarray_data_file):
     assert isinstance(item.xarray, Dataset)
 
 
-@pytest.mark.remote
+@pytest.mark.remote()
 def test_time_pad_vires():
     start_time = datetime(2016, 1, 1, 0, 0, 0)
     end_time = datetime(2016, 1, 1, 0, 0, 10)
@@ -95,7 +137,7 @@ def test_time_pad_vires():
     # assert pdi.xarray.attrs["PAL_meta"]["analysis_window"][1] == end_time.isoformat()
 
 
-@pytest.mark.remote
+@pytest.mark.remote()
 def test_time_pad_hapi():
     start_time = datetime(2016, 1, 1, 0, 0, 0)
     end_time = datetime(2016, 1, 1, 0, 0, 10)
@@ -119,8 +161,8 @@ def test_time_pad_hapi():
     # assert pdi.xarray.attrs["PAL_meta"]["analysis_window"][1] == end_time.isoformat()
 
 
-@pytest.mark.remote
-@pytest.fixture
+@pytest.mark.remote()
+@pytest.fixture()
 def paldata_item_MAGA():
     data_params = dict(
         collection="SW_OPER_MAGA_LR_1B",
@@ -136,8 +178,8 @@ def paldata_item_MAGA():
     return pdi
 
 
-@pytest.mark.remote
-@pytest.fixture
+@pytest.mark.remote()
+@pytest.fixture()
 def paldata_item_MAGB():
     data_params = dict(
         collection="SW_OPER_MAGB_LR_1B",
@@ -153,13 +195,16 @@ def paldata_item_MAGB():
     return pdi
 
 
-@pytest.mark.remote
+@pytest.mark.remote()
 def test_create_paldata(paldata_item_MAGA, paldata_item_MAGB):
     # Test basic paldata
     data = create_paldata(paldata_item_MAGA)
+    assert isinstance(data, DataTree)
     assert data.name == "paldata"
     assert "SW_OPER_MAGA_LR_1B" in data.children
     assert data.swarmpal.pal_meta["SW_OPER_MAGA_LR_1B"]
+    assert isinstance(paldata_item_MAGA.datatree, DataTree)
+    # assert not paldata_item_MAGA.datatree == data
     # Test paldata with two entries
     data = create_paldata(paldata_item_MAGA, paldata_item_MAGB)
     assert data.name == "paldata"
@@ -177,5 +222,8 @@ def test_create_paldata(paldata_item_MAGA, paldata_item_MAGB):
     assert data.name == "paldata"
     assert data["path1/alpha"]
     assert data["path2/bravo"]
+    # assert isinstance(data["path1/alpha"], DataTree)
+    # assert data["path1/alpha"].name == "SW_OPER_MAGA_LR_1B"
+    # assert isinstance(data["path2/bravo"], DataTree)
     assert data.swarmpal.pal_meta["path1/alpha"]
     assert data.swarmpal.pal_meta["path2/bravo"]

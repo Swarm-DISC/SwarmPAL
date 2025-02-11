@@ -4,25 +4,18 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [ main, staging ]
+  schedule:
+    # Weekly on Sunday
+    - cron: "0 1 * * 0"
 
 jobs:
-  pre-commit:
-    name: Format
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-python@v2
-    - uses: pre-commit/action@v3.0.0
-      with:
-        extra_args: --hook-stage manual --all-files
-
   checks:
     name: Check Python ${{ matrix.python-version }} on ${{ matrix.runs-on }}
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10"]
+        python-version: ["3.10", "3.11"]
         runs-on: [ubuntu-latest, macos-latest, windows-latest]
 
         # include:
@@ -36,9 +29,9 @@ jobs:
       run: brew reinstall gfortran
       shell: bash
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 

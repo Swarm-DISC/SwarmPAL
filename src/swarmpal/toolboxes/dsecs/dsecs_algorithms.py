@@ -3,7 +3,7 @@
 Adapted from MatLab code by Heikki Vanhamäki.
 
 """
-
+from __future__ import annotations
 
 import logging
 
@@ -276,7 +276,7 @@ def SECS_1D_DivFree_magnetic(latB, latSECS, rb, rsecs, M):
     t_aux = np.zeros((len(latB), M))
     t_aux[:, 0] = 0.2 * np.pi / rb * t * np.where(rb <= rsecs, 1, -rsecs / rb)
     above = rb > rsecs
-    for i in range(0, M - 1):
+    for i in range(M - 1):
         t_aux[:, i + 1] = t * t_aux[:, i]
         t_aux[:, i] = t_aux[:, i] / (i + 1 + above)
     t_aux[:, M - 1] = t_aux[:, M - 1] / (M + above)
@@ -1499,8 +1499,8 @@ def get_exclusion_zone(SwA, SwC):
     valsA = alat[apexcrossing_a : apexcrossing_a + 2]
     valsC = clat[apexcrossing_c : apexcrossing_c + 2]
 
-    minval = np.max([np.min(valsA), np.min(valsC)])
-    maxval = np.min([np.max(valsA), np.max(valsC)])
+    minval = np.max([np.min(valsA), np.min(valsC)]).item()
+    maxval = np.min([np.max(valsA), np.max(valsC)]).item()
 
     return maxval, minval
 
@@ -1794,9 +1794,7 @@ class dsecsdata:
             ) @ cf1D
             tmp = -(
                 np.sin(thetaJ + dtheta) * apuSouth - np.sin(thetaJ - dtheta) * apuNorth
-            ) / (
-                2 * dtheta * self.grid.Ri * np.sin(thetaJ)
-            )  # radial current = -div
+            ) / (2 * dtheta * self.grid.Ri * np.sin(thetaJ))  # radial current = -div
             tmp = np.reshape(
                 tmp * 1000, self.grid.out.magLat.shape
             )  # A/km^2 --> nA/m^2
@@ -2063,8 +2061,7 @@ class dsecsdata:
             + self.remoteCf2dDipMagJt
         )
         MagJphiCf = (
-            self.cf2dDipMagJp
-            + self.remoteCf2dDipMagJp
+            self.cf2dDipMagJp + self.remoteCf2dDipMagJp
             # self.df1DJp + #self.df2dMagJp + self.cf2dDipMagJp + self.remoteCf2dDipMagJp
         )
 

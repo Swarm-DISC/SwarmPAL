@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from apexpy import Apex
-from datatree import DataTree
 from numpy import cos, deg2rad, sin
 from pyproj import CRS, Transformer
+from xarray import DataTree
 
 from swarmpal.io import PalProcess
 from swarmpal.toolboxes.dsecs.dsecs_algorithms import _DSECS_steps
@@ -157,12 +159,12 @@ class Analysis(PalProcess):
         for i, output in enumerate(dsecs_output):
             if output["current_densities"] is not None:
                 datatree[f"DSECS_output/{i}/currents"] = DataTree(
-                    data=output["current_densities"]
+                    dataset=output["current_densities"]
                 )
                 datatree[f"DSECS_output/{i}/Fit_Alpha"] = DataTree(
-                    data=output["magnetic_fit_Alpha"]
+                    dataset=output["magnetic_fit_Alpha"]
                 )
                 datatree[f"DSECS_output/{i}/Fit_Charlie"] = DataTree(
-                    data=output["magnetic_fit_Charlie"]
+                    dataset=output["magnetic_fit_Charlie"]
                 )
         return datatree

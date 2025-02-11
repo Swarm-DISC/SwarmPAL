@@ -1,19 +1,22 @@
 """Tools to evaluate FACs using the single-satellite method
 
-Given input containing magnetic field measurements and model predictions
-(from swarmpal.io.MagData), compute the FACs
+Given input containing magnetic field measurements and model predictions, compute the FACs
 
-Adapted from code by Ask Neve Gamby (https://github.com/Swarm-DISC/SwarmPyFAC)
+Adapted from code by Ask Neve Gamby (https://github.com/Swarm-DISC/SwarmPyFAC).
+For information about the algorithm, see https://doi.org/10.5047/eps.2013.09.006
 
 """
 
 
 from __future__ import annotations
 
+import logging
+
 from numpy import (
     abs,
     apply_along_axis,
     arctan2,
+    array,
     cos,
     deg2rad,
     diff,
@@ -25,6 +28,8 @@ from numpy import (
 )
 from numpy.linalg import norm
 from scipy.interpolate import splev, splrep
+
+logger = logging.getLogger(__name__)
 
 MU_0 = 4.0 * pi * 10 ** (-7)
 
@@ -87,7 +92,12 @@ def _inclination(v):
 
 
 def fac_single_sat_algo(
-    time=None, positions=None, B_res=None, B_model=None, inclination_limit=30.0
+    time=None,
+    positions=None,
+    B_res=None,
+    B_model=None,
+    inclination_limit=30.0,
+    time_jump_limit=1,
 ):
     """Compute field-aligned current (FAC) from numpy arrays
 
@@ -102,13 +112,19 @@ def fac_single_sat_algo(
     B_model : array_like
         Nx3 array of magnetic field model predictions in nanoTesla
     inclination_limit : float, optional
+        Limit of inclination for FAC validity
+    time_jump_limit : int, optional
+        Maximum allowable time step in data for FAC validity
 
     Returns
     -------
     dict
-        {"time": array_like, "fac": array_like}
-        Times and FAC estimates at those times
+        {"time": array_like, "fac": array_like, "irc": array_like}
+        FAC (field-aligned current) and IRC (radial current) estimates
     """
+    if len(time) == 0:
+        logger.warning("Empty data")
+        return {"time": array([]), "fac": array([]), "irc": array([])}
     # Convert time (datetime64[ns]) to seconds
     time_seconds = time.astype(float) / 1e9
     # Array of positions accounting for local time
@@ -131,11 +147,11 @@ def fac_single_sat_algo(
     # Convert radial current according to the inclination of B_model
     inclination = _inclination(B_interpolated)
     fac = -irc / sin(inclination)
-    # Screen out positions where the inclination is too extreme
+    # Screen out positions where the inclination is too low
     #  or where dt > 1 second
     reject = abs(inclination) < deg2rad(inclination_limit)
-    reject &= dt > 1
+    reject |= dt > time_jump_limit
     fac[reject] = nan
     # Convert new time back to datetime64
     target_time = (target_time * 1e9).astype("datetime64[ns]")
-    return {"time": target_time, "fac": fac}
+    return {"time": target_time, "fac": fac, "irc": irc}

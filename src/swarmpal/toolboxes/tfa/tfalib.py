@@ -3,13 +3,13 @@
 
 @author: constantinos@noa.gr
 """
+from __future__ import annotations
 
 import sys
 
 import numpy as np
 import pandas as pd
-import scipy.interpolate as interpolate
-import scipy.signal as signal
+from scipy import interpolate, signal
 from scipy.fft import fft, ifft
 
 R_E = 6371.2  # reference Earth radius in km
@@ -129,10 +129,10 @@ def constant_cadence(t_obs, x_obs, sampling_rate, interp=False):
     t_rec = np.arange(init_t, init_t + time_rec_N * dt + 1e-6, dt)
 
     if multiDim:
-        x_rec = np.full((N, M), np.NaN)
+        x_rec = np.full((N, M), np.nan)
         x_rec[inds, :] = x_obs
     else:
-        x_rec = np.full(t_rec.shape, np.NaN)
+        x_rec = np.full(t_rec.shape, np.nan)
         x_rec[inds] = x_obs
 
     nonnan_mask = ~np.isnan(x_rec)
@@ -146,7 +146,7 @@ def constant_cadence(t_obs, x_obs, sampling_rate, interp=False):
         # numpy interpolation, without extrapolation of final value
         # x_int = np.interp(t_rec, t_obs, x_obs)
 
-        x_int[~nonnan_mask] = np.NaN
+        x_int[~nonnan_mask] = np.nan
 
         if multiDim and transp:
             x_int = x_int.T
@@ -217,8 +217,8 @@ def moving_mean_and_stdev(x, window_size, unbiased_std=True):
         )
 
     # initialize outputs
-    moving_mean = np.full(x.shape, np.NaN)
-    moving_stdev = np.full(x.shape, np.NaN)
+    moving_mean = np.full(x.shape, np.nan)
+    moving_stdev = np.full(x.shape, np.nan)
 
     for i in range(M):
         # convolve() works with 1-D series so use the appropriate dimensionality
@@ -244,7 +244,7 @@ def moving_mean_and_stdev(x, window_size, unbiased_std=True):
             stdev *= np.sqrt(moving_N / (moving_N - 1))
 
         # replace NaNs that were removed previously
-        x1[~nonNaNs] = np.NaN
+        x1[~nonNaNs] = np.nan
 
         moving_mean[:, i] = m
         moving_stdev[:, i] = stdev
@@ -330,7 +330,7 @@ def moving_q25_and_q75(x, window_size):
     return moving_q25, moving_q75
 
 
-def outliers(x, window_size, method="iqr", multiplier=np.NaN):
+def outliers(x, window_size, method="iqr", multiplier=np.nan):
     """
     Find statistical outliers in data
 
@@ -394,7 +394,7 @@ def outliers(x, window_size, method="iqr", multiplier=np.NaN):
     >>> plt.show()
     """
 
-    if not (type(multiplier) == list or type(multiplier) == np.ndarray):
+    if not isinstance(multiplier, (list, np.ndarray)):
         multiplier = [multiplier, multiplier]
 
     inds = np.full(x.shape, False)
@@ -698,7 +698,7 @@ def mfa(B_NEC, B_MEAN_NEC, R_NEC=None):
         R_NEC = np.zeros(B_NEC.shape)
         R_NEC[:, 2] = -1
 
-    MFA = np.full(B_NEC.shape, np.NaN)
+    MFA = np.full(B_NEC.shape, np.nan)
 
     # create the unitary vector of the mean field
     B_MEAN = magn(B_MEAN_NEC)

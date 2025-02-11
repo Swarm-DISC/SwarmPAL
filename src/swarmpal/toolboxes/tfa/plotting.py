@@ -3,10 +3,10 @@ from __future__ import annotations
 import logging
 
 import matplotlib.dates as mdt
-import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from matplotlib import gridspec
 
 from swarmpal.utils.exceptions import PalError
 
@@ -205,7 +205,7 @@ def spectrum(
     }
     # Identify levels to use in colorbar (can be overridden)
     if levels is None:
-        lower, upper = np.min(da), np.max(da)
+        lower, upper = da.min().item(), da.max().item()
         levels = np.linspace(lower, upper, 20)
     # Identify other settings to use in plot (can be overridden)
     cmap = kwargs.pop("cmap", "jet")

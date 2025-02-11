@@ -1,67 +1,90 @@
+from __future__ import annotations
+
+import logging
+
 import matplotlib.pyplot as plt
-from datatree import DataTree, register_datatree_accessor
 from numpy import stack
-from xarray import Dataset
+from xarray import Dataset, DataTree, register_datatree_accessor
 
 from swarmpal.io import PalProcess
 from swarmpal.toolboxes.fac.fac_algorithms import fac_single_sat_algo
 
+logger = logging.getLogger(__name__)
+
 __all__ = (
-    "FAC_singlesat",
+    "FAC_single_sat",
     "PalFacDataTreeAccessor",
 )
 
 
-class FAC_singlesat(PalProcess):
-    """Provides the process for the classic single-satellite FAC algorithm
-
-    Notes
-    -----
-    Expected config parameters:
-    dataset
-    model_varname
-    measurement_varname
-    """
+class FAC_single_sat(PalProcess):
+    """Provides the process for the classic single-satellite FAC algorithm"""
 
     @property
     def process_name(self):
-        return "FAC_singlesat"
+        return "FAC_single_sat"
 
     def set_config(
         self,
         dataset: str = "SW_OPER_MAGA_LR_1B",
         model_varname: str = "B_NEC_CHAOS",
         measurement_varname: str = "B_NEC",
+        inclination_limit: float = 30,
+        time_jump_limit: int = 1,
+        include_auxiliaries: bool = True,
     ) -> None:
+        """Configures the process
+
+        Parameters
+        ----------
+        dataset : str, optional
+            Dataset to use, by default "SW_OPER_MAGA_LR_1B"
+        model_varname : str, optional
+            Name of the magnetic model predictions, by default "B_NEC_CHAOS"
+        measurement_varname : str, optional
+            Name of the measurements, by default "B_NEC"
+        inclination_limit : float, optional
+            Limit of inclination for FAC validity (in degrees), by default 30
+        time_jump_limit : int, optional
+            Maximum allowable time step in data for FAC validity (in seconds), by default 1
+        include_auxiliaries : bool, optional
+            Whether to include e.g. Latitude, Longitude, Flags, etc, by default True
+        """
         self.config = dict(
             dataset=dataset,
             model_varname=model_varname,
             measurement_varname=measurement_varname,
+            inclination_limit=inclination_limit,
+            time_jump_limit=time_jump_limit,
+            include_auxiliaries=include_auxiliaries,
         )
 
     def _call(self, datatree):
         # Identify inputs for algorithm
         subtree = datatree[self.config.get("dataset")]
-        dataset = subtree.ds
-        time = self._get_time(dataset)
-        positions = self._get_positions(dataset)
-        B_res = self._get_B_res(dataset)
-        B_model = self._get_B_model(dataset)
+        dataset_in = subtree.ds
         # Apply algorithm
         fac_results = fac_single_sat_algo(
-            time=time, positions=positions, B_res=B_res, B_model=B_model
+            time=self._get_time(dataset_in),
+            positions=self._get_positions(dataset_in),
+            B_res=self._get_B_res(dataset_in),
+            B_model=self._get_B_model(dataset_in),
+            inclination_limit=self.config.get("inclination_limit"),
+            time_jump_limit=self.config.get("time_jump_limit"),
         )
-        time_out = fac_results["time"]
-        fac_out = fac_results["fac"]
         # Insert a new output dataset with these results
         ds_out = Dataset(
             data_vars={
-                "Timestamp": ("Timestamp", time_out),
-                "FAC": ("Timestamp", fac_out),
+                "Timestamp": ("Timestamp", fac_results["time"]),
+                "FAC": ("Timestamp", fac_results["fac"]),
+                "IRC": ("Timestamp", fac_results["irc"]),
             }
         )
         ds_out["FAC"].attrs = {"units": "uA/m2"}
-        subtree["output"] = DataTree(data=ds_out)
+        ds_out["IRC"].attrs = {"units": "uA/m2"}
+        if self.config.get("include_auxiliaries"):
+            ds_out = self._append_aux(dataset_in, ds_out)
+        datatree["PAL_FAC_single_sat"] = DataTree(dataset=ds_out)
         return datatree
 
     def _validate(self):
@@ -89,6 +112,40 @@ class FAC_singlesat(PalProcess):
         model_varname = self.config.get("model_varname", "B_NEC_Model")
         return dataset.get(model_varname).data
 
+    def _append_aux(self, ds_in, ds_out):
+        """Extract auxiliary information from inputs and add to output dataset"""
+        # Identify available auxiliaries that can be added
+        aux_in = set(ds_in.data_vars)
+        aux_desired = {
+            "Latitude",
+            "Longitude",
+            "Radius",
+            "Flags_F",
+            "Flags_B",
+            "Flags_q",
+        }
+        aux_matched = aux_desired.intersection(aux_in)
+        aux_missing = aux_desired.difference(aux_in)
+        if aux_missing:
+            logging.warning(f"Missing auxiliaries: {aux_missing}")
+        # FAC time series is shorter than the inputs, so need to interpolate
+        # Subset only the ones we want to append
+        if len(ds_in["Timestamp"]) > 0:
+            ds_in_interpd = ds_in[list(aux_matched)].interp_like(
+                ds_out, method="nearest"
+            )
+        else:
+            ds_in_interpd = ds_in.copy()
+        # Convert data types back to the source data (interpolation changes it to float64)
+        for aux in aux_matched:
+            ds_in_interpd[aux] = ds_in_interpd[aux].astype(ds_in[aux].dtype)
+        # Attach the subselected data variables
+        ds_out = ds_out.assign(
+            {aux_name: ds_in_interpd[aux_name] for aux_name in aux_matched}
+        )
+        ds_out.attrs["Sources"] = ds_in_interpd.attrs["Sources"]
+        return ds_out
+
 
 @register_datatree_accessor("swarmpal_fac")
 class PalFacDataTreeAccessor:
@@ -98,18 +155,12 @@ class PalFacDataTreeAccessor:
     def quicklook(self, active_tree="."):
         fig, axes = plt.subplots(nrows=2, sharex=True)
         # TODO: refactor to be able to identify active tree
-        process_config = self._datatree.swarmpal.pal_meta[active_tree]["FAC_singlesat"]
-        measurement_varname = process_config.get("measurement_varname", "B_NEC")
-        model_varname = process_config.get("model_varname", "B_NEC_Model")
+        process_config = self._datatree.swarmpal.pal_meta[active_tree]["FAC_single_sat"]
         dataset = process_config.get("dataset")
-        residual = (
-            self._datatree[f"{active_tree}/{dataset}"][measurement_varname]
-            - self._datatree[f"{active_tree}/{dataset}"][model_varname]
-        )
-        residual.diff(dim="Timestamp").plot.line(ax=axes[0], hue="NEC")
-        self._datatree[f"{active_tree}/{dataset}/output"]["FAC"].plot.line(ax=axes[1])
+        self._datatree[f"{active_tree}/PAL_FAC_single_sat"]["IRC"].plot.line(ax=axes[0])
+        self._datatree[f"{active_tree}/PAL_FAC_single_sat"]["FAC"].plot.line(ax=axes[1])
         axes[0].set_xlabel("")
-        axes[0].set_ylabel(r"d/dt($\Delta$B)")
         axes[0].grid()
         axes[1].grid()
+        fig.suptitle(f"{dataset}")
         return fig, axes
