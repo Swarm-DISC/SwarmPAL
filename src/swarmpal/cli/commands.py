@@ -28,11 +28,7 @@ def spacecraft():
 @click.option("--grade", required=True, help="'OPER' or 'FAST'")
 @click.option("--to_cdf_file", required=True, help="Output CDF file")
 def fac_single_sat(
-    spacecraft: str,
-    time_start: str,
-    time_end: str,
-    grade: str,
-    to_cdf_file: str
+    spacecraft: str, time_start: str, time_end: str, grade: str, to_cdf_file: str
 ):
     """Execute FAC single-satellite processor"""
     return _fac_single_sat(spacecraft, time_start, time_end, grade, to_cdf_file)
