@@ -52,9 +52,13 @@ def fac_single_sat(
     else:
         raise PalError("Invalid 'grade'. Must be one of 'OPER', 'FAST'")
     # Fetch data and apply process
+    if spacecraft in ["Swarm-A", "Swarm-B", "Swarm-C"]:
+        measurements = ["B_NEC", "Flags_F", "Flags_B", "Flags_q"]
+    else:
+        measurements = ["B_NEC"]
     data_params = dict(
         collection=input_dataset,
-        measurements=["B_NEC", "Flags_F", "Flags_B", "Flags_q"],
+        measurements=measurements,
         models=["CHAOS"],
         start_time=time_start,
         end_time=time_end,
