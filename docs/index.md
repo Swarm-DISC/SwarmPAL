@@ -49,6 +49,7 @@ guides/shared/paldata
 :maxdepth: 2
 :caption: API Reference
 
+api/swarmpal
 api/express
 api/io
 api/fac

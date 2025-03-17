@@ -12,9 +12,8 @@ from ..test_data import load_test_config, load_test_dataset
 
 def test_by_name():
     """FAC_single_sat was added to the toolboxes lookup dictionary"""
-    process = swarmpal.toolboxes.make_toolbox("FAC_single_sat")
+    process = swarmpal.make_process("FAC_single_sat")
     assert isinstance(process, fac.processes.FAC_single_sat)
-    assert swarmpal.toolboxes.by_name["FAC_single_sat"] == fac.processes.FAC_single_sat
 
 
 @pytest.mark.cached()

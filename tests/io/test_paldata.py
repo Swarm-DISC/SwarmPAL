@@ -13,9 +13,7 @@ from swarmpal.io._paldata import PalDataItem, create_paldata
 from ..test_data import load_test_dataset
 
 
-@pytest.mark.cached()
-def test_paldataitem_vires():
-    item = load_test_dataset("test_paldataitem_vires.nc4", group="SW_OPER_MAGA_LR_1B")
+def vires_checks(item):
     # Type checks
     assert isinstance(item.xarray, Dataset)
     assert isinstance(item.datatree, DataTree)
@@ -46,6 +44,12 @@ def test_paldataitem_vires():
 
 
 @pytest.mark.cached()
+def test_paldataitem_vires():
+    item = load_test_dataset("test_paldataitem_vires.nc4", group="SW_OPER_MAGA_LR_1B")
+    return vires_checks(item)
+
+
+@pytest.mark.cached()
 @pytest.fixture()
 def xarray_data_file(tmp_path):
     ds = test_paldataitem_vires()
@@ -54,9 +58,7 @@ def xarray_data_file(tmp_path):
     return target_output
 
 
-@pytest.mark.cached()
-def test_paldataitem_hapi():
-    item = load_test_dataset("test_paldataitem_hapi.nc4", group="SW_OPER_MAGA_LR_1B")
+def hapi_checks(item):
     # Type checks
     assert isinstance(item.xarray, Dataset)
     assert isinstance(item.datatree, DataTree)
@@ -75,6 +77,12 @@ def test_paldataitem_hapi():
     assert item.xarray["Timestamp"].to_numpy()[-1] <= np.datetime64(
         "2016-01-01T00:00:10"
     )
+
+
+@pytest.mark.cached()
+def test_paldataitem_hapi():
+    item = load_test_dataset("test_paldataitem_hapi.nc4", group="SW_OPER_MAGA_LR_1B")
+    hapi_checks(item)
 
 
 def test_paldataitem_file(xarray_data_file):
