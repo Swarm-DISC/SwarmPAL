@@ -1499,8 +1499,8 @@ def get_exclusion_zone(SwA, SwC):
     valsA = alat[apexcrossing_a : apexcrossing_a + 2]
     valsC = clat[apexcrossing_c : apexcrossing_c + 2]
 
-    minval = np.max([np.min(valsA), np.min(valsC)])
-    maxval = np.min([np.max(valsA), np.max(valsC)])
+    minval = np.max([np.min(valsA), np.min(valsC)]).item()
+    maxval = np.min([np.max(valsA), np.max(valsC)]).item()
 
     return maxval, minval
 

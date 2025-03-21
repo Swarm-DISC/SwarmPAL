@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import logging
+
 import matplotlib.pyplot as plt
 from numpy import stack
 from xarray import Dataset, DataTree, register_datatree_accessor
 
 from swarmpal.io import PalProcess
 from swarmpal.toolboxes.fac.fac_algorithms import fac_single_sat_algo
+
+logger = logging.getLogger(__name__)
 
 __all__ = (
     "FAC_single_sat",
@@ -27,6 +31,7 @@ class FAC_single_sat(PalProcess):
         measurement_varname: str = "B_NEC",
         inclination_limit: float = 30,
         time_jump_limit: int = 1,
+        include_auxiliaries: bool = True,
     ) -> None:
         """Configures the process
 
@@ -42,6 +47,8 @@ class FAC_single_sat(PalProcess):
             Limit of inclination for FAC validity (in degrees), by default 30
         time_jump_limit : int, optional
             Maximum allowable time step in data for FAC validity (in seconds), by default 1
+        include_auxiliaries : bool, optional
+            Whether to include e.g. Latitude, Longitude, Flags, etc, by default True
         """
         self.config = dict(
             dataset=dataset,
@@ -49,18 +56,19 @@ class FAC_single_sat(PalProcess):
             measurement_varname=measurement_varname,
             inclination_limit=inclination_limit,
             time_jump_limit=time_jump_limit,
+            include_auxiliaries=include_auxiliaries,
         )
 
     def _call(self, datatree):
         # Identify inputs for algorithm
         subtree = datatree[self.config.get("dataset")]
-        dataset = subtree.ds
+        dataset_in = subtree.ds
         # Apply algorithm
         fac_results = fac_single_sat_algo(
-            time=self._get_time(dataset),
-            positions=self._get_positions(dataset),
-            B_res=self._get_B_res(dataset),
-            B_model=self._get_B_model(dataset),
+            time=self._get_time(dataset_in),
+            positions=self._get_positions(dataset_in),
+            B_res=self._get_B_res(dataset_in),
+            B_model=self._get_B_model(dataset_in),
             inclination_limit=self.config.get("inclination_limit"),
             time_jump_limit=self.config.get("time_jump_limit"),
         )
@@ -74,6 +82,8 @@ class FAC_single_sat(PalProcess):
         )
         ds_out["FAC"].attrs = {"units": "uA/m2"}
         ds_out["IRC"].attrs = {"units": "uA/m2"}
+        if self.config.get("include_auxiliaries"):
+            ds_out = self._append_aux(dataset_in, ds_out)
         datatree["PAL_FAC_single_sat"] = DataTree(dataset=ds_out)
         return datatree
 
@@ -101,6 +111,40 @@ class FAC_single_sat(PalProcess):
     def _get_B_model(self, dataset):
         model_varname = self.config.get("model_varname", "B_NEC_Model")
         return dataset.get(model_varname).data
+
+    def _append_aux(self, ds_in, ds_out):
+        """Extract auxiliary information from inputs and add to output dataset"""
+        # Identify available auxiliaries that can be added
+        aux_in = set(ds_in.data_vars)
+        aux_desired = {
+            "Latitude",
+            "Longitude",
+            "Radius",
+            "Flags_F",
+            "Flags_B",
+            "Flags_q",
+        }
+        aux_matched = aux_desired.intersection(aux_in)
+        aux_missing = aux_desired.difference(aux_in)
+        if aux_missing:
+            logging.warning(f"Missing auxiliaries: {aux_missing}")
+        # FAC time series is shorter than the inputs, so need to interpolate
+        # Subset only the ones we want to append
+        if len(ds_in["Timestamp"]) > 0:
+            ds_in_interpd = ds_in[list(aux_matched)].interp_like(
+                ds_out, method="nearest"
+            )
+        else:
+            ds_in_interpd = ds_in.copy()
+        # Convert data types back to the source data (interpolation changes it to float64)
+        for aux in aux_matched:
+            ds_in_interpd[aux] = ds_in_interpd[aux].astype(ds_in[aux].dtype)
+        # Attach the subselected data variables
+        ds_out = ds_out.assign(
+            {aux_name: ds_in_interpd[aux_name] for aux_name in aux_matched}
+        )
+        ds_out.attrs["Sources"] = ds_in_interpd.attrs["Sources"]
+        return ds_out
 
 
 @register_datatree_accessor("swarmpal_fac")

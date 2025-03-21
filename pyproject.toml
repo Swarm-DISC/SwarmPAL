@@ -35,6 +35,7 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
+    "click >= 8.1",
     "hapiclient >= 0.2.3",
     "numpy >= 2.0.0",
     "matplotlib >= 3.5",
@@ -65,12 +66,15 @@ docs = [
     "Sphinx==7.2",
     "myst-nb==1.0",
     "sphinx-book-theme==1.1",
+    "sphinx_click==5.0",
     "sphinx_copybutton==0.5",
     "matplotlib==3.9",
     "ipywidgets==8.0",
     "ipython!=8.7.0",
 ]
 
+[project.scripts]
+swarmpal = "swarmpal.cli.commands:cli"
 
 [project.urls]
 homepage = "https://github.com/Swarm-DISC/SwarmPAL"
