@@ -51,6 +51,7 @@ dsecs = [
 ]
 test = [
     "pytest >=6",
+    "pooch",
 ]
 dev = [
     "pytest >=6",
