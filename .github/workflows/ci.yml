@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   pull_request_target:
     branches: [ main, staging ]
-    types: [labeled]
+    types: [labeled, synchronize]
   schedule:
     # Weekly on Sunday
     - cron: "0 1 * * 0"
