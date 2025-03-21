@@ -115,7 +115,7 @@ class PalDataItem:
 
     def _serialise_pal_metadata(self):
         def _format_handler(x):
-            if isinstance(x, (datetime, date)):
+            if isinstance(x, datetime | date):
                 return x.isoformat()
             raise TypeError("Unknown type")
 
@@ -296,7 +296,7 @@ class PalMeta:
     @staticmethod
     def serialise(meta: dict) -> str:
         def _format_handler(x):
-            if isinstance(x, (datetime, date)):
+            if isinstance(x, datetime | date):
                 return x.isoformat()
             raise TypeError("Unknown type")
 
