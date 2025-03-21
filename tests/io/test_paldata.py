@@ -10,23 +10,12 @@ from xarray import Dataset, DataTree, open_dataset
 
 from swarmpal.io._paldata import PalDataItem, create_paldata
 
+from ..test_data import load_test_dataset
 
-@pytest.mark.remote()
+
+@pytest.mark.cached()
 def test_paldataitem_vires():
-    params = dict(
-        collection="SW_OPER_MAGA_LR_1B",
-        measurements=["F", "B_NEC"],
-        start_time="2016-01-01T00:00:00",
-        end_time="2016-01-01T00:00:10",
-    )
-    vires_params = dict(
-        **params,
-        models=["IGRF"],
-        filters=["(Longitude > 92.8) AND (Latitude < -72.57)"],
-        options=dict(asynchronous=False, show_progress=False),
-    )
-    item = PalDataItem.from_vires(**vires_params)
-    item.initialise()
+    item = load_test_dataset("test_paldataitem_vires.nc4", group="SW_OPER_MAGA_LR_1B")
     # Type checks
     assert isinstance(item.xarray, Dataset)
     assert isinstance(item.datatree, DataTree)
@@ -56,7 +45,7 @@ def test_paldataitem_vires():
     return item.xarray
 
 
-@pytest.mark.remote()
+@pytest.mark.cached()
 @pytest.fixture()
 def xarray_data_file(tmp_path):
     ds = test_paldataitem_vires()
@@ -65,21 +54,9 @@ def xarray_data_file(tmp_path):
     return target_output
 
 
-@pytest.mark.remote()
+@pytest.mark.cached()
 def test_paldataitem_hapi():
-    params = dict(
-        dataset="SW_OPER_MAGA_LR_1B",
-        parameters="F,B_NEC",
-        start="2016-01-01T00:00:00",
-        stop="2016-01-01T00:00:10",
-    )
-    hapi_params = dict(
-        **params,
-        server="https://vires.services/hapi",
-        options=dict(logging=True),
-    )
-    item = PalDataItem.from_hapi(**hapi_params)
-    item.initialise()
+    item = load_test_dataset("test_paldataitem_hapi.nc4", group="SW_OPER_MAGA_LR_1B")
     # Type checks
     assert isinstance(item.xarray, Dataset)
     assert isinstance(item.datatree, DataTree)
@@ -111,22 +88,13 @@ def test_paldataitem_manual(xarray_data_file):
     assert isinstance(item.xarray, Dataset)
 
 
-@pytest.mark.remote()
+@pytest.mark.cached()
 def test_time_pad_vires():
     start_time = datetime(2016, 1, 1, 0, 0, 0)
     end_time = datetime(2016, 1, 1, 0, 0, 10)
     dt0 = timedelta(seconds=3)
     dt1 = timedelta(seconds=5)
-    vires_params = dict(
-        collection="SW_OPER_MAGA_LR_1B",
-        measurements=["F", "B_NEC"],
-        start_time=start_time,
-        end_time=end_time,
-        pad_times=[dt0, dt1],
-        server_url="https://vires.services/ows",
-        options=dict(asynchronous=False, show_progress=False),
-    )
-    pdi = PalDataItem.from_vires(**vires_params)
+    pdi = load_test_dataset("test_time_pad_vires.nc4", group="SW_OPER_MAGA_LR_1B")
     # Check that the start and end times of data are offset correctly
     t0, t1 = to_pandas_datetime(pdi.xarray["Timestamp"][[0, -1]])
     assert t0 == start_time - dt0
@@ -137,21 +105,13 @@ def test_time_pad_vires():
     # assert pdi.xarray.attrs["PAL_meta"]["analysis_window"][1] == end_time.isoformat()
 
 
-@pytest.mark.remote()
+@pytest.mark.cached()
 def test_time_pad_hapi():
     start_time = datetime(2016, 1, 1, 0, 0, 0)
     end_time = datetime(2016, 1, 1, 0, 0, 10)
     dt0 = timedelta(seconds=3)
     dt1 = timedelta(seconds=5)
-    hapi_params = dict(
-        dataset="SW_OPER_MAGA_LR_1B",
-        parameters="F,B_NEC",
-        start=start_time.isoformat(),
-        stop=end_time.isoformat(),
-        pad_times=[dt0, dt1],
-        server="https://vires.services/hapi",
-    )
-    pdi = PalDataItem.from_hapi(**hapi_params)
+    pdi = load_test_dataset("test_time_pad_hapi.nc4", group="SW_OPER_MAGA_LR_1B")
     # Check that the start and end times of data are offset correctly
     t0, t1 = to_pandas_datetime(pdi.xarray["Timestamp"][[0, -1]])
     assert t0 == start_time - dt0
@@ -161,41 +121,23 @@ def test_time_pad_hapi():
     # assert pdi.xarray.attrs["PAL_meta"]["analysis_window"][1] == end_time.isoformat()
 
 
-@pytest.mark.remote()
+@pytest.mark.cached()
 @pytest.fixture()
 def paldata_item_MAGA():
-    data_params = dict(
-        collection="SW_OPER_MAGA_LR_1B",
-        measurements=["B_NEC"],
-        models=["IGRF"],
-        start_time="2016-01-01T00:00:00",
-        end_time="2016-01-01T00:01:00",
-        server_url="https://vires.services/ows",
-        options=dict(asynchronous=False, show_progress=False),
+    return load_test_dataset(
+        "fixture_paldata_item_MAGA.nc4", group="SW_OPER_MAGA_LR_1B"
     )
-    pdi = PalDataItem.from_vires(**data_params)
-    pdi.initialise()
-    return pdi
 
 
-@pytest.mark.remote()
+@pytest.mark.cached()
 @pytest.fixture()
 def paldata_item_MAGB():
-    data_params = dict(
-        collection="SW_OPER_MAGB_LR_1B",
-        measurements=["B_NEC"],
-        models=["IGRF"],
-        start_time="2016-01-01T00:00:00",
-        end_time="2016-01-01T00:01:00",
-        server_url="https://vires.services/ows",
-        options=dict(asynchronous=False, show_progress=False),
+    return load_test_dataset(
+        "fixture_paldata_item_MAGB.nc4", group="SW_OPER_MAGB_LR_1B"
     )
-    pdi = PalDataItem.from_vires(**data_params)
-    pdi.initialise()
-    return pdi
 
 
-@pytest.mark.remote()
+@pytest.mark.cached()
 def test_create_paldata(paldata_item_MAGA, paldata_item_MAGB):
     # Test basic paldata
     data = create_paldata(paldata_item_MAGA)
