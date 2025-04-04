@@ -69,6 +69,12 @@ docs = [
     "ipywidgets==8.0",
     "ipython!=8.7.0",
 ]
+mma = [
+    "h5py>=3.13.0",
+    "pyshtools>=4.13.1",
+    "spacepy>=0.7.0",
+    "statsmodels>=0.14.4",
+]
 
 [project.scripts]
 swarmpal = "swarmpal.cli.commands:cli"
@@ -129,6 +135,7 @@ profile = "black"
 
 [tool.ruff]
 src = ["src"]
+exclude = ["src/swarmpal/experimental"]
 
 [tool.ruff.lint]
 # TODO: Re-enable those commented out
