@@ -1,0 +1,3 @@
+[submodule "src/swarmpal/experimental/upstream_MMA_2E"]
+	path = src/swarmpal/experimental/upstream_MMA_2E
+	url = git@github.com:smithara/MMA-2E
