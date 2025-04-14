@@ -27,6 +27,9 @@ authors:
   - given-names: Georgios
     family-names: Balasis
     orcid: 'https://orcid.org/0000-0001-7342-0557'
+  - given-names: David
+    family-names: de Klerk
+    orcid: 'https://orcid.org/0000-0002-2728-2955'
 repository-code: 'https://github.com/Swarm-DISC/SwarmPAL'
 abstract: >-
   The Swarm Product Algorithm Laboratory: A Python toolbox
