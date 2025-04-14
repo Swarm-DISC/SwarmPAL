@@ -22,8 +22,9 @@ build:
 
 python:
   install:
+    - requirements: docs/extra-requirements.txt
     - method: pip
       path: .
       extra_requirements:
         - docs
-        - dsecs_cp311_manylinux
+        - dsecs

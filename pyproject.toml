@@ -16,7 +16,7 @@ license = { file = "LICENSE" }
 description = "Toolbox for ESA's Swarm mission"
 readme = "README.md"
 
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 classifiers = [
     "License :: OSI Approved :: MIT License",
@@ -49,20 +49,18 @@ dependencies = [
 
 [project.optional-dependencies]
 dsecs = [
-    "apexpy>=1.1.0",
+    "apexpy>=2.1.0",
     "pyproj>=3",
-]
-dsecs_cp311_manylinux = [
-    "apexpy @ https://github.com/smithara/apexpy/releases/download/v2.1.0-binaries/apexpy-2.1.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-    "pyproj>=3"
 ]
 test = [
     "pytest >=6",
+    "pooch",
 ]
 dev = [
     "pytest >=6",
     "nox >=2022",
     "pre-commit",
+    "pooch",
 ]
 docs = [
     "Sphinx==7.2",
@@ -102,6 +100,7 @@ testpaths = [
 markers = [
     "remote",
     "dsecs",
+    "cached",
 ]
 
 [tool.pycln]
