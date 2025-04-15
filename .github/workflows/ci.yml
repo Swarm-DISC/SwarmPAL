@@ -52,6 +52,9 @@ jobs:
         viresclient set_token "https://vires.services/ows" ${{ secrets.VIRES_TOKEN }}
         viresclient set_default_server https://vires.services/ows
 
+    - name: Install pyyaml
+      run: python -m pip install pyyaml
+
     - name: Test package (On Windows; Exclude DSECS)
       if: runner.os == 'Windows'
       run: python -m pytest -ra -m "not dsecs"

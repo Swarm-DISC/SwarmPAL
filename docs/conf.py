@@ -61,7 +61,7 @@ nb_execution_allow_errors = False
 nb_execution_raise_on_error = False
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = []
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -86,10 +86,6 @@ html_theme_options = {
     "use_repository_button": True,
     "use_issues_button": True,
     "use_edit_page_button": True,
-    "announcement": (
-        "WARNING! THIS PACKAGE IS IN ACTIVE DEVELOPMENT AND IS NOT YET STABLE!<br>"
-        "<button><a href='https://vre.vires.services/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2Fsmithara%2Fswarmpal-demo&amp;urlpath=lab%2Ftree%2Fswarmpal-demo%2FREADME.ipynb&amp;branch=main'>Click here to try SwarmPAL in the Virtual Research Environment</a></button>"
-    ),
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
