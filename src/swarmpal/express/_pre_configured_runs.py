@@ -52,9 +52,13 @@ def fac_single_sat(
     else:
         raise PalError("Invalid 'grade'. Must be one of 'OPER', 'FAST'")
     # Fetch data and apply process
+    if spacecraft in ["Swarm-A", "Swarm-B", "Swarm-C"]:
+        measurements = ["B_NEC", "Flags_F", "Flags_B", "Flags_q"]
+    else:
+        measurements = ["B_NEC"]
     data_params = dict(
         collection=input_dataset,
-        measurements=["B_NEC"],
+        measurements=measurements,
         models=["CHAOS"],
         start_time=time_start,
         end_time=time_end,
@@ -62,11 +66,13 @@ def fac_single_sat(
         options=dict(asynchronous=False, show_progress=False),
     )
     data = create_paldata(PalDataItem.from_vires(**data_params))
+    time_jump_limit = 1 if "Swarm" in spacecraft else 10
     process = fac.processes.FAC_single_sat(
         config={
             "dataset": input_dataset,
             "model_varname": "B_NEC_CHAOS",
             "measurement_varname": "B_NEC",
+            "time_jump_limit": time_jump_limit,
         },
     )
     data = process(data)
