@@ -66,11 +66,13 @@ def fac_single_sat(
         options=dict(asynchronous=False, show_progress=False),
     )
     data = create_paldata(PalDataItem.from_vires(**data_params))
+    time_jump_limit = 1 if "Swarm" in spacecraft else 10
     process = fac.processes.FAC_single_sat(
         config={
             "dataset": input_dataset,
             "model_varname": "B_NEC_CHAOS",
             "measurement_varname": "B_NEC",
+            "time_jump_limit": time_jump_limit,
         },
     )
     data = process(data)

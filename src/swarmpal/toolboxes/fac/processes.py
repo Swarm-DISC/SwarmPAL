@@ -40,7 +40,7 @@ class FAC_single_sat(PalProcess):
         dataset : str, optional
             Dataset to use, by default "SW_OPER_MAGA_LR_1B"
         model_varname : str, optional
-            Name of the magnetic model predictions, by default "B_NEC_CHAOS"
+            Name of the magnetic model predictions, by default "B_NEC_Model"
         measurement_varname : str, optional
             Name of the measurements, by default "B_NEC"
         inclination_limit : float, optional
