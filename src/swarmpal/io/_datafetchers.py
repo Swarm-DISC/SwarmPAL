@@ -15,6 +15,8 @@ from pandas import to_datetime as to_pandas_datetime
 from viresclient import SwarmRequest
 from xarray import Dataset, open_dataset
 
+from swarmpal.io._cdf_interface import cdf_to_xarray
+
 
 @dataclass
 class Parameters:
@@ -39,7 +41,6 @@ class ViresParameters(Parameters):
 
 @dataclass
 class HapiParameters(Parameters):
-    # TODO: switch to naming used by hapiclient
     server: str = ""
     dataset: str = ""
     parameters: str = ""
@@ -51,6 +52,15 @@ class HapiParameters(Parameters):
 @dataclass
 class FileParameters(Parameters):
     filename: PathLike | None = None
+
+
+@dataclass
+class CDFFileParameters(FileParameters):
+    ...
+
+
+@dataclass
+class NetCDFFileParameters(FileParameters):
     group: str | None = None
 
 
@@ -206,18 +216,18 @@ class HapiDataFetcher(DataFetcherBase):
         return self._hapi_to_xarray(data, meta)
 
 
-class FileDataFetcher(DataFetcherBase):
+class NetCDFfileDataFetcher(DataFetcherBase):
     @property
     def source(self) -> str:
-        return "file"
+        return "netcdf_file"
 
     @property
-    def parameters(self) -> FileParameters:
+    def parameters(self) -> NetCDFFileParameters:
         return self._parameters
 
     @parameters.setter
     def parameters(self, parameters: dict) -> None:
-        self._parameters = FileParameters(**parameters)
+        self._parameters = NetCDFFileParameters(**parameters)
 
     def __init__(self, filename: PathLike, group: str | None = None) -> None:
         self.parameters = dict(filename=filename, group=group)
@@ -229,6 +239,29 @@ class FileDataFetcher(DataFetcherBase):
         if self.parameters.group:
             kwargs["group"] = self.parameters.group
         return open_dataset(**kwargs)
+
+
+class CDFfileDataFetcher(DataFetcherBase):
+    @property
+    def source(self) -> str:
+        return "cdf_file"
+
+    @property
+    def parameters(self) -> CDFFileParameters:
+        return self._parameters
+
+    @parameters.setter
+    def parameters(self, parameters: dict) -> None:
+        self._parameters = CDFFileParameters(**parameters)
+
+    def __init__(self, **parameters) -> None:
+        self.parameters = parameters
+        if not path_exists(self.parameters.filename):
+            raise FileNotFoundError(self.parameters.filename)
+
+    def fetch_data(self) -> Dataset:
+        kwargs = {"cdf_file": self.parameters.filename}
+        return cdf_to_xarray(kwargs["cdf_file"])
 
 
 class ManualDataFetcher(DataFetcherBase):
@@ -256,10 +289,11 @@ class ManualDataFetcher(DataFetcherBase):
 
 def get_fetcher(source) -> DataFetcherBase:
     fetchers = {
-        "vires": ViresDataFetcher,
-        "hapi": HapiDataFetcher,
-        "file": FileDataFetcher,
-        "manual": ManualDataFetcher,
+        "ViresDataFetcher": ViresDataFetcher,
+        "HapiDataFetcher": HapiDataFetcher,
+        "NetCDFfileDataFetcher": NetCDFfileDataFetcher,
+        "CDFfileDataFetcher": CDFfileDataFetcher,
+        "ManualDataFetcher": ManualDataFetcher,
     }
     try:
         return fetchers[source]

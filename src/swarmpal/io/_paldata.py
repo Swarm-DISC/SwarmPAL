@@ -10,6 +10,7 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import date, datetime
 from os import PathLike
+from pathlib import Path
 from re import match as regex_match
 
 from cdflib.xarray import xarray_to_cdf
@@ -216,7 +217,7 @@ class PalDataItem:
             This is handled specially by SwarmPAL and not passed to viresclient
         """
         params, analysis_window = PalDataItem._pad_times(params)
-        fetcher = get_fetcher("vires")(**params)
+        fetcher = get_fetcher("ViresDataFetcher")(**params)
         pdi = PalDataItem(fetcher)
         pdi.analysis_window = analysis_window
         pdi.dataset_name = params.get("collection")
@@ -238,7 +239,7 @@ class PalDataItem:
             This is handled specially by SwarmPAL and not passed to hapiclient
         """
         params, analysis_window = PalDataItem._pad_times(params)
-        fetcher = get_fetcher("hapi")(**params)
+        fetcher = get_fetcher("HapiDataFetcher")(**params)
         pdi = PalDataItem(fetcher)
         pdi.analysis_window = analysis_window
         pdi.dataset_name = params.get("dataset")
@@ -246,28 +247,42 @@ class PalDataItem:
 
     @staticmethod
     def from_file(
-        filename: PathLike | None = None, group: str | None = None, **params
+        filename: PathLike | None = None,
+        group: str | None = None,
+        filetype: str = "auto",
+        **params,
     ) -> PalDataItem:
         """Create a PalDataItem from a file
 
         Parameters
         ----------
         filename : PathLike
-            Path to the (netCDF) file to load
+            Path to the (netCDF / CDF) file to load
         group : str
-            Group name within the (netCDF) file
+            Group name within the netCDF file
+        filetype: str
+            Type of file to load. Can be "netcdf", "cdf" or "auto". If "auto", the file extension will be used to determine the type.
+        params : dict
+            Additional parameters to pass to the fetcher
 
         Returns
         -------
         PalDataItem
         """
-        if filename:
-            params["filename"] = filename
-        if group:
-            params["group"] = group
-        fetcher = get_fetcher("file")(**params)
+        cdf_endings = ("CDF",)
+        netcdf_endings = ("NETCDF", "NETCDF4", "NC", "NC4", "HDF", "HDF5", "H5", "HE5")
+        if str(filename).upper().endswith(netcdf_endings) or filetype == "netcdf":
+            fetcher = get_fetcher("NetCDFfileDataFetcher")(
+                filename=filename, group=group, **params
+            )
+            default_dataset_name = group
+        elif str(filename).upper().endswith(cdf_endings) or filetype == "cdf":
+            fetcher = get_fetcher("CDFfileDataFetcher")(filename=filename, **params)
+            default_dataset_name = Path(filename).stem
+        else:
+            raise PalError("File type not recognised")
         pdi = PalDataItem(fetcher)
-        pdi.dataset_name = params.get("dataset_name", group)
+        pdi.dataset_name = params.get("dataset_name", default_dataset_name)
         pdi.initialise()
         return pdi
 
@@ -286,7 +301,7 @@ class PalDataItem:
         """
         if xarray_dataset:
             params["xarray_dataset"] = xarray_dataset
-        fetcher = get_fetcher("manual")(**params)
+        fetcher = get_fetcher("ManualDataFetcher")(**params)
         pdi = PalDataItem(fetcher)
         pdi.dataset_name = "manual"
         return pdi
