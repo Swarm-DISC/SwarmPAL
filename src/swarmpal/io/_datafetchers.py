@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from os import PathLike
 from os.path import exists as path_exists
+from pathlib import Path
 
 from hapiclient import hapi, hapitime2datetime
 from numpy.typing import ArrayLike
@@ -238,7 +239,12 @@ class NetCDFfileDataFetcher(DataFetcherBase):
         kwargs = {"filename_or_obj": self.parameters.filename}
         if self.parameters.group:
             kwargs["group"] = self.parameters.group
-        return open_dataset(**kwargs)
+        ds = open_dataset(**kwargs)
+        try:
+            ds.attrs["Sources"]
+        except KeyError:
+            ds.attrs["Sources"] = [Path(kwargs["cdf_file"]).name]
+        return ds
 
 
 class CDFfileDataFetcher(DataFetcherBase):
@@ -261,7 +267,12 @@ class CDFfileDataFetcher(DataFetcherBase):
 
     def fetch_data(self) -> Dataset:
         kwargs = {"cdf_file": self.parameters.filename}
-        return cdf_to_xarray(kwargs["cdf_file"])
+        ds = cdf_to_xarray(kwargs["cdf_file"])
+        try:
+            ds.attrs["Sources"]
+        except KeyError:
+            ds.attrs["Sources"] = [Path(kwargs["cdf_file"]).name]
+        return ds
 
 
 class ManualDataFetcher(DataFetcherBase):
