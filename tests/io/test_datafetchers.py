@@ -7,10 +7,11 @@ from swarmpal.io._datafetchers import HapiDataFetcher, ViresDataFetcher, get_fet
 
 
 def test_get_fetcher():
-    get_fetcher("vires")
-    get_fetcher("hapi")
-    get_fetcher("file")
-    get_fetcher("manual")
+    get_fetcher("ViresDataFetcher")
+    get_fetcher("HapiDataFetcher")
+    get_fetcher("NetCDFfileDataFetcher")
+    get_fetcher("CDFfileDataFetcher")
+    get_fetcher("ManualDataFetcher")
 
 
 @pytest.mark.remote()
