@@ -236,6 +236,7 @@ class NetCDFfileDataFetcher(DataFetcherBase):
             raise FileNotFoundError(self.parameters.filename)
 
     def fetch_data(self) -> Dataset:
+        # filename_or_obj and group are kwargs for xarray.open_dataset
         kwargs = {"filename_or_obj": self.parameters.filename}
         if self.parameters.group:
             kwargs["group"] = self.parameters.group
@@ -243,7 +244,7 @@ class NetCDFfileDataFetcher(DataFetcherBase):
         try:
             ds.attrs["Sources"]
         except KeyError:
-            ds.attrs["Sources"] = [Path(kwargs["cdf_file"]).name]
+            ds.attrs["Sources"] = [Path(self.parameters.filename).name]
         return ds
 
 
@@ -267,11 +268,11 @@ class CDFfileDataFetcher(DataFetcherBase):
 
     def fetch_data(self) -> Dataset:
         kwargs = {"cdf_file": self.parameters.filename}
-        ds = cdf_to_xarray(kwargs["cdf_file"])
+        ds = cdf_to_xarray(**kwargs)
         try:
             ds.attrs["Sources"]
         except KeyError:
-            ds.attrs["Sources"] = [Path(kwargs["cdf_file"]).name]
+            ds.attrs["Sources"] = [Path(self.parameters.filename).name]
         return ds
 
 

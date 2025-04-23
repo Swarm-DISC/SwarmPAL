@@ -13,11 +13,12 @@ from os import PathLike
 from pathlib import Path
 from re import match as regex_match
 
-from cdflib.xarray import xarray_to_cdf
+from cdflib.xarray import xarray_to_cdf as cdflib_xarray_to_cdf
 from pandas import to_datetime as to_pandas_datetime
 from xarray import DataArray, Dataset, DataTree, register_datatree_accessor
 from xarray.core.extension_array import PandasExtensionArray
 
+from swarmpal.io._cdf_interface import xarray_to_cdf
 from swarmpal.io._datafetchers import DataFetcherBase, get_fetcher
 from swarmpal.utils.exceptions import PalError
 
@@ -383,32 +384,38 @@ class PalDataTreeAccessor:
         }
         return residual
 
-    def to_cdf(self, file_name: str, leaf: str, istp_check: bool = False) -> None:
+    def to_cdf(self, filename: str, leaf: str, handler: str = "pycdfpp") -> None:
         """Write one leaf of the datatree to a CDF file
 
         Parameters
         ----------
-        file_name : str
+        filename : str
             Name of the file to create
         leaf : str
             Location within the datatree
+        handler : str
+            CDF handler to use. Can be "pycdfpp" or "cdflib". Defaults to "pycdfpp".
         """
         # Identify dataset to use
         ds = self._datatree[leaf].ds.copy()
         # Adjust metadata (CDF global attrs)
         # Extra PAL_meta from the parent node
         pal_meta = self._datatree[leaf].parent.swarmpal.pal_meta["."]
-        versions = f"swarmpal-{packages_metadata.version('swarmpal')} [cdflib-{packages_metadata.version('cdflib')}]"
+        versions = f"swarmpal-{packages_metadata.version('swarmpal')} [{handler}-{packages_metadata.version(handler)}]"
         ds.attrs.update(
             {
                 "CREATOR": versions,
                 "CREATED": dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "TITLE": file_name,
+                "TITLE": Path(filename.name),
                 "PAL_meta": PalMeta.serialise(pal_meta),
             }
         )
-        # NB: cdflib will write Timestamp as type CDF_TT2000 not CDF_EPOCH
-        xarray_to_cdf(xarray_dataset=ds, file_name=file_name, istp=istp_check)
+        if handler == "pycdfpp":
+            xarray_to_cdf(ds, filename)
+        elif handler == "cdflib":
+            # NB: cdflib will write Timestamp as type CDF_TT2000 not CDF_EPOCH
+            # and data dimensions seem wrong
+            cdflib_xarray_to_cdf(xarray_dataset=ds, file_name=filename)
 
 
 def create_paldata(
