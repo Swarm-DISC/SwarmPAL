@@ -406,7 +406,7 @@ class PalDataTreeAccessor:
             {
                 "CREATOR": versions,
                 "CREATED": dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "TITLE": Path(filename.name),
+                "TITLE": Path(filename).name,
                 "PAL_meta": PalMeta.serialise(pal_meta),
             }
         )
