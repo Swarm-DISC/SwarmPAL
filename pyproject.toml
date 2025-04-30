@@ -37,7 +37,7 @@ dynamic = ["version"]
 dependencies = [
     "click >= 8.1",
     "hapiclient >= 0.2.3",
-    "numpy >= 2.0.0",
+    "numpy >= 1.26",
     "matplotlib >= 3.5",
     "pycdfpp >= 0.7",
     "scipy >= 1.8",
@@ -46,6 +46,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+experimental = [
+    "chaosmagpy",
+]
 dsecs = [
     "apexpy>=2.1.0",
     "pyproj>=3",
