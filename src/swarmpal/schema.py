@@ -25,6 +25,8 @@ properties:
           description: "Name of the SwarmPAL process to run"
           enum:
             - FAC_single_sat
+            - DSECS_Preprocess
+            - DSECS_Analysis
     description: "List of parameter objects, each describing a SwarmPal process that will be applied to the dataset"
 required:
   - data_params
@@ -98,7 +100,6 @@ definitions:
       - collection
       - start_time
       - end_time
-    additionalProperties: false
     description: "Schema for VirES data parameters configuration."
 
   hapi_data_params:

@@ -26,7 +26,9 @@ def test_fac_singlesat_swarm():
     assert input_dataset in input_data
 
     dataset_meta = load_test_config("test_fac_singlesat_swarm")
-    process_config = dataset_meta["toolboxes"]["FAC_single_sat"]
+    process_config = dataset_meta["process_params"][0]
+    process_name = process_config.pop("process_name")
+    assert process_name == "FAC_single_sat"
     process = fac.processes.FAC_single_sat(config=process_config)
 
     data = process(input_data)

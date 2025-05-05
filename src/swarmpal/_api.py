@@ -27,9 +27,19 @@ def make_process(process_name=None, config={}):
 
             processes_by_name["FAC_single_sat"] = FAC_single_sat
 
+        elif process_name == "DSECS_Preprocess":
+            from swarmpal.toolboxes.dsecs.processes import Preprocess
+
+            processes_by_name["DSECS_Preprocess"] = Preprocess
+
+        elif process_name == "DSECS_Analysis":
+            from swarmpal.toolboxes.dsecs.processes import Analysis
+
+            processes_by_name["DSECS_Analysis"] = Analysis
+
         else:
             raise ValueError(
-                f"Unknown process {process_name}. Must be one of ['FAC_single_sat']"
+                f"Unknown process {process_name}. Must be one of ['FAC_single_sat', 'DSECS_Preprocess', 'DSECS_Analysis']"
             )
 
     return processes_by_name[process_name](config=config)
