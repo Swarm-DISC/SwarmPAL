@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from os.path import join as join_path
 
 import numpy as np
 import pytest
@@ -10,7 +9,7 @@ from xarray import Dataset, DataTree, open_dataset
 
 from swarmpal.io._paldata import PalDataItem, create_paldata
 
-from ..test_data import load_test_dataset, get_local_filename
+from ..test_data import get_local_filename, load_test_dataset
 
 
 def vires_checks(item):
