@@ -46,4 +46,4 @@ def test_fac_singlesat_swarm():
             data["PAL_FAC_single_sat"][variable]
             - input_data["PAL_FAC_single_sat"][variable]
         ).to_numpy()
-        assert np.all((diffs < 1e-10) | np.isnan(diffs))
+        assert np.all((np.abs(diffs) < 1e-10) | np.isnan(diffs))

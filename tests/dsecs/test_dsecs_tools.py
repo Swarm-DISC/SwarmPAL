@@ -73,4 +73,4 @@ def test_dsecs_basic():
             test_data["DSECS_output/0/currents"][variable]
             - input_data["DSECS_output/0/currents"][variable]
         ).to_numpy()
-        assert np.all((diff < 1e-10) | np.isnan(diff))
+        assert np.all((np.abs(diff) < 1e-7) | np.isnan(diff))

@@ -31,7 +31,7 @@ POOCH_LFS = pooch.create(
 POOCH_LFS.load_registry(POOCH.fetch("registry.txt"))
 
 
-def _get_local_filename(filename):
+def get_local_filename(filename):
     """Returns the absolute path to a filename in the test set."""
     data_filename = f"data/{filename}"
     return POOCH_LFS.fetch(data_filename)
@@ -39,13 +39,13 @@ def _get_local_filename(filename):
 
 def load_test_dataset(filename, group=""):
     """Returns a test dataset as a SwarmPal PalDataItem"""
-    local_filename = _get_local_filename(filename)
+    local_filename = get_local_filename(filename)
     return PalDataItem.from_file(local_filename, group=group)
 
 
 def load_test_datatree(filename, group=""):
     """Returns a test dataset as an xarray.DataTree"""
-    local_filename = _get_local_filename(filename)
+    local_filename = get_local_filename(filename)
     return open_datatree(local_filename, group=group)
 
 
