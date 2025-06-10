@@ -31,6 +31,11 @@ jobs:
       shell: bash
 
     - uses: actions/checkout@v4
+      with:
+        # Without this, checkout would use the target branch instead, since we use pull_request_target
+        # Use merge_commit_sha for PRs, else use github.sha
+        ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+        repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
 
     - uses: actions/setup-python@v5
       with:
