@@ -37,9 +37,11 @@ dynamic = ["version"]
 dependencies = [
     "click >= 8.1",
     "hapiclient >= 0.2.3",
+    "jsonschema >= 4.0.0",
     "numpy >= 1.26",
     "matplotlib >= 3.5",
     "pycdfpp >= 0.7",
+    "pyyaml >= 6.0.0",
     "scipy >= 1.8",
     "viresclient >= 0.11",
     "xarray >= 2024.10.0",
@@ -74,12 +76,11 @@ docs = [
     "ipython!=8.7.0",
 ]
 
-[project.scripts]
-swarmpal = "swarmpal.cli.commands:cli"
-
 [project.urls]
 homepage = "https://github.com/Swarm-DISC/SwarmPAL"
 
+[project.scripts]
+swarmpal = "swarmpal.cli:cli"
 
 [tool.pytest.ini_options]
 minversion = "6.0"

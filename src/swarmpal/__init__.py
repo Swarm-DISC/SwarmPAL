@@ -1,7 +1,21 @@
 from __future__ import annotations
 
 from swarmpal import express, io, toolboxes, utils
+from swarmpal._api import (
+    apply_process,
+    fetch_data,
+    make_process,
+)
 
 __version__ = "0.2.0-alpha"
 
-__all__ = ("__version__", "express", "io", "toolboxes", "utils")
+__all__ = (
+    "__version__",
+    "express",
+    "io",
+    "toolboxes",
+    "utils",
+    "make_process",
+    "apply_process",
+    "fetch_data",
+)

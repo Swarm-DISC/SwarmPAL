@@ -12,9 +12,8 @@ from ..test_data import load_test_config, load_test_dataset
 
 def test_by_name():
     """FAC_single_sat was added to the toolboxes lookup dictionary"""
-    process = swarmpal.toolboxes.make_toolbox("FAC_single_sat")
+    process = swarmpal.make_process("FAC_single_sat")
     assert isinstance(process, fac.processes.FAC_single_sat)
-    assert swarmpal.toolboxes.by_name["FAC_single_sat"] == fac.processes.FAC_single_sat
 
 
 @pytest.mark.cached()
@@ -27,7 +26,9 @@ def test_fac_singlesat_swarm():
     assert input_dataset in input_data
 
     dataset_meta = load_test_config("test_fac_singlesat_swarm")
-    process_config = dataset_meta["toolboxes"]["FAC_single_sat"]
+    process_config = dataset_meta["process_params"][0]
+    process_name = process_config.pop("process_name")
+    assert process_name == "FAC_single_sat"
     process = fac.processes.FAC_single_sat(config=process_config)
 
     data = process(input_data)
@@ -45,4 +46,4 @@ def test_fac_singlesat_swarm():
             data["PAL_FAC_single_sat"][variable]
             - input_data["PAL_FAC_single_sat"][variable]
         ).to_numpy()
-        assert np.all((diffs < 1e-10) | np.isnan(diffs))
+        assert np.all((np.abs(diffs) < 1e-10) | np.isnan(diffs))

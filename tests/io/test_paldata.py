@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from os.path import join as join_path
 
 import numpy as np
 import pytest
@@ -10,12 +9,10 @@ from xarray import Dataset, DataTree, open_dataset
 
 from swarmpal.io._paldata import PalDataItem, create_paldata
 
-from ..test_data import load_test_dataset
+from ..test_data import get_local_filename, load_test_dataset
 
 
-@pytest.mark.cached()
-def test_paldataitem_vires():
-    item = load_test_dataset("test_paldataitem_vires.nc4", group="SW_OPER_MAGA_LR_1B")
+def vires_checks(item):
     # Type checks
     assert isinstance(item.xarray, Dataset)
     assert isinstance(item.datatree, DataTree)
@@ -42,21 +39,9 @@ def test_paldataitem_vires():
     )
     # Every entry in 'Spacecraft' should be 'A'
     assert np.all(np.unique(item.xarray["Spacecraft"]) == ["A"])
-    return item.xarray
 
 
-@pytest.mark.cached()
-@pytest.fixture()
-def xarray_data_file(tmp_path):
-    ds = test_paldataitem_vires()
-    target_output = join_path(tmp_path, "test_data.nc")
-    ds.to_netcdf(target_output)
-    return target_output
-
-
-@pytest.mark.cached()
-def test_paldataitem_hapi():
-    item = load_test_dataset("test_paldataitem_hapi.nc4", group="SW_OPER_MAGA_LR_1B")
+def hapi_checks(item):
     # Type checks
     assert isinstance(item.xarray, Dataset)
     assert isinstance(item.datatree, DataTree)
@@ -77,14 +62,27 @@ def test_paldataitem_hapi():
     )
 
 
-def test_paldataitem_file(xarray_data_file):
-    item = PalDataItem.from_file(xarray_data_file)
+@pytest.mark.cached()
+def test_paldataitem_hapi():
+    item = load_test_dataset("test_paldataitem_hapi.nc4", group="SW_OPER_MAGA_LR_1B")
+    hapi_checks(item)
+
+
+@pytest.mark.cached()
+def test_paldataitem_file():
+    dataset_filename = get_local_filename("test_paldataitem_vires.nc4")
+    item = PalDataItem.from_file(dataset_filename, group="SW_OPER_MAGA_LR_1B")
+    vires_checks(item)
     assert isinstance(item.xarray, Dataset)
 
 
-def test_paldataitem_manual(xarray_data_file):
-    ds = open_dataset(xarray_data_file)
+@pytest.mark.cached()
+def test_paldataitem_manual():
+    dataset_filename = get_local_filename("test_paldataitem_vires.nc4")
+    ds = open_dataset(dataset_filename, group="SW_OPER_MAGA_LR_1B")
     item = PalDataItem.from_manual(ds)
+    item.dataset_name = "SW_OPER_MAGA_LR_1B"
+    vires_checks(item)
     assert isinstance(item.xarray, Dataset)
 
 
