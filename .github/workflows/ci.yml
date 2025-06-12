@@ -76,7 +76,7 @@ jobs:
     - name: Test package (On Windows; Remote tests only)
       if: runner.os == 'Windows' && env.SKIP_REMOTE_MARK != '1'
       run: python -m pytest -ra -m "remote and not dsecs"
-    
+
     - name: Test package (On Linux / macOS; Remote tests only)
       if: runner.os != 'Windows' && env.SKIP_REMOTE_MARK != '1'
       run: python -m pytest -ra -m "remote"

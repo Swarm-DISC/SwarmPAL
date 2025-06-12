@@ -7,12 +7,13 @@ from xarray import open_datatree
 # from swarmpal import version
 from swarmpal.io._paldata import PalDataItem
 
+SWARMPAL_TEST_DATA_VERSION = "v0.0.1"
+
 POOCH = pooch.create(
     # Download location. Defaults to ~/.cache/swarmpal_test_data on Linux.
     path=pooch.os_cache("swarmpal_test_data"),
-    base_url="https://raw.githubusercontent.com/Swarm-DISC/SwarmPal-test-data/refs/heads/main",
-    # version='main',
-    version_dev="main",
+    base_url="https://raw.githubusercontent.com/Swarm-DISC/SwarmPal-test-data/{version}",
+    version=SWARMPAL_TEST_DATA_VERSION,
     registry={
         "registry.txt": "md5:f93b9c46046ed30bd9e8f7fe94441eaf",
     },
@@ -23,9 +24,8 @@ POOCH.load_registry(POOCH.fetch("registry.txt"))
 # See: https://stackoverflow.com/questions/45117476/access-download-on-git-lfs-file-via-raw-githubusercontent-com
 POOCH_LFS = pooch.create(
     path=pooch.os_cache("swarmpal_test_data"),
-    base_url="https://media.githubusercontent.com/media/Swarm-DISC/SwarmPal-test-data/refs/heads/main",
-    # version='main',
-    version_dev="main",
+    base_url="https://media.githubusercontent.com/media/Swarm-DISC/SwarmPal-test-data/{version}",
+    version=SWARMPAL_TEST_DATA_VERSION,
     registry=None,
 )
 POOCH_LFS.load_registry(POOCH.fetch("registry.txt"))
