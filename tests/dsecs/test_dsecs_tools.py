@@ -5,7 +5,11 @@ import pytest
 from xarray import DataTree
 
 import swarmpal.toolboxes
-from swarmpal.toolboxes import dsecs
+
+try:
+    from swarmpal.toolboxes import dsecs
+except ImportError:
+    pytest.skip("dsecs not available", allow_module_level=True)
 
 from ..test_data import load_test_config, load_test_datatree
 
