@@ -27,6 +27,11 @@ properties:
             - FAC_single_sat
             - DSECS_Preprocess
             - DSECS_Analysis
+            - TFA_Preprocess
+            - TFA_Clean
+            - TFA_Filter
+            - TFA_Wavelet
+            - TFA_WaveDetection
     description: "List of parameter objects, each describing a SwarmPal process that will be applied to the dataset"
 required:
   - data_params

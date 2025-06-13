@@ -5,6 +5,7 @@ import pytest
 from xarray import DataTree
 
 import swarmpal.toolboxes
+from swarmpal import apply_processes
 
 try:
     from swarmpal.toolboxes import dsecs
@@ -42,10 +43,7 @@ def test_dsecs_basic():
     assert "SW_OPER_MAGC_LR_1B" in input_data
 
     dataset_meta = load_test_config("test_dsecs_basic")
-    for config in dataset_meta["process_params"]:
-        process_name = config.pop("process_name")
-        process = swarmpal.make_process(process_name=process_name, config=config)
-        input_data = process(input_data)
+    input_data = apply_processes(input_data, dataset_meta["process_params"])
 
     assert "DSECS_output" in input_data
     assert len(input_data["DSECS_output"]) == 1
