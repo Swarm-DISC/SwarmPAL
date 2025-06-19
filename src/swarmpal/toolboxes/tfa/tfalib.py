@@ -126,7 +126,7 @@ def constant_cadence(t_obs, x_obs, sampling_rate, interp=False):
     init_t = t_obs[0]
     inds = np.abs(np.round((t_obs - init_t) / dt)).astype(int)
 
-    t_rec = init_t + np.arange(inds[-1]+1)*dt
+    t_rec = init_t + np.arange(inds[-1] + 1) * dt
 
     if multiDim:
         x_rec = np.full((len(t_rec), M), np.nan)
