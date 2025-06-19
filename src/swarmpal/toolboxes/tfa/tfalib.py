@@ -120,9 +120,6 @@ def constant_cadence(t_obs, x_obs, sampling_rate, interp=False):
         multiDim = False
 
     dt = 1 / sampling_rate
-    time_range = np.max(t_obs) - np.min(t_obs)
-    time_rec_N = np.ceil(time_range / dt)
-    # init_t = np.round(t_obs[0]/dt) * dt
     init_t = t_obs[0]
     inds = np.abs(np.round((t_obs - init_t) / dt)).astype(int)
 
