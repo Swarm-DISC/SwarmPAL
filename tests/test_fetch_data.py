@@ -11,7 +11,7 @@ from .io.test_paldata import hapi_checks, vires_checks
 
 
 @pytest.mark.remote()
-def test_fetch_data_vires():
+def test_fetch_data_vires(tmp_path):
     data_spec = dict(
         data_params=[
             dict(
@@ -32,6 +32,9 @@ def test_fetch_data_vires():
     palitem = PalDataItem.from_manual(item["/SW_OPER_MAGA_LR_1B"].to_dataset())
     palitem.dataset_name = "SW_OPER_MAGA_LR_1B"
     vires_checks(palitem)
+    # Test to make sure ViRES client data can be saved to NetCDF; had
+    # problems with writing CategoricalDType variables in the past
+    palitem.xarray.to_netcdf(tmp_path / "test_fetch_data_vires.nc4")
 
 
 @pytest.mark.remote()

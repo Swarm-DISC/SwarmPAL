@@ -13,6 +13,9 @@ from pathlib import Path
 from hapiclient import hapi, hapitime2datetime
 from numpy.typing import ArrayLike
 from pandas import to_datetime as to_pandas_datetime
+
+# from xarray.core.extension_array import PandasExtensionArray
+from pandas.core.arrays.categorical import Categorical
 from viresclient import SwarmRequest
 from xarray import Dataset, open_dataset
 
@@ -132,11 +135,16 @@ class ViresDataFetcher(DataFetcherBase):
 
     def fetch_data(self) -> Dataset:
         """Process the request on VirES and load an xarray Dataset"""
-        return self.vires_request.get_between(
+        result = self.vires_request.get_between(
             self.parameters.start_time,
             self.parameters.end_time,
             **self.parameters.options,
         ).as_xarray()
+        # Convert PandasExtensionArray to numpy.ndarray
+        for var in result.variables:
+            if isinstance(result[var].data, Categorical):
+                result[var].data = result[var].data.to_numpy()
+        return result
 
 
 class HapiDataFetcher(DataFetcherBase):
