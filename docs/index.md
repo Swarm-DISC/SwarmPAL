@@ -48,7 +48,7 @@ guides/shared/paldata
 ```{toctree}
 :hidden:
 :maxdepth: 2
-:caption: CLI Reference
+:caption: Reference
 
-cli/cli
+cli
 ```
