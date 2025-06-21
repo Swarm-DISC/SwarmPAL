@@ -2,9 +2,8 @@ name: CI
 
 on:
   workflow_dispatch:
-  pull_request_target:
+  pull_request:
     branches: [ main, staging ]
-    types: [labeled, synchronize]
   schedule:
     # Weekly on Sunday
     - cron: "0 1 * * 0"
@@ -24,6 +23,16 @@ jobs:
         #   runs-on: ubuntu-latest
 
     steps:
+
+    # When PRs come from a fork, skip tests requiring VirES token access (marked "remote")
+    - name: Set SKIP_REMOTE_MARK if PR is from fork
+      id: skip-remote
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ] && \
+           [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+          echo "SKIP_REMOTE_MARK=1" >> $GITHUB_ENV
+        fi
+      shell: bash
 
     - name: Fix install of gfortran (on macOS)
       if: runner.os == 'macOS'
@@ -48,6 +57,7 @@ jobs:
         python -m pip install .[test,dsecs]
 
     - name: Configure token access
+      if: env.SKIP_REMOTE_MARK != '1'
       run: |
         viresclient set_token "https://vires.services/ows" ${{ secrets.VIRES_TOKEN }}
         viresclient set_default_server https://vires.services/ows
@@ -55,14 +65,21 @@ jobs:
     - name: Install pyyaml
       run: python -m pip install pyyaml
 
-    - name: Test package (On Windows; Exclude DSECS)
+    - name: Test package (On Windows; Exclude DSECS; Exclude remote)
       if: runner.os == 'Windows'
-      run: python -m pytest -ra -m "not dsecs"
+      run: python -m pytest -ra -m "not (dsecs or remote)"
 
-    - name: Test package (On Linux / macOS)
+    - name: Test package (On Linux / macOS; Exclude remote)
       if: runner.os != 'Windows'
-      run: python -m pytest -ra
+      run: python -m pytest -ra -m "not remote"
 
+    - name: Test package (On Windows; Remote tests only)
+      if: runner.os == 'Windows' && env.SKIP_REMOTE_MARK != '1'
+      run: python -m pytest -ra -m "remote and not dsecs"
+
+    - name: Test package (On Linux / macOS; Remote tests only)
+      if: runner.os != 'Windows' && env.SKIP_REMOTE_MARK != '1'
+      run: python -m pytest -ra -m "remote"
 
   # dist:
   #   name: Distribution build

@@ -2,44 +2,59 @@ from __future__ import annotations
 
 import pooch
 import yaml
+from xarray import open_datatree
 
 # from swarmpal import version
 from swarmpal.io._paldata import PalDataItem
 
+SWARMPAL_TEST_DATA_VERSION = "v0.0.2"
+
 POOCH = pooch.create(
     # Download location. Defaults to ~/.cache/swarmpal_test_data on Linux.
     path=pooch.os_cache("swarmpal_test_data"),
-    base_url="https://raw.githubusercontent.com/dawiedotcom/SwarmPal-test-data/refs/heads/main",
-    # version='main',
+    base_url="https://raw.githubusercontent.com/Swarm-DISC/SwarmPal-test-data/{version}",
+    version=SWARMPAL_TEST_DATA_VERSION,
     version_dev="main",
     registry={
-        "registry.txt": "md5:48d2b7b830b9fa7c2eaec28cb0bc1c07",
-        "config.yaml": "md5:f5b6ca36ee46a61b956bc14dc3db8abb",
+        "registry.txt": "md5:a22241a9d245a3aec147808ab4da4d41",
     },
 )
+POOCH.load_registry(POOCH.fetch("registry.txt"))
 
 # git-lfs files are not 'in' the git repository, but can be downloaded from slightly different URL.
 # See: https://stackoverflow.com/questions/45117476/access-download-on-git-lfs-file-via-raw-githubusercontent-com
 POOCH_LFS = pooch.create(
-    path=pooch.os_cache("swarmpal_test_data/data"),
-    base_url="https://media.githubusercontent.com/media/dawiedotcom/SwarmPal-test-data/refs/heads/main/data",
-    # version='main',
+    path=pooch.os_cache("swarmpal_test_data"),
+    base_url="https://media.githubusercontent.com/media/Swarm-DISC/SwarmPal-test-data/{version}",
+    version=SWARMPAL_TEST_DATA_VERSION,
     version_dev="main",
     registry=None,
 )
-
 POOCH_LFS.load_registry(POOCH.fetch("registry.txt"))
+
+
+def get_local_filename(filename):
+    """Returns the absolute path to a filename in the test set."""
+    data_filename = f"data/{filename}"
+    return POOCH_LFS.fetch(data_filename)
 
 
 def load_test_dataset(filename, group=""):
     """Returns a test dataset as a SwarmPal PalDataItem"""
-    local_filename = POOCH_LFS.fetch(filename)
+    local_filename = get_local_filename(filename)
     return PalDataItem.from_file(local_filename, group=group)
+
+
+def load_test_datatree(filename, group=""):
+    """Returns a test dataset as an xarray.DataTree"""
+    local_filename = get_local_filename(filename)
+    return open_datatree(local_filename, group=group)
 
 
 def load_test_config(dataset_name):
     """Returns the configuration of a test dataset as dictionary"""
-    filename = POOCH.fetch("config.yaml")
+    config_filename = f"config/{dataset_name}.yaml"
+    filename = POOCH.fetch(config_filename)
     with open(filename) as f:
         datasets = yaml.safe_load(f)
-        return datasets[dataset_name]
+        return datasets

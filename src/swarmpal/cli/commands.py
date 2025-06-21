@@ -1,10 +1,19 @@
 from __future__ import annotations
 
 import click
+import yaml
 
+import swarmpal
 from swarmpal.express import fac_single_sat as _fac_single_sat
 from swarmpal.utils.configs import SPACECRAFT_TO_MAGLR_DATASET
 from swarmpal.utils.queries import last_available_time as _last_available_time
+
+
+def _read_config(filename):
+    """Helper function to read and validate YAML config files"""
+    with open(filename) as f:
+        datasets = yaml.safe_load(f)
+    return datasets
 
 
 @click.group()
@@ -40,3 +49,35 @@ def last_available_time(collection):
     """UTC of last available data for a collection, e.g. SW_FAST_MAGA_LR_1B"""
     time = _last_available_time(collection)
     click.echo(time.isoformat())
+
+
+@cli.command(add_help_option=True, short_help="Fetch datasets from Vires or Hapi")
+@click.argument("config", type=click.File("r"))
+@click.argument("out", type=click.File("w"))
+def fetch_data(config, out):
+    """Fetch data described in yaml file CONFIG and save the resulting DataTree in NetCDF file OUT"""
+
+    dataset_config = _read_config(config.name)
+    data = swarmpal.fetch_data(dataset_config)
+    data.to_netcdf(out.name)
+
+
+@cli.command(
+    add_help_option=True,
+    short_help="Process datasets in batch mode",
+    # help="Process datasets in batch mode for a given CONFIG file in yaml format",
+)
+@click.argument("config", type=click.File("r"))
+@click.argument("out", type=click.File("w"))
+def batch(config: click.File, out: click.Path):
+    """Run SwarmPAL in batch mode. The datasets and processes need to be specified in YAML file and
+    passed as the first CONFIG argument. The results are written to NetCDF files specified by OUT."""
+
+    dataset_config = _read_config(config.name)
+    data = swarmpal.fetch_data(dataset_config)
+
+    # Apply processes
+    swarmpal.apply_processes(data, dataset_config.get("process_params", []))
+
+    # Save the results as a NetCDF file
+    data.to_netcdf(out.name)

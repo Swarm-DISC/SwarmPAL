@@ -10,13 +10,15 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import date, datetime
 from os import PathLike
+from pathlib import Path
 from re import match as regex_match
 
-from cdflib.xarray import xarray_to_cdf
+from cdflib.xarray import xarray_to_cdf as cdflib_xarray_to_cdf
 from pandas import to_datetime as to_pandas_datetime
 from xarray import DataArray, Dataset, DataTree, register_datatree_accessor
 from xarray.core.extension_array import PandasExtensionArray
 
+from swarmpal.io._cdf_interface import xarray_to_cdf
 from swarmpal.io._datafetchers import DataFetcherBase, get_fetcher
 from swarmpal.utils.exceptions import PalError
 
@@ -216,7 +218,7 @@ class PalDataItem:
             This is handled specially by SwarmPAL and not passed to viresclient
         """
         params, analysis_window = PalDataItem._pad_times(params)
-        fetcher = get_fetcher("vires")(**params)
+        fetcher = get_fetcher("ViresDataFetcher")(**params)
         pdi = PalDataItem(fetcher)
         pdi.analysis_window = analysis_window
         pdi.dataset_name = params.get("collection")
@@ -238,7 +240,7 @@ class PalDataItem:
             This is handled specially by SwarmPAL and not passed to hapiclient
         """
         params, analysis_window = PalDataItem._pad_times(params)
-        fetcher = get_fetcher("hapi")(**params)
+        fetcher = get_fetcher("HapiDataFetcher")(**params)
         pdi = PalDataItem(fetcher)
         pdi.analysis_window = analysis_window
         pdi.dataset_name = params.get("dataset")
@@ -246,28 +248,42 @@ class PalDataItem:
 
     @staticmethod
     def from_file(
-        filename: PathLike | None = None, group: str | None = None, **params
+        filename: PathLike | None = None,
+        group: str | None = None,
+        filetype: str = "auto",
+        **params,
     ) -> PalDataItem:
         """Create a PalDataItem from a file
 
         Parameters
         ----------
         filename : PathLike
-            Path to the (netCDF) file to load
+            Path to the (netCDF / CDF) file to load
         group : str
-            Group name within the (netCDF) file
+            Group name within the netCDF file
+        filetype: str
+            Type of file to load. Can be "netcdf", "cdf" or "auto". If "auto", the file extension will be used to determine the type.
+        params : dict
+            Additional parameters to pass to the fetcher
 
         Returns
         -------
         PalDataItem
         """
-        if filename:
-            params["filename"] = filename
-        if group:
-            params["group"] = group
-        fetcher = get_fetcher("file")(**params)
+        cdf_endings = ("CDF",)
+        netcdf_endings = ("NETCDF", "NETCDF4", "NC", "NC4", "HDF", "HDF5", "H5", "HE5")
+        if str(filename).upper().endswith(netcdf_endings) or filetype == "netcdf":
+            fetcher = get_fetcher("NetCDFfileDataFetcher")(
+                filename=filename, group=group, **params
+            )
+            default_dataset_name = group
+        elif str(filename).upper().endswith(cdf_endings) or filetype == "cdf":
+            fetcher = get_fetcher("CDFfileDataFetcher")(filename=filename, **params)
+            default_dataset_name = Path(filename).stem
+        else:
+            raise PalError("File type not recognised")
         pdi = PalDataItem(fetcher)
-        pdi.dataset_name = params.get("dataset_name", group)
+        pdi.dataset_name = params.get("dataset_name", default_dataset_name)
         pdi.initialise()
         return pdi
 
@@ -286,7 +302,7 @@ class PalDataItem:
         """
         if xarray_dataset:
             params["xarray_dataset"] = xarray_dataset
-        fetcher = get_fetcher("manual")(**params)
+        fetcher = get_fetcher("ManualDataFetcher")(**params)
         pdi = PalDataItem(fetcher)
         pdi.dataset_name = "manual"
         return pdi
@@ -368,32 +384,38 @@ class PalDataTreeAccessor:
         }
         return residual
 
-    def to_cdf(self, file_name: str, leaf: str, istp_check: bool = False) -> None:
+    def to_cdf(self, filename: str, leaf: str, handler: str = "pycdfpp") -> None:
         """Write one leaf of the datatree to a CDF file
 
         Parameters
         ----------
-        file_name : str
+        filename : str
             Name of the file to create
         leaf : str
             Location within the datatree
+        handler : str
+            CDF handler to use. Can be "pycdfpp" or "cdflib". Defaults to "pycdfpp".
         """
         # Identify dataset to use
         ds = self._datatree[leaf].ds.copy()
         # Adjust metadata (CDF global attrs)
         # Extra PAL_meta from the parent node
         pal_meta = self._datatree[leaf].parent.swarmpal.pal_meta["."]
-        versions = f"swarmpal-{packages_metadata.version('swarmpal')} [cdflib-{packages_metadata.version('cdflib')}]"
+        versions = f"swarmpal-{packages_metadata.version('swarmpal')} [{handler}-{packages_metadata.version(handler)}]"
         ds.attrs.update(
             {
                 "CREATOR": versions,
                 "CREATED": dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "TITLE": file_name,
+                "TITLE": Path(filename).name,
                 "PAL_meta": PalMeta.serialise(pal_meta),
             }
         )
-        # NB: cdflib will write Timestamp as type CDF_TT2000 not CDF_EPOCH
-        xarray_to_cdf(xarray_dataset=ds, file_name=file_name, istp=istp_check)
+        if handler == "pycdfpp":
+            xarray_to_cdf(ds, filename)
+        elif handler == "cdflib":
+            # NB: cdflib will write Timestamp as type CDF_TT2000 not CDF_EPOCH
+            # and data dimensions seem wrong
+            cdflib_xarray_to_cdf(xarray_dataset=ds, file_name=filename)
 
 
 def create_paldata(
