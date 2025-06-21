@@ -77,5 +77,5 @@ def fac_single_sat(
     )
     data = process(data)
     if to_cdf_file:
-        data.swarmpal.to_cdf(file_name=to_cdf_file, leaf="PAL_FAC_single_sat")
+        data.swarmpal.to_cdf(filename=to_cdf_file, leaf="PAL_FAC_single_sat")
     return data
