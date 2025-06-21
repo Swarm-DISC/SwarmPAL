@@ -49,6 +49,8 @@ dependencies = [
 
 [project.optional-dependencies]
 experimental = [
+    "ipywidgets",
+    "cartopy",
     "chaosmagpy",
 ]
 dsecs = [

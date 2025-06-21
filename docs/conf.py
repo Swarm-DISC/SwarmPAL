@@ -64,7 +64,9 @@ autoapi_dirs = ["../src/swarmpal"]
 # -- Notebook execution config -----------------------------------------------
 
 # Increase allowed notebook run time
-nb_execution_timeout = 300
+# 15 minutes max per cell
+# (should change this to use per-cell metadata instead)
+nb_execution_timeout = 900
 # Fix execution of notebooks with different kernel names
 nb_kernel_rgx_aliases = {".*": "python3"}
 # Temporarily disable notebook execution while working on docs (default is "auto")
