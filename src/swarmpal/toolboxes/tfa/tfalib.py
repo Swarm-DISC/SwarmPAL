@@ -120,16 +120,13 @@ def constant_cadence(t_obs, x_obs, sampling_rate, interp=False):
         multiDim = False
 
     dt = 1 / sampling_rate
-    time_range = np.max(t_obs) - np.min(t_obs)
-    time_rec_N = np.ceil(time_range / dt)
-    # init_t = np.round(t_obs[0]/dt) * dt
     init_t = t_obs[0]
     inds = np.abs(np.round((t_obs - init_t) / dt)).astype(int)
 
-    t_rec = np.arange(init_t, init_t + time_rec_N * dt + 1e-6, dt)
+    t_rec = init_t + np.arange(inds[-1] + 1) * dt
 
     if multiDim:
-        x_rec = np.full((N, M), np.nan)
+        x_rec = np.full((len(t_rec), M), np.nan)
         x_rec[inds, :] = x_obs
     else:
         x_rec = np.full(t_rec.shape, np.nan)

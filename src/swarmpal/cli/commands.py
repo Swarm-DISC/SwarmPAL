@@ -77,10 +77,7 @@ def batch(config: click.File, out: click.Path):
     data = swarmpal.fetch_data(dataset_config)
 
     # Apply processes
-    for process_spec in dataset_config.get("process_params", []):
-        process_name = process_spec.pop("process_name")
-        process = swarmpal.make_process(process_name=process_name, config=process_spec)
-        data = process(data)
+    swarmpal.apply_processes(data, dataset_config.get("process_params", []))
 
     # Save the results as a NetCDF file
     data.to_netcdf(out.name)

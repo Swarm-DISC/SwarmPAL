@@ -223,8 +223,16 @@ class Preprocess(PalProcess):
         max_val = self.config.get("flagclean_maxval", None)
         # Use default parameters if none given in config
         varname = varname if varname else self.active_variable
-        flagname = flagname if flagname else FLAG_THRESHOLDS[varname]["flag_name"]
-        max_val = max_val if max_val else FLAG_THRESHOLDS[varname]["max_val"]
+        flagname = (
+            flagname
+            if flagname
+            else FLAG_THRESHOLDS[varname.replace("_res_Model", "")]["flag_name"]
+        )
+        max_val = (
+            max_val
+            if max_val
+            else FLAG_THRESHOLDS[varname.replace("_res_Model", "")]["max_val"]
+        )
         # Set flagged values to NaN
         inds_to_remove = ds[flagname] > max_val
         ds[varname][inds_to_remove, ...] = np.nan

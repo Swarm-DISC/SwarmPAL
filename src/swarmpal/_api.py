@@ -37,6 +37,33 @@ def make_process(process_name=None, config={}):
 
             processes_by_name["DSECS_Analysis"] = Analysis
 
+        elif process_name == "TFA_Preprocess":
+            from swarmpal.toolboxes.tfa.processes import Preprocess as TFA_Preprocess
+
+            processes_by_name["TFA_Preprocess"] = TFA_Preprocess
+
+        elif process_name == "TFA_Clean":
+            from swarmpal.toolboxes.tfa.processes import Clean as TFA_Clean
+
+            processes_by_name["TFA_Clean"] = TFA_Clean
+
+        elif process_name == "TFA_Filter":
+            from swarmpal.toolboxes.tfa.processes import Filter as TFA_Filter
+
+            processes_by_name["TFA_Filter"] = TFA_Filter
+
+        elif process_name == "TFA_Wavelet":
+            from swarmpal.toolboxes.tfa.processes import Wavelet as TFA_Wavelet
+
+            processes_by_name["TFA_Wavelet"] = TFA_Wavelet
+
+        elif process_name == "TFA_WaveDetection":
+            from swarmpal.toolboxes.tfa.processes import (
+                WaveDetection as TFA_WaveDetection,
+            )
+
+            processes_by_name["TFA_WaveDetection"] = TFA_WaveDetection
+
         else:
             raise ValueError(
                 f"Unknown process {process_name}. Must be one of ['FAC_single_sat', 'DSECS_Preprocess', 'DSECS_Analysis']"
@@ -59,6 +86,22 @@ def apply_process(data, process_name=None, config={}):
     """
     process = make_process(process_name=process_name, config=config)
     return process(data)
+
+
+def apply_processes(data, process_params):
+    """Apply a list of processes to a dataset.
+
+    Parameters
+    ----------
+    data: DataTree
+        the data on which the process will be applied to.
+    process_params:
+        a list of processes to apply to the input data.
+    """
+    for config in process_params:
+        process_name = config.pop("process_name")
+        apply_process(data, process_name=process_name, config=config)
+    return data
 
 
 def _str_to_timedelta(time):
