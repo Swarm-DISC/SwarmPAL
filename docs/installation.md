@@ -19,6 +19,11 @@ pip install swarmpal[dsecs]
 ```
 which includes [apexpy](https://github.com/aburrell/apexpy), which is needed for the DSECS toolbox. There can be some trouble installing this so you might need to manually install apexpy first.
 
+To include extra experimental features:
+```bash
+pip install swarmpal[dsecs,experimental]
+```
+
 :::{admonition} New to Python?
 
 To setup Python on your system, check guidance on the [viresclient installation notes](https://viresclient.readthedocs.io/en/latest/installation.html#recommended-setup-if-starting-without-python-already)
@@ -27,10 +32,10 @@ To setup Python on your system, check guidance on the [viresclient installation 
 
 ## Install latest development version
 
-Assuming you have a compatible system with git, a fortran compiler, and a Python>=3.8 installation with a recent version of pip, you can install the latest development version from the `staging` branch with:
+Assuming you have a compatible system with git, a fortran compiler, and a Python>=3.10 installation with a recent version of pip, you can install the latest development version from the `staging` branch with:
 
 ```bash
-pip install git+https://github.com/Swarm-DISC/SwarmPAL@staging#egg=swarmpal[dsecs]
+pip install git+https://github.com/Swarm-DISC/SwarmPAL@staging#egg=swarmpal[dsecs,experimental,test]
 ```
 
 :::{admonition} Fortran compiler?
@@ -52,11 +57,21 @@ pip install git+https://github.com/Swarm-DISC/SwarmPAL@staging#egg=swarmpal
 
 ## Install for local development
 
-Clone the repository and install it in editable mode:
+Clone the repository and install it in editable mode :
 
 ```bash
 git clone https://github.com/Swarm-DISC/SwarmPAL
-pip install -e SwarmPAL/
+pip install -e SwarmPAL[dsecs,experimental,test,dev,docs]
+pytest SwarmPAL/
 ```
+
+````{tip}
+Instructions for using [uv](https://docs.astral.sh/uv/reference/cli/) will be provided soon. e.g.:
+```bash
+uv venv
+uv sync --all-extras
+uv run pytest
+```
+````
 
 For more information check the [development Guide on HackMD](https://hackmd.io/@swarm/dev/%2Ff6YIHfqxT9yL0giWJzhr_Q)

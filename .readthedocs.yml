@@ -28,3 +28,4 @@ python:
       extra_requirements:
         - docs
         - dsecs
+        - experimental

@@ -7,7 +7,8 @@
 :caption: Getting Started
 
 installation
-guides/quickstart
+quickstart
+guides/tutorial
 acknowledgements
 contributing
 changelog
@@ -47,21 +48,7 @@ guides/shared/paldata
 ```{toctree}
 :hidden:
 :maxdepth: 2
-:caption: API Reference
+:caption: Reference
 
-api/swarmpal
-api/express
-api/io
-api/fac
-api/dsecs
-api/tfa
-api/utils
-```
-
-```{toctree}
-:hidden:
-:maxdepth: 2
-:caption: CLI Reference
-
-cli/cli
+cli
 ```

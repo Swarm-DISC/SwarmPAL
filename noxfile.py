@@ -34,7 +34,7 @@ def docs(session: nox.Session) -> None:
     Build the docs. Pass "serve" to serve.
     """
 
-    session.install(".[docs,dsecs]")
+    session.install(".[docs,dsecs,experimental]")
     session.chdir("docs")
     session.run("sphinx-build", "-M", "html", ".", "_build")
 
