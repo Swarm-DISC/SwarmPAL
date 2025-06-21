@@ -34,9 +34,8 @@ if token:
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    # "myst_parser",  # broke when enabling this with myst_nb
     "myst_nb",
-    "sphinx.ext.autodoc",
+    "autoapi.extension",
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "sphinx_copybutton",
@@ -50,6 +49,20 @@ myst_enable_extensions = [
     "colon_fence",
 ]
 
+# Add any paths that contain templates here, relative to this directory.
+templates_path = ["_templates"]
+
+# List of patterns, relative to source directory, that match files and
+# directories to ignore when looking for source files.
+# This pattern also affects html_static_path and html_extra_path.
+exclude_patterns = ["_build", "**.ipynb_checkpoints", "Thumbs.db", ".DS_Store", ".env"]
+
+# -- Extra configurations ----------------------------------------------------
+
+autoapi_dirs = ["../src/swarmpal"]
+
+# -- Notebook execution config -----------------------------------------------
+
 # Increase allowed notebook run time
 nb_execution_timeout = 300
 # Fix execution of notebooks with different kernel names
@@ -61,15 +74,6 @@ nb_kernel_rgx_aliases = {".*": "python3"}
 # This allows readthedocs to report failure in CI, while still displaying the docs
 nb_execution_allow_errors = False
 nb_execution_raise_on_error = False
-
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ["_templates"]
-
-# List of patterns, relative to source directory, that match files and
-# directories to ignore when looking for source files.
-# This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "**.ipynb_checkpoints", "Thumbs.db", ".DS_Store", ".env"]
-
 
 # -- Options for HTML output -------------------------------------------------
 

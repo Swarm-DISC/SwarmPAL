@@ -1,9 +1,7 @@
 # Acknowledgements
 
-If you make use of this package in a publication, please cite the following:
-
-```raw
-[Pending Zenodo link - for now, just reference the GitHub repo]
+```{important}
+If you make use of this package in a publication, please follow the citation information on Zenodo: <https://doi.org/10.5281/zenodo.7826899>
 ```
 
 ## Funding

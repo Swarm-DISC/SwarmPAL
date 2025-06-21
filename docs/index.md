@@ -48,20 +48,6 @@ guides/shared/paldata
 ```{toctree}
 :hidden:
 :maxdepth: 2
-:caption: API Reference
-
-api/swarmpal
-api/express
-api/io
-api/fac
-api/dsecs
-api/tfa
-api/utils
-```
-
-```{toctree}
-:hidden:
-:maxdepth: 2
 :caption: CLI Reference
 
 cli/cli
