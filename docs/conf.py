@@ -42,6 +42,8 @@ extensions = [
     "sphinx_copybutton",
     "sphinx.ext.viewcode",
     "sphinx_click",
+    "sphinx_design",
+    "sphinx_tabs.tabs",
 ]
 
 myst_enable_extensions = [

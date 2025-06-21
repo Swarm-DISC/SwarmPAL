@@ -7,7 +7,8 @@
 :caption: Getting Started
 
 installation
-guides/quickstart
+quickstart
+guides/tutorial
 acknowledgements
 contributing
 changelog
