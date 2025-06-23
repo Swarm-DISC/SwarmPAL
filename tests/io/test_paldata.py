@@ -62,13 +62,13 @@ def hapi_checks(item):
     )
 
 
-@pytest.mark.cached()
+@pytest.mark.cached
 def test_paldataitem_hapi():
     item = load_test_dataset("test_paldataitem_hapi.nc4", group="SW_OPER_MAGA_LR_1B")
     hapi_checks(item)
 
 
-@pytest.mark.cached()
+@pytest.mark.cached
 def test_paldataitem_file():
     dataset_filename = get_local_filename("test_paldataitem_vires.nc4")
     item = PalDataItem.from_file(dataset_filename, group="SW_OPER_MAGA_LR_1B")
@@ -76,7 +76,7 @@ def test_paldataitem_file():
     assert isinstance(item.xarray, Dataset)
 
 
-@pytest.mark.cached()
+@pytest.mark.cached
 def test_paldataitem_manual():
     dataset_filename = get_local_filename("test_paldataitem_vires.nc4")
     ds = open_dataset(dataset_filename, group="SW_OPER_MAGA_LR_1B")
@@ -86,7 +86,7 @@ def test_paldataitem_manual():
     assert isinstance(item.xarray, Dataset)
 
 
-@pytest.mark.cached()
+@pytest.mark.cached
 def test_time_pad_vires():
     start_time = datetime(2016, 1, 1, 0, 0, 0)
     end_time = datetime(2016, 1, 1, 0, 0, 10)
@@ -103,7 +103,7 @@ def test_time_pad_vires():
     # assert pdi.xarray.attrs["PAL_meta"]["analysis_window"][1] == end_time.isoformat()
 
 
-@pytest.mark.cached()
+@pytest.mark.cached
 def test_time_pad_hapi():
     start_time = datetime(2016, 1, 1, 0, 0, 0)
     end_time = datetime(2016, 1, 1, 0, 0, 10)
@@ -119,23 +119,23 @@ def test_time_pad_hapi():
     # assert pdi.xarray.attrs["PAL_meta"]["analysis_window"][1] == end_time.isoformat()
 
 
-@pytest.mark.cached()
-@pytest.fixture()
+@pytest.mark.cached
+@pytest.fixture
 def paldata_item_MAGA():
     return load_test_dataset(
         "fixture_paldata_item_MAGA.nc4", group="SW_OPER_MAGA_LR_1B"
     )
 
 
-@pytest.mark.cached()
-@pytest.fixture()
+@pytest.mark.cached
+@pytest.fixture
 def paldata_item_MAGB():
     return load_test_dataset(
         "fixture_paldata_item_MAGB.nc4", group="SW_OPER_MAGB_LR_1B"
     )
 
 
-@pytest.mark.cached()
+@pytest.mark.cached
 def test_create_paldata(paldata_item_MAGA, paldata_item_MAGB):
     # Test basic paldata
     data = create_paldata(paldata_item_MAGA)

@@ -6,8 +6,8 @@ from xarray import Dataset, DataTree
 from swarmpal.io._paldata import PalDataItem, PalProcess, create_paldata
 
 
-@pytest.mark.remote()
-@pytest.fixture()
+@pytest.mark.remote
+@pytest.fixture
 def paldata_MAGA():
     data_params = dict(
         collection="SW_OPER_MAGA_LR_1B",
@@ -22,7 +22,7 @@ def paldata_MAGA():
     return data
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_palprocess(paldata_MAGA):
     """Test the creation and use of a basic PalProcess"""
     data = paldata_MAGA
