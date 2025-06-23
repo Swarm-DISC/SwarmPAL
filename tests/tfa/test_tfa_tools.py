@@ -25,7 +25,7 @@ def test_by_name():
         assert isinstance(new_process, process)
 
 
-@pytest.mark.cached()
+@pytest.mark.cached
 def test_tfa_basic():
     product_name = "SW_OPER_MAGA_LR_1B"
     input_data = DataTree.from_dict(

@@ -10,7 +10,7 @@ from swarmpal.io import PalDataItem
 from .io.test_paldata import hapi_checks, vires_checks
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_fetch_data_vires(tmp_path):
     data_spec = dict(
         data_params=[
@@ -37,7 +37,7 @@ def test_fetch_data_vires(tmp_path):
     palitem.xarray.to_netcdf(tmp_path / "test_fetch_data_vires.nc4")
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_fetch_data_hapi():
     data_spec = dict(
         data_params=[
@@ -59,7 +59,7 @@ def test_fetch_data_hapi():
     hapi_checks(dataitem)
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_pad_times():
     data_spec = dict(
         data_params=[
