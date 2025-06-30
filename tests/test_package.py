@@ -17,7 +17,7 @@ def test_imports():
         print(module.__doc__)
 
 
-@pytest.mark.dsecs()
+@pytest.mark.dsecs
 def test_imports_dsecs():
     from swarmpal.toolboxes import dsecs
 
