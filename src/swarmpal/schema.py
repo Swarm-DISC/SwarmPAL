@@ -152,17 +152,21 @@ definitions:
 fetch_data_schema = safe_load(fetch_data_schema_txt)
 
 
+def is_iso8601_datetime(instance):
+    try:
+        datetime.datetime.fromisoformat(instance)
+        return True
+    except ValueError:
+        return False
+
+
 def validate(config):
     """Validates config against the schema for fetch_data"""
     format_checker = jsonschema.FormatChecker()
 
     @format_checker.checks("iso8601-date-time")
-    def is_iso8601_datetime(instance):
-        try:
-            datetime.datetime.fromisoformat(instance)
-            return True
-        except ValueError:
-            return False
+    def _is_iso8601_datetime(instance):
+        return is_iso8601_datetime(instance)
 
     @format_checker.checks("timedelta")
     def is_timedelta(instance):
