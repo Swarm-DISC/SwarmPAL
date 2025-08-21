@@ -37,6 +37,7 @@ dynamic = ["version"]
 dependencies = [
     "click >= 8.1",
     "hapiclient >= 0.2.3",
+    "h5netcdf >= 1.6",
     "jsonschema >= 4.0.0",
     "numpy >= 1.26",
     "matplotlib >= 3.5",
