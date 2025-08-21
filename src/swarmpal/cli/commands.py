@@ -1,18 +1,51 @@
 from __future__ import annotations
 
+import sys
+
 import click
 import yaml
 
 import swarmpal
 from swarmpal.express import fac_single_sat as _fac_single_sat
+from swarmpal.schema import is_iso8601_datetime
 from swarmpal.utils.configs import SPACECRAFT_TO_MAGLR_DATASET
 from swarmpal.utils.queries import last_available_time as _last_available_time
 
 
-def _read_config(filename):
+def _update_times(start_time, end_time, dataset_config):
+    """Helper to update start and end times in a dataset configuration."""
+    if not is_iso8601_datetime(start_time):
+        click.echo(
+            f"The start time should be in ISO8601 format. Got '{start_time}' instead.",
+            err=True,
+        )
+        sys.exit(1)
+    if not is_iso8601_datetime(end_time):
+        click.echo(
+            f"The end time should be in ISO8601 format. Got '{end_time}' instead.",
+            err=True,
+        )
+        sys.exit(1)
+
+    for dataset in dataset_config["data_params"]:
+        # Vires format
+        if "start_time" in dataset:
+            dataset["start_time"] = start_time
+        if "end_time" in dataset:
+            dataset["end_time"] = end_time
+        # HAPI format
+        if "start" in dataset:
+            dataset["start"] = start_time
+        if "stop" in dataset:
+            dataset["stop"] = end_time
+
+
+def _read_config(filename, times):
     """Helper function to read and validate YAML config files"""
     with open(filename) as f:
         datasets = yaml.safe_load(f)
+    if times is not None:
+        _update_times(times[0], times[1], datasets)
     return datasets
 
 
@@ -52,12 +85,18 @@ def last_available_time(collection):
 
 
 @cli.command(add_help_option=True, short_help="Fetch datasets from Vires or Hapi")
+@click.option(
+    "--time",
+    nargs=2,
+    type=str,
+    help="Override the start and end times in the configuration file",
+)
 @click.argument("config", type=click.File("r"))
 @click.argument("out", type=click.File("w"))
-def fetch_data(config, out):
+def fetch_data(time, config, out):
     """Fetch data described in yaml file CONFIG and save the resulting DataTree in NetCDF file OUT"""
 
-    dataset_config = _read_config(config.name)
+    dataset_config = _read_config(config.name, time)
     data = swarmpal.fetch_data(dataset_config)
     data.to_netcdf(out.name)
 
@@ -67,13 +106,19 @@ def fetch_data(config, out):
     short_help="Process datasets in batch mode",
     # help="Process datasets in batch mode for a given CONFIG file in yaml format",
 )
+@click.option(
+    "--time",
+    nargs=2,
+    type=str,
+    help="Override the start and end times in the configuration file",
+)
 @click.argument("config", type=click.File("r"))
 @click.argument("out", type=click.File("w"))
-def batch(config: click.File, out: click.Path):
+def batch(time, config: click.File, out: click.Path):
     """Run SwarmPAL in batch mode. The datasets and processes need to be specified in YAML file and
     passed as the first CONFIG argument. The results are written to NetCDF files specified by OUT."""
 
-    dataset_config = _read_config(config.name)
+    dataset_config = _read_config(config.name, time)
     data = swarmpal.fetch_data(dataset_config)
 
     # Apply processes
