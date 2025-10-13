@@ -64,6 +64,13 @@ def make_process(process_name=None, config={}):
 
             processes_by_name["TFA_WaveDetection"] = TFA_WaveDetection
 
+        elif process_name == "EXP_LocalForwardMagneticModel":
+            from swarmpal.experimental import LocalForwardMagneticModel
+
+            processes_by_name[
+                "EXP_LocalForwardMagneticModel"
+            ] = LocalForwardMagneticModel
+
         else:
             raise ValueError(
                 f"Unknown process {process_name}. Must be one of ['FAC_single_sat', 'DSECS_Preprocess', 'DSECS_Analysis']"
@@ -133,6 +140,19 @@ def _fetch_dataset(provider="", config={}, options=None):
                 * - `hapi`
                   - `dict(logging=False)`
     """
+    if provider == "file":
+        # TODO:
+        #  check that the file exists.
+        #  check that all required config keys are present.
+        return create_paldata(
+            **{
+                config["dataset"]: PalDataItem.from_file(
+                    filename=config["filename"],
+                    filetype=config["filetype"],
+                )
+            }
+        )
+
     # Convert pad_times from strings to timedelta objects
     if "pad_times" in config:
         config["pad_times"] = [_str_to_timedelta(time) for time in config["pad_times"]]
@@ -147,7 +167,7 @@ def _fetch_dataset(provider="", config={}, options=None):
         return create_paldata(PalDataItem.from_hapi(options=options, **config))
 
     raise ValueError(
-        f"Unknown provider {provider}. Provider must be one of ['vires', 'hapi']."
+        f"Unknown provider {provider}. Provider must be one of ['vires', 'hapi', 'file']."
     )
 
 
