@@ -14,6 +14,7 @@ properties:
       anyOf:
         - $ref: "#/definitions/vires_data_params"
         - $ref: "#/definitions/hapi_data_params"
+        - $ref: "#/definitions/file_data_params"
     description: "List of data parameter objects, each conforming to either vires_data_params or hapi_data_params."
   process_params:
     type: array
@@ -32,6 +33,7 @@ properties:
             - TFA_Filter
             - TFA_Wavelet
             - TFA_WaveDetection
+            - EXP_LocalForwardMagneticModel
     description: "List of parameter objects, each describing a SwarmPal process that will be applied to the dataset"
 required:
   - data_params
@@ -147,6 +149,27 @@ definitions:
       - server
     additionalProperties: false
     description: "Schema for HAPI data parameters configuration."
+  file_data_params:
+    type: object
+    properties:
+
+      provider:
+        type: string
+        description: "Data provider name."
+        enum:
+          - "file"
+      filename:
+        type: string
+        description: "Name of the file to be included in the DataTree"
+      filetype:
+        type: string
+        description: "File format."
+        enum:
+          - "cdf"
+          - "netcdf"
+      dataset:
+        type: string
+        description: "Name of the dataset in the resulting DataTree"
 """
 
 fetch_data_schema = safe_load(fetch_data_schema_txt)
