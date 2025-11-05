@@ -32,6 +32,7 @@ class FAC_single_sat(PalProcess):
         inclination_limit: float = 30,
         time_jump_limit: int = 1,
         include_auxiliaries: bool = True,
+        output_dataset: str = "PAL_FAC_single_sat",
     ) -> None:
         """Configures the process
 
@@ -49,14 +50,17 @@ class FAC_single_sat(PalProcess):
             Maximum allowable time step in data for FAC validity (in seconds), by default 1
         include_auxiliaries : bool, optional
             Whether to include e.g. Latitude, Longitude, Flags, etc, by default True
+        output_dataset : str
+            Sets the name of the dataset in the data tree that TFA processes will write results to, by default "PAL_FAC_singlesat"
         """
-        self.config = dict(
+        super().set_config(
             dataset=dataset,
             model_varname=model_varname,
             measurement_varname=measurement_varname,
             inclination_limit=inclination_limit,
             time_jump_limit=time_jump_limit,
             include_auxiliaries=include_auxiliaries,
+            output_dataset=output_dataset,
         )
 
     def _call(self, datatree):

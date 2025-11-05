@@ -35,7 +35,7 @@ def test_palprocess(paldata_MAGA):
             return "MyProcess"
 
         def set_config(self, **kwargs) -> None:
-            return super().set_config(**kwargs)
+            return super().set_config(output_dataset="MyProcess", **kwargs)
 
         def _call(self, datatree):
             # Identify inputs for algorithm
@@ -52,10 +52,10 @@ def test_palprocess(paldata_MAGA):
                 }
             )
             # Write the output into a new path in the datatree and return it
-            subtree["output"] = DataTree(dataset=data_out)
+            datatree[self.output_dataset] = DataTree(dataset=data_out)
             return datatree
 
     p = MyProcess(config={"dataset": "SW_OPER_MAGA_LR_1B", "parameter": "B_NEC"})
     data = data.swarmpal.apply(p)
-    assert "output_parameter" in data["SW_OPER_MAGA_LR_1B/output"]
-    assert "MyProcess" in data.swarmpal.pal_meta["."].keys()
+    assert "output_parameter" in data[p.output_dataset]
+    assert "MyProcess" in data.swarmpal.pal_meta["."]["output_datasets"]

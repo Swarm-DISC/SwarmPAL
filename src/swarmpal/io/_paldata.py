@@ -491,8 +491,17 @@ class PalProcess(ABC):
         return "PalProcess"
 
     @abstractmethod
-    def set_config(self, **kwargs) -> None:
-        self.config = dict(**kwargs)
+    def set_config(self, output_dataset: str = "", **kwargs):
+        if output_dataset == "":
+            raise RuntimeError(
+                "All instances of PalProcess must name an output_dataset"
+            )
+
+        self.config = dict(output_dataset=output_dataset, **kwargs)
+
+    @property
+    def output_dataset(self):
+        return self.config["output_dataset"]
 
     @property
     def active_tree(self) -> str:
@@ -519,14 +528,21 @@ class PalProcess(ABC):
             subtree = datatree
         # Check metadata to see if this has already been run
         procname = self.process_name
-        subtree_root_pal_meta = subtree.swarmpal.pal_meta["."]
-        if procname in subtree_root_pal_meta.keys():
-            logger.warn(f" Rerunning {procname}: May overwrite existing data")
+        output_dataset = self.output_dataset
         # Apply process to create updated datatree
         subtree = self._call(subtree)
         # Update metadata with details of the applied process
-        subtree_root_pal_meta[procname] = self.config
-        subtree.attrs["PAL_meta"] = PalMeta.serialise(subtree_root_pal_meta)
+        pal_meta = subtree.swarmpal.pal_meta.get(output_dataset, {})
+        if procname in pal_meta.keys():
+            logger.warn(f" Rerunning {procname}: May overwrite existing data")
+        pal_meta[procname] = self.config
+        subtree[output_dataset].attrs["PAL_meta"] = PalMeta.serialise(pal_meta)
+        # Updata metadata for the global datatree
+        root_pal_meta = datatree.swarmpal.pal_meta
+        output_datasets = root_pal_meta.get("output_datasets", [])
+        output_datasets.append(output_dataset)
+        root_pal_meta["output_datasets"] = output_datasets
+        datatree.attrs["PAL_meta"] = PalMeta.serialise(root_pal_meta)
         # Update the full tree with the modified subtree
         if self.active_tree != "/":
             subtree.parent = datatree
