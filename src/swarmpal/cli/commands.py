@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import os
 import sys
 
 import click
 import yaml
+from xarray import open_datatree
 
 import swarmpal
 from swarmpal.express import fac_single_sat as _fac_single_sat
@@ -84,6 +86,15 @@ def last_available_time(collection):
     click.echo(time.isoformat())
 
 
+def _check_overwrite(file: click.Path, overwrite: bool):
+    if os.path.exists(file.name) and not overwrite:
+        click.echo(
+            f"Output file '{file.name}' already exists. Use --overwrite to replace it.",
+            err=True,
+        )
+        sys.exit(1)
+
+
 @cli.command(add_help_option=True, short_help="Fetch datasets from Vires or Hapi")
 @click.option(
     "--time",
@@ -91,11 +102,16 @@ def last_available_time(collection):
     type=str,
     help="Override the start and end times in the configuration file",
 )
+@click.option(
+    "--overwrite",
+    is_flag=True,
+    help="Overwrite output file if it already exists",
+)
 @click.argument("config", type=click.File("r"))
 @click.argument("out", type=click.File("w"))
-def fetch_data(time, config, out):
+def fetch_data(time, overwrite, config: click.File, out: click.Path):
     """Fetch data described in yaml file CONFIG and save the resulting DataTree in NetCDF file OUT"""
-
+    _check_overwrite(out, overwrite)
     dataset_config = _read_config(config.name, time)
     data = swarmpal.fetch_data(dataset_config)
     data.to_netcdf(out.name)
@@ -112,11 +128,18 @@ def fetch_data(time, config, out):
     type=str,
     help="Override the start and end times in the configuration file",
 )
+@click.option(
+    "--overwrite",
+    is_flag=True,
+    help="Overwrite output file if it already exists",
+)
 @click.argument("config", type=click.File("r"))
 @click.argument("out", type=click.File("w"))
-def batch(time, config: click.File, out: click.Path):
+def batch(time, overwrite, config: click.File, out: click.Path):
     """Run SwarmPAL in batch mode. The datasets and processes need to be specified in YAML file and
     passed as the first CONFIG argument. The results are written to NetCDF files specified by OUT."""
+
+    _check_overwrite(out, overwrite)
 
     dataset_config = _read_config(config.name, time)
     data = swarmpal.fetch_data(dataset_config)
@@ -126,3 +149,19 @@ def batch(time, config: click.File, out: click.Path):
 
     # Save the results as a NetCDF file
     data.to_netcdf(out.name)
+
+
+@cli.command()
+@click.argument("file", type=click.File("r"))
+@click.argument("out", type=click.File("w"))
+@click.option(
+    "--overwrite",
+    is_flag=True,
+    help="Overwrite output file if it already exists",
+)
+def quicklook(overwrite, file: click.File, out: click.Path):
+    """Create a quicklook plot if possible"""
+    _check_overwrite(out, overwrite)
+    data = open_datatree(file.name)
+    fig = swarmpal.quicklook(data)
+    fig.savefig(out.name)

@@ -149,6 +149,7 @@ def _fetch_dataset(provider="", config={}, options=None):
                 config["dataset"]: PalDataItem.from_file(
                     filename=config["filename"],
                     filetype=config["filetype"],
+                    group=config.get("dataset", None),
                 )
             }
         )
@@ -194,3 +195,48 @@ def fetch_data(configurations):
         for key, dt in item.children.items():
             data[key] = dt
     return data
+
+
+def quicklook(data: DataTree):
+    """Create a quicklook plot if possible
+
+    Parameters
+    ----------
+    data: DataTree
+        Data that has been processed by SwarmPAL
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    """
+    # Get a quicklook plot if possible
+    # Try different quicklook methods in order of preference
+    quicklook_methods = [
+        ("fac", lambda: data.swarmpal_fac.quicklook()),
+        (
+            "tfa",
+            lambda: __import__(
+                "swarmpal.toolboxes.tfa.plotting", fromlist=["quicklook"]
+            ).quicklook(data),
+        ),
+        (
+            "dsecs",
+            lambda: (
+                __import__(
+                    "swarmpal.experimental.dsecs_plotting",
+                    fromlist=["plot_analysed_pass"],
+                ).plot_analysed_pass(data, pass_no=0),
+                None,
+            ),
+        ),
+    ]
+
+    for method_name, method in quicklook_methods:
+        try:
+            result = method()
+            fig = result[0] if isinstance(result, tuple) else result
+            return fig
+        except Exception:
+            continue
+
+    raise RuntimeError("No suitable quicklook method available for this data")
