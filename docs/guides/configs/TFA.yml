@@ -1,0 +1,34 @@
+---
+data_params:
+- provider: vires
+  collection: SW_OPER_MAGA_LR_1B
+  measurements:
+  - B_NEC
+  models:
+  - Model='CHAOS-Core'+'CHAOS-Static'
+  auxiliaries:
+  - QDLat
+  - MLT
+  start_time: '2025-10-05T00:00:00'
+  end_time: '2025-10-06T00:00:00'
+  pad_times:
+  - 03:00:00
+  - 03:00:00
+  server_url: https://vires.services/ows
+process_params:
+- process_name: TFA_Preprocess
+  dataset: SW_OPER_MAGA_LR_1B
+  active_variable: B_NEC
+  active_component: 2
+  sampling_rate: 1.0
+  remove_model: false
+- process_name: TFA_Clean
+  window_size: 300
+  method: iqr
+  multiplier: 0.5
+- process_name: TFA_Filter
+  cutoff_frequency: 0.02
+- process_name: TFA_Wavelet
+  min_frequency: 0.02
+  max_frequency: 0.1
+  dj: 0.1

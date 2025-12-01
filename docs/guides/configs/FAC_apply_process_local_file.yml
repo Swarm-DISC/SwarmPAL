@@ -1,0 +1,15 @@
+data_params:
+  - provider: file
+    dataset: "SW_OPER_MAGA_LR_1B"
+    filename: "SW_OPER_MAGA_LR_1B_20250410T000000_20250410T235959_0606_MDR_MAG_LR.cdf"
+    filetype: "cdf"
+
+process_params:
+  - process_name: EXP_LocalForwardMagneticModel
+    dataset: "SW_OPER_MAGA_LR_1B"
+    model_descriptor: "CHAOS-Core"
+  - process_name: FAC_single_sat
+    dataset: SW_OPER_MAGA_LR_1B
+    model_varname: B_NEC_CHAOS-Core
+    measurement_varname: B_NEC
+    time_jump_limit: 1
