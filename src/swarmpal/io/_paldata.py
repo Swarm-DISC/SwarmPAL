@@ -539,8 +539,9 @@ class PalProcess(ABC):
         subtree[output_dataset].attrs["PAL_meta"] = PalMeta.serialise(pal_meta)
         # Updata metadata for the global datatree
         root_pal_meta = datatree.swarmpal.pal_meta
-        output_datasets = root_pal_meta.get("output_datasets", [])
-        output_datasets.append(output_dataset)
+        output_datasets = root_pal_meta["."].get("output_datasets", [])
+        if output_dataset not in output_datasets:
+            output_datasets.append(output_dataset)
         root_pal_meta["output_datasets"] = output_datasets
         datatree.attrs["PAL_meta"] = PalMeta.serialise(root_pal_meta)
         # Update the full tree with the modified subtree

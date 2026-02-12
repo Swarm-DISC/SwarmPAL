@@ -88,7 +88,7 @@ class FAC_single_sat(PalProcess):
         ds_out["IRC"].attrs = {"units": "uA/m2"}
         if self.config.get("include_auxiliaries"):
             ds_out = self._append_aux(dataset_in, ds_out)
-        datatree["PAL_FAC_single_sat"] = DataTree(dataset=ds_out)
+        datatree[self.output_dataset] = DataTree(dataset=ds_out)
         return datatree
 
     def _validate(self):
@@ -159,12 +159,17 @@ class PalFacDataTreeAccessor:
     def quicklook(self, active_tree="."):
         fig, axes = plt.subplots(nrows=2, sharex=True)
         # TODO: refactor to be able to identify active tree
-        process_config = self._datatree.swarmpal.pal_meta[active_tree]["FAC_single_sat"]
-        dataset = process_config.get("dataset")
-        self._datatree[f"{active_tree}/PAL_FAC_single_sat"]["IRC"].plot.line(ax=axes[0])
-        self._datatree[f"{active_tree}/PAL_FAC_single_sat"]["FAC"].plot.line(ax=axes[1])
-        axes[0].set_xlabel("")
-        axes[0].grid()
-        axes[1].grid()
-        fig.suptitle(f"{dataset}")
-        return fig, axes
+        active_tree_meta = self._datatree.swarmpal.pal_meta[active_tree]
+        for output_dataset in active_tree_meta["output_datasets"]:
+            process_config = active_tree_meta[output_dataset]
+            if "FAC_single_sat" not in process_config:
+                continue
+            dataset_dir = f"{active_tree}/{output_dataset}"
+            self._datatree[dataset_dir]["IRC"].plot.line(ax=axes[0])
+            self._datatree[dataset_dir]["FAC"].plot.line(ax=axes[1])
+            axes[0].set_xlabel("")
+            axes[0].grid()
+            axes[1].grid()
+            dataset = process_config.get("dataset")
+            fig.suptitle(f"{dataset}")
+            return fig, axes
