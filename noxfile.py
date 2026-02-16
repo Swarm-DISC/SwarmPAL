@@ -4,7 +4,6 @@ import shutil
 from pathlib import Path
 
 import nox
-import nox_uv
 
 nox.options.default_venv_backend = "uv"
 
@@ -20,16 +19,26 @@ def lint(session: nox.Session) -> None:
     session.run("pre-commit", "run", "--all-files", *session.posargs)
 
 
-@nox_uv.session(python=["3.10", "3.11"], uv_groups=["test"])
+@nox.session(python=["3.10", "3.11"])
 def tests(session: nox.Session) -> None:
     """
     Run the unit and regular tests.
     """
-    session.install(".[dsecs,experimental]")
+    session.run(
+        "uv",
+        "sync",
+        "--locked",
+        "--group",
+        "test",
+        "--extra",
+        "dsecs",
+        "--extra",
+        "experimental",
+    )
     session.run("pytest", *session.posargs)
 
 
-@nox_uv.session(python="3.11", uv_groups=["docs"])
+@nox.session(python="3.11")
 def docs(session: nox.Session) -> None:
     """
     Build the docs. Pass "serve" to serve, "no-exec" to skip notebook execution.
@@ -37,7 +46,17 @@ def docs(session: nox.Session) -> None:
     e.g. uvx nox -s docs -- no-exec
     """
 
-    session.install(".[dsecs,experimental]")
+    session.run(
+        "uv",
+        "sync",
+        "--frozen",
+        "--group",
+        "docs",
+        "--group",
+        "apexpy_wheels",
+        "--extra",
+        "experimental",
+    )
 
     sphinx_args = ["-b", "html"]
 

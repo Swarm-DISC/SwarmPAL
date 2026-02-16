@@ -52,34 +52,29 @@ jobs:
 
     - name: Sync test dependencies with lock file
       run: |
-        uv sync --locked --group test
-
-    - name: Install DSECS extra (On Linux / macOS only)
-      if: runner.os != 'Windows'
-      run: |
-        uv pip install --locked .[dsecs,experimental]
+        uv sync --frozen --group test --group apexpy_wheels --extra experimental
 
     - name: Configure token access
       if: env.SKIP_REMOTE_MARK != '1'
       run: |
-        viresclient set_token "https://vires.services/ows" ${{ secrets.VIRES_TOKEN }}
-        viresclient set_default_server https://vires.services/ows
+        uv run viresclient set_token "https://vires.services/ows" ${{ secrets.VIRES_TOKEN }}
+        uv run viresclient set_default_server https://vires.services/ows
 
     - name: Test package (On Windows; Exclude DSECS; Exclude remote)
       if: runner.os == 'Windows'
-      run: python -m pytest -ra -m "not (dsecs or remote)"
+      run: uv run python -m pytest -ra -m "not (dsecs or remote)"
 
     - name: Test package (On Linux / macOS; Exclude remote)
       if: runner.os != 'Windows'
-      run: python -m pytest -ra -m "not remote"
+      run: uv run python -m pytest -ra -m "not remote"
 
     - name: Test package (On Windows; Remote tests only)
       if: runner.os == 'Windows' && env.SKIP_REMOTE_MARK != '1'
-      run: python -m pytest -ra -m "remote and not dsecs"
+      run: uv run python -m pytest -ra -m "remote and not dsecs"
 
     - name: Test package (On Linux / macOS; Remote tests only)
       if: runner.os != 'Windows' && env.SKIP_REMOTE_MARK != '1'
-      run: python -m pytest -ra -m "remote"
+      run: uv run python -m pytest -ra -m "remote"
 
   # dist:
   #   name: Distribution build

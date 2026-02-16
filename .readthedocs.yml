@@ -24,12 +24,5 @@ build:
     create_environment:
     - uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
 
-    post_create_environment:
-    - uv tool install nox --with=nox-uv
-
     install:
-    - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --frozen --group docs
-
-    build:
-      html:
-      - nox -s docs
+    - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --frozen --group docs --group apexpy_wheels --extra experimental
