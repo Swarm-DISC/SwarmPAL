@@ -27,6 +27,7 @@ def tests(session: nox.Session) -> None:
     session.run(
         "uv",
         "sync",
+        "--active",
         "--locked",
         "--group",
         "test",
@@ -49,6 +50,7 @@ def docs(session: nox.Session) -> None:
     session.run(
         "uv",
         "sync",
+        "--active",
         "--frozen",
         "--group",
         "docs",
