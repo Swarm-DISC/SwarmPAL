@@ -129,7 +129,6 @@ def time_series(
     ds = _get_active_dataset_window(
         datatree, meta=meta, clip_times=clip_times, tlims=tlims
     )
-    dataset = meta["TFA_Preprocess"]["dataset"]
     if varname == "TFA_Variable":
         da = ds["TFA_Variable"]
         da_origin_name = meta["TFA_Preprocess"]["active_variable"]
@@ -138,7 +137,7 @@ def time_series(
         da = ds[varname]
         da_origin_name = da.name
         use_magnitude = False
-    units = datatree[dataset][da_origin_name].attrs.get("units")
+    units = da.attrs.get("units")
     # Build figure
     fig, ax = (None, ax) if ax else plt.subplots(1, 1)
     mainvar_timevar = "TFA_Time" if "TFA_Time" in da.coords else timevar
