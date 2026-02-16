@@ -20,10 +20,6 @@ jobs:
         python-version: ["3.10", "3.11"]
         runs-on: [ubuntu-latest, macos-latest, windows-latest]
 
-        # include:
-        # - python-version: pypy-3.8
-        #   runs-on: ubuntu-latest
-
     steps:
 
     # When PRs come from a fork, skip tests requiring VirES token access (marked "remote")
@@ -34,11 +30,6 @@ jobs:
            [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
           echo "SKIP_REMOTE_MARK=1" >> $GITHUB_ENV
         fi
-      shell: bash
-
-    - name: Fix install of gfortran (on macOS)
-      if: runner.os == 'macOS'
-      run: brew reinstall gfortran
       shell: bash
 
     - uses: actions/checkout@v4
@@ -60,45 +51,9 @@ jobs:
         uv run viresclient set_token "https://vires.services/ows" ${{ secrets.VIRES_TOKEN }}
         uv run viresclient set_default_server https://vires.services/ows
 
-    - name: Test package (On Windows; Exclude DSECS; Exclude remote)
-      if: runner.os == 'Windows'
-      run: uv run python -m pytest -ra -m "not (dsecs or remote)"
-
-    - name: Test package (On Linux / macOS; Exclude remote)
-      if: runner.os != 'Windows'
+    - name: Test package (Exclude remote)
       run: uv run python -m pytest -ra -m "not remote"
 
-    - name: Test package (On Windows; Remote tests only)
-      if: runner.os == 'Windows' && env.SKIP_REMOTE_MARK != '1'
-      run: uv run python -m pytest -ra -m "remote and not dsecs"
-
-    - name: Test package (On Linux / macOS; Remote tests only)
-      if: runner.os != 'Windows' && env.SKIP_REMOTE_MARK != '1'
+    - name: Test package (Remote tests only)
+      if: env.SKIP_REMOTE_MARK != '1'
       run: uv run python -m pytest -ra -m "remote"
-
-  # dist:
-  #   name: Distribution build
-  #   runs-on: ubuntu-latest
-  #   needs: [pre-commit]
-
-  #   steps:
-  #   - uses: actions/checkout@v1
-
-  #   - name: Build sdist and wheel
-  #     run: pipx run build
-
-  #   - uses: actions/upload-artifact@v2
-  #     with:
-  #       path: dist
-
-  #   - name: Check products
-  #     run: pipx run twine check dist/*
-
-  #   - uses: pypa/gh-action-pypi-publish@v1.4.2
-  #     if: github.event_name == 'release' && github.event.action == 'published'
-  #     with:
-  #       user: __token__
-  #       # Remember to generate this and set it in "GitHub Secrets"
-  #       password: ${{ secrets.pypi_password }}
-  #       # Remove this line
-  #       repository_url: https://test.pypi.org/legacy/
