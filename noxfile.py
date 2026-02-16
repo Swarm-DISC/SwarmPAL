@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-import shutil
-from pathlib import Path
-
 import nox
 
 nox.options.default_venv_backend = "uv"
-
-DIR = Path(__file__).parent.resolve()
 
 
 @nox.session
@@ -28,11 +23,11 @@ def tests(session: nox.Session) -> None:
         "uv",
         "sync",
         "--active",
-        "--locked",
+        "--frozen",
         "--group",
         "test",
-        "--extra",
-        "dsecs",
+        "--group",
+        "apexpy_wheels",
         "--extra",
         "experimental",
     )
@@ -76,17 +71,3 @@ def docs(session: nox.Session) -> None:
             session.run("python", "-m", "http.server", "8000", "-d", "docs/_build/html")
         elif "no-exec" not in session.posargs:
             session.warn("Unsupported argument to docs")
-
-
-@nox.session
-def build(session: nox.Session) -> None:
-    """
-    Build an SDist and wheel.
-    """
-
-    build_p = DIR.joinpath("build")
-    if build_p.exists():
-        shutil.rmtree(build_p)
-
-    session.install("build")
-    session.run("python", "-m", "build")
