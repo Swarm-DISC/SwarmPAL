@@ -538,8 +538,8 @@ class PalProcess(ABC):
         pal_meta[procname] = self.config
         subtree[output_dataset].attrs["PAL_meta"] = PalMeta.serialise(pal_meta)
         # Updata metadata for the global datatree
-        root_pal_meta = datatree.swarmpal.pal_meta
-        output_datasets = root_pal_meta["."].get("output_datasets", [])
+        root_pal_meta = PalMeta.deserialise(datatree.attrs.get("PAL_meta", "{}"))
+        output_datasets = root_pal_meta.get("output_datasets", [])
         if output_dataset not in output_datasets:
             output_datasets.append(output_dataset)
         root_pal_meta["output_datasets"] = output_datasets
