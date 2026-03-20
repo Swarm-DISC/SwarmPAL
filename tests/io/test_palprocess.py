@@ -5,6 +5,8 @@ from xarray import Dataset, DataTree
 
 from swarmpal.io._paldata import PalDataItem, PalProcess, create_paldata
 
+from .test_paldata import fetch_pal_meta_checks
+
 
 @pytest.mark.remote()
 @pytest.fixture()
@@ -19,6 +21,7 @@ def paldata_MAGA():
         options=dict(asynchronous=False, show_progress=False),
     )
     data = create_paldata(PalDataItem.from_vires(**data_params))
+    fetch_pal_meta_checks(data.swarmpal.pal_meta["SW_OPER_MAGA_LR_1B"], data_params)
     return data
 
 

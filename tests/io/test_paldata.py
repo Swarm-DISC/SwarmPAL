@@ -62,6 +62,14 @@ def hapi_checks(item):
     )
 
 
+def fetch_pal_meta_checks(metadata, input_config):
+    # metadata = item.swarmpal.pal_meta['SW_OPER_MAGA_LR_1B']
+    assert "config" in metadata
+    for key, value in input_config.items():
+        assert key in metadata["config"]
+        assert metadata["config"][key] == input_config[key]
+
+
 @pytest.mark.cached()
 def test_paldataitem_hapi():
     item = load_test_dataset("test_paldataitem_hapi.nc4", group="SW_OPER_MAGA_LR_1B")

@@ -124,6 +124,7 @@ class PalDataItem:
         meta = {
             "analysis_window": self.analysis_window,
             "magnetic_models": self.magnetic_models,
+            "config": self._fetcher.config(),
         }
         return json.dumps(meta, default=_format_handler)
 
