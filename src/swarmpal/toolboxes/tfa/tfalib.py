@@ -3,6 +3,7 @@
 
 @author: constantinos@noa.gr
 """
+
 from __future__ import annotations
 
 import sys

@@ -1,6 +1,7 @@
 """
 Tools to connect to the outside world and get/create xarray Datasets
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -59,8 +60,7 @@ class FileParameters(Parameters):
 
 
 @dataclass
-class CDFFileParameters(FileParameters):
-    ...
+class CDFFileParameters(FileParameters): ...
 
 
 @dataclass
@@ -69,8 +69,7 @@ class NetCDFFileParameters(FileParameters):
 
 
 @dataclass
-class ManualParameters(Parameters):
-    ...
+class ManualParameters(Parameters): ...
 
 
 class DataFetcherBase(ABC):
@@ -182,7 +181,7 @@ class HapiDataFetcher(DataFetcherBase):
         dims = ()
         for p in meta["parameters"][1:]:
             n_extra_dims = len(p.get("size", []))
-            extra_dims = (f"{p['name']}_dim{i+1}" for i in range(n_extra_dims))
+            extra_dims = (f"{p['name']}_dim{i + 1}" for i in range(n_extra_dims))
             dims = (*dims, (timevar, *extra_dims))
         # Convert time data to timezone-naive DatetimeIndex
         tdata = to_pandas_datetime(hapitime2datetime(data[timevar]))

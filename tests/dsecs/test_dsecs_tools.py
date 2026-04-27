@@ -15,7 +15,7 @@ except ImportError:
 from ..test_data import load_test_config, load_test_datatree
 
 
-@pytest.mark.dsecs()
+@pytest.mark.dsecs
 def test_by_name():
     """The DSECS toolbox was added to the toolboxes lookup dictionary"""
     preprocess = swarmpal.make_process("DSECS_Preprocess")
@@ -25,8 +25,8 @@ def test_by_name():
     assert isinstance(analysis, dsecs.processes.Analysis)
 
 
-@pytest.mark.cached()
-@pytest.mark.dsecs()
+@pytest.mark.cached
+@pytest.mark.dsecs
 def test_dsecs_basic():
     input_data = DataTree.from_dict(
         {

@@ -1,6 +1,7 @@
 """
 PalData tools for containing data
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -478,7 +479,7 @@ class PalProcess(ABC):
         self, config: dict | None = None, active_tree: str = "/", inplace: bool = True
     ):
         self._active_tree = active_tree
-        config = config if config else {}
+        config = config or {}
         self.set_config(**config)
         if not inplace:
             raise NotImplementedError(
@@ -533,5 +534,4 @@ class PalProcess(ABC):
         return datatree
 
     @abstractmethod
-    def _call(self, datatree) -> DataTree:
-        ...
+    def _call(self, datatree) -> DataTree: ...

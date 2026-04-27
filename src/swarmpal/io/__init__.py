@@ -8,8 +8,8 @@ from swarmpal.io._paldata import (
 )
 
 __all__ = (
-    "create_paldata",
     "PalDataItem",
     "PalDataTreeAccessor",
     "PalProcess",
+    "create_paldata",
 )
