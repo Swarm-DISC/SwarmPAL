@@ -4,7 +4,7 @@ Tools to connect to the outside world and get/create xarray Datasets
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from os import PathLike
 from os.path import exists as path_exists
@@ -92,6 +92,11 @@ class DataFetcherBase(ABC):
     def fetch_data(self) -> Dataset:
         """Command to get data as an xarray Dataset"""
         ...
+
+    def config(self) -> dict:
+        config = asdict(self._parameters)
+        config["provider"] = self.source
+        return config
 
 
 class ViresDataFetcher(DataFetcherBase):
