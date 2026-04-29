@@ -74,7 +74,7 @@ class LocalForwardMagneticModel(PalProcess):
         return "LocalForwardMagneticModel"
 
     def set_config(self, dataset="SW_OPER_MAGA_LR_1B", model_descriptor="CHAOS-Core"):
-        self.config = dict(dataset=dataset, model_descriptor=model_descriptor)
+        super().set_config(dataset=dataset, model_descriptor=model_descriptor, output_dataset=dataset)
 
     def _call(self, datatree):
         subtree = datatree[f"{self.config.get('dataset')}"]
