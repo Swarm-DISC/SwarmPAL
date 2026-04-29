@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 def _get_tfa_meta(datatree):
     for output_dataset in datatree.swarmpal.pal_meta["."]["output_datasets"]:
-        if "TFA_Preprocess" in datatree.swarmpal.pal_meta["."][output_dataset]:
-            return datatree.swarmpal.pal_meta["."][output_dataset]
+        if "TFA_Preprocess" in datatree.swarmpal.pal_meta[output_dataset]:
+            return datatree.swarmpal.pal_meta[output_dataset]
     raise PalError("Must first run tfa.processes.Preprocess")
 
 

@@ -156,20 +156,20 @@ class PalFacDataTreeAccessor:
     def __init__(self, datatree) -> None:
         self._datatree = datatree
 
-    def quicklook(self, active_tree="."):
+    def quicklook(self):
         fig, axes = plt.subplots(nrows=2, sharex=True)
-        # TODO: refactor to be able to identify active tree
-        active_tree_meta = self._datatree.swarmpal.pal_meta[active_tree]
-        for output_dataset in active_tree_meta["output_datasets"]:
-            process_config = active_tree_meta[output_dataset]
+        meta = self._datatree.swarmpal.pal_meta
+        output_datasets = meta["."]["output_datasets"]
+        for output_dataset in output_datasets:
+            process_config = meta[output_dataset]
             if "FAC_single_sat" not in process_config:
                 continue
-            dataset_dir = f"{active_tree}/{output_dataset}"
+            dataset_dir = f"./{output_dataset}"
             self._datatree[dataset_dir]["IRC"].plot.line(ax=axes[0])
             self._datatree[dataset_dir]["FAC"].plot.line(ax=axes[1])
             axes[0].set_xlabel("")
             axes[0].grid()
             axes[1].grid()
-            dataset = process_config.get("dataset")
-            fig.suptitle(f"{dataset}")
+            input_dataset = process_config["FAC_single_sat"]["dataset"]
+            fig.suptitle(f"Input: {input_dataset}")
             return fig, axes
