@@ -119,6 +119,8 @@ class PalDataItem:
         def _format_handler(x):
             if isinstance(x, datetime | date):
                 return x.isoformat()
+            if isinstance(x, PathLike):
+                return str(x)
             raise TypeError("Unknown type")
 
         meta = {
