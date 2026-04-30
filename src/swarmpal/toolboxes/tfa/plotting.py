@@ -14,17 +14,17 @@ logger = logging.getLogger(__name__)
 
 
 def _get_tfa_meta(datatree):
-    pal_processes_meta = datatree.swarmpal.pal_meta.get(".", {})
-    if not pal_processes_meta.get("TFA_Preprocess"):
-        raise PalError("Must first run tfa.processes.Preprocess")
-    return pal_processes_meta
+    for output_dataset in datatree.swarmpal.pal_meta["."]["output_datasets"]:
+        if "TFA_Preprocess" in datatree.swarmpal.pal_meta[output_dataset]:
+            return datatree.swarmpal.pal_meta[output_dataset]
+    raise PalError("Must first run tfa.processes.Preprocess")
 
 
 def _get_active_dataset_window(datatree, meta=None, clip_times=True, tlims=None):
     """Get the dataset, subselected to the analysis window"""
     pal_processes_meta = meta if meta else _get_tfa_meta(datatree)
     tfa_preprocess_meta = pal_processes_meta.get("TFA_Preprocess")
-    subtree = datatree[tfa_preprocess_meta.get("dataset")]
+    subtree = datatree[tfa_preprocess_meta.get("output_dataset")]
     # Get the analysis time window if present
     dataset_palmeta = subtree.swarmpal.pal_meta.get(".", {})
     window = dataset_palmeta.get("analysis_window")
@@ -137,7 +137,7 @@ def time_series(
         da = ds[varname]
         da_origin_name = da.name
         use_magnitude = False
-    units = ds[da_origin_name].attrs.get("units")
+    units = da.attrs.get("units")
     # Build figure
     fig, ax = (None, ax) if ax else plt.subplots(1, 1)
     mainvar_timevar = "TFA_Time" if "TFA_Time" in da.coords else timevar

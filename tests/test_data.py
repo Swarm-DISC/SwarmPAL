@@ -7,7 +7,7 @@ from xarray import open_datatree
 # from swarmpal import version
 from swarmpal.io._paldata import PalDataItem
 
-SWARMPAL_TEST_DATA_VERSION = "v0.0.2"
+SWARMPAL_TEST_DATA_VERSION = "v0.0.3+dev"
 
 POOCH = pooch.create(
     # Download location. Defaults to ~/.cache/swarmpal_test_data on Linux.
@@ -16,7 +16,7 @@ POOCH = pooch.create(
     version=SWARMPAL_TEST_DATA_VERSION,
     version_dev="main",
     registry={
-        "registry.txt": "md5:a22241a9d245a3aec147808ab4da4d41",
+        "registry.txt": "md5:dc613552d93b7f68e3d53c7dc681a06a",
     },
 )
 POOCH.load_registry(POOCH.fetch("registry.txt"))

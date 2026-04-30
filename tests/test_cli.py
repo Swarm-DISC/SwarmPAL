@@ -12,6 +12,8 @@ from click.testing import CliRunner
 from swarmpal.cli import cli
 from swarmpal.cli.commands import _update_times
 
+from .io.test_paldata import fetch_pal_meta_checks
+
 # Unit tests for swarmpal.cli using the click library's recommendation at
 #  https://click.palletsprojects.com/en/stable/testing/
 
@@ -107,12 +109,17 @@ def test_cli_fetch_data(cli_runner, tmp_path):
         with open(input_filename, "w") as f:
             f.write(test_yaml_data_params)
 
+        config = yaml.safe_load(test_yaml_data_params)
+
         result = cli_runner.invoke(cli, cmd_args)
         assert result.exit_code == 0, _format_cmd_non_zero_message(cmd_args)
         assert os.path.exists(output_filename)
 
         ds = xr.open_datatree(output_filename)
         assert "Spacecraft" in ds["/SW_OPER_MAGA_LR_1B"]
+        fetch_pal_meta_checks(
+            ds.swarmpal.pal_meta["SW_OPER_MAGA_LR_1B"], config["data_params"][0]
+        )
 
 
 @pytest.mark.remote()
