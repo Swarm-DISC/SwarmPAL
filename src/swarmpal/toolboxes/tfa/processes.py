@@ -136,6 +136,12 @@ class Preprocess(PalProcess):
         da = da.rename({self.config["timevar"]: "TFA_Time"})
         da = self._constant_cadence(da)
         ds_out = Dataset(data_vars={"TFA_Variable": da, "TFA_Time": da["TFA_Time"]})
+        # Append the specially created variables (e.g. B_NEC_res_Model, B_MFA, Eh_XYZ, Ev_XYZ)
+        #  (created in "ds" by "_prep_magnetic_data" & "_prep_efi_expt_data")
+        #  so that they are preserved in the output
+        special_vars = {"B_NEC_res_Model", "B_MFA", "Eh_XYZ", "Ev_XYZ"}.intersection(set(ds.data_vars))
+        for special_var in special_vars:
+            ds_out = ds_out.assign({special_var: ds[special_var]})
         # Remove attrs, because .to_netcdf() is failing when blank units are set here
         ds_out["TFA_Time"].attrs = {}
         # Assign dataset back into the datatree to return
