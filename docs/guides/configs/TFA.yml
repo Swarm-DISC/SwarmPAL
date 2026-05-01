@@ -10,7 +10,7 @@ data_params:
   - QDLat
   - MLT
   start_time: '2025-10-05T00:00:00'
-  end_time: '2025-10-06T00:00:00'
+  end_time: '2025-10-05T01:00:00'
   pad_times:
   - 03:00:00
   - 03:00:00

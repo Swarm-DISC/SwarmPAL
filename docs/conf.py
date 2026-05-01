@@ -76,6 +76,9 @@ nb_kernel_rgx_aliases = {".*": "python3"}
 # This allows readthedocs to report failure in CI, while still displaying the docs
 nb_execution_allow_errors = False
 nb_execution_raise_on_error = False
+# Merge consecutive stream outputs (e.g. chunked stdout from %%bash)
+# so they render as a single <pre> block instead of being split mid-word
+nb_merge_streams = True
 
 # -- Options for HTML output -------------------------------------------------
 
