@@ -29,6 +29,9 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Development Status :: 4 - Beta",
 ]
 
@@ -92,26 +95,6 @@ markers = [
 [tool.pycln]
 all = true
 
-
-[tool.mypy]
-files = "src"
-python_version = "3.8"
-warn_unused_configs = true
-ignore_missing_imports = true
-
-check_untyped_defs = true
-# disallow_incomplete_defs = true
-# disallow_any_generics = true
-# disallow_subclassing_any = true
-# disallow_untyped_calls = true
-# disallow_untyped_defs = true
-# disallow_untyped_decorators = true
-# no_implicit_optional = true
-# warn_redundant_casts = true
-# warn_unused_ignores = true
-# warn_return_any = true
-# no_implicit_reexport = true
-# strict_equality = true
 
 [tool.isort]
 profile = "black"

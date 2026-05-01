@@ -53,16 +53,6 @@ repos:
         args: ["--fix", "--show-fixes"]
       - id: ruff-format
 
-  # TODO: Enable type checking
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: "v1.8.0"
-  #   hooks:
-  #     - id: mypy
-  #       files: src|tests
-  #       args: []
-  #       additional_dependencies:
-  #         - pytest
-
   - repo: https://github.com/codespell-project/codespell
     rev: "v2.4.2"
     hooks:
