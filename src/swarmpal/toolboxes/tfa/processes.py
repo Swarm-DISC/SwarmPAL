@@ -184,7 +184,7 @@ class Preprocess(PalProcess):
         # Identify model name from config or from PAL meta
         model = self.config.get("model", "")
         try:
-            model = model if model else self.subtree.swarmpal.magnetic_model_name
+            model = model or self.subtree.swarmpal.magnetic_model_name
         except PalError:
             model = ""
         # Optionally assign residuals to dataset
@@ -233,16 +233,12 @@ class Preprocess(PalProcess):
         flagname = self.config.get("flagclean_flagname", None)
         max_val = self.config.get("flagclean_maxval", None)
         # Use default parameters if none given in config
-        varname = varname if varname else self.active_variable
+        varname = varname or self.active_variable
         flagname = (
-            flagname
-            if flagname
-            else FLAG_THRESHOLDS[varname.replace("_res_Model", "")]["flag_name"]
+            flagname or FLAG_THRESHOLDS[varname.replace("_res_Model", "")]["flag_name"]
         )
         max_val = (
-            max_val
-            if max_val
-            else FLAG_THRESHOLDS[varname.replace("_res_Model", "")]["max_val"]
+            max_val or FLAG_THRESHOLDS[varname.replace("_res_Model", "")]["max_val"]
         )
         # Set flagged values to NaN
         inds_to_remove = ds[flagname] > max_val
@@ -513,11 +509,9 @@ class WaveDetection(PalProcess):
 
     def set_config(
         self,
-    ):
-        ...
+    ): ...
 
     def _call(self, datatree):
         raise NotImplementedError
 
-    def _attach_ibi(self):
-        ...
+    def _attach_ibi(self): ...

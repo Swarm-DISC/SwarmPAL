@@ -18,7 +18,7 @@ from .io.test_paldata import fetch_pal_meta_checks
 #  https://click.palletsprojects.com/en/stable/testing/
 
 
-@pytest.fixture()
+@pytest.fixture
 def cli_runner():
     return CliRunner()
 
@@ -48,7 +48,7 @@ def test_cli_spacecraft(cli_runner):
     assert len(known_spacecraft) == len(result.output.strip().split("\n"))
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_cli_last_available_time(cli_runner):
     cmd_args = ["last-available-time", "SW_FAST_MAGA_LR_1B"]
     result = cli_runner.invoke(cli, cmd_args)
@@ -57,7 +57,7 @@ def test_cli_last_available_time(cli_runner):
     datetime.strptime(result.output.strip(), "%Y-%m-%dT%H:%M:%S.%f")
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_cli_fac_single_sat(cli_runner, tmp_path):
     cmd_args = [
         "fac-single-sat",
@@ -99,7 +99,7 @@ process_params:
 """
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_cli_fetch_data(cli_runner, tmp_path):
     output_filename = "output.nc4"
     input_filename = "input.yaml"
@@ -122,7 +122,7 @@ def test_cli_fetch_data(cli_runner, tmp_path):
         )
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_cli_batch(cli_runner, tmp_path):
     output_filename = "output.nc4"
     input_filename = "input.yaml"
@@ -217,7 +217,7 @@ def test_cli_update_times_helper(start_time, end_time, config_content):
             assert dataset["stop"] == end_time
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 @pytest.mark.parametrize(
     ("start_time", "end_time", "config_content"),
     [

@@ -10,7 +10,7 @@ from swarmpal.io import PalDataItem
 from .io.test_paldata import fetch_pal_meta_checks, hapi_checks, vires_checks
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_fetch_data_vires(tmp_path):
     data_spec = dict(
         data_params=[
@@ -42,7 +42,7 @@ def test_fetch_data_vires(tmp_path):
     )
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_fetch_data_hapi():
     data_spec = dict(
         data_params=[
@@ -67,7 +67,7 @@ def test_fetch_data_hapi():
     )
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_pad_times():
     data_spec = dict(
         data_params=[

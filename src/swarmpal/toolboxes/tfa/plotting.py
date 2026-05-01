@@ -22,7 +22,7 @@ def _get_tfa_meta(datatree):
 
 def _get_active_dataset_window(datatree, meta=None, clip_times=True, tlims=None):
     """Get the dataset, subselected to the analysis window"""
-    pal_processes_meta = meta if meta else _get_tfa_meta(datatree)
+    pal_processes_meta = meta or _get_tfa_meta(datatree)
     tfa_preprocess_meta = pal_processes_meta.get("TFA_Preprocess")
     subtree = datatree[tfa_preprocess_meta.get("output_dataset")]
     # Get the analysis time window if present

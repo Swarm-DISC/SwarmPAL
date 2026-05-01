@@ -3,6 +3,7 @@
 Adapted from MatLab code by Heikki Vanhamäki.
 
 """
+
 from __future__ import annotations
 
 import logging
@@ -1664,7 +1665,7 @@ class dsecsdata:
 
         self.matBpara1D = (self.matBr1Ddf.T * self.uvR).T + (
             self.matBt1Ddf.T * self.uvT
-        ).T  #
+        ).T
 
         regmat = self.grid.secs1Ddf.diff2  # regularization
         x = auto.sub_inversion(

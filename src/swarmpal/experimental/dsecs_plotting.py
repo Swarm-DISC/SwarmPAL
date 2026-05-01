@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 
 __all__ = (
     "plot_analysed_pass",
-    "quicklook_subtree",
     "quicklook",
     "quicklook_animated",
+    "quicklook_subtree",
 )
 
 

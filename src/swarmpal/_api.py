@@ -67,9 +67,9 @@ def make_process(process_name=None, config={}):
         elif process_name == "EXP_LocalForwardMagneticModel":
             from swarmpal.experimental import LocalForwardMagneticModel
 
-            processes_by_name[
-                "EXP_LocalForwardMagneticModel"
-            ] = LocalForwardMagneticModel
+            processes_by_name["EXP_LocalForwardMagneticModel"] = (
+                LocalForwardMagneticModel
+            )
 
         else:
             raise ValueError(

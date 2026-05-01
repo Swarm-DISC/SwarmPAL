@@ -3,6 +3,7 @@
 
 @author: constantinos@noa.gr
 """
+
 from __future__ import annotations
 
 import sys
@@ -560,7 +561,7 @@ def morlet_wave(N=600, scale=1, dx=0.01, omega=6.203607835633639, roll=True, nor
     wavelet_norm_factor = 0.74044116  # for omega = 6.20360...
     if omega == 6:
         wavelet_norm_factor = 0.776  # for omega = 6
-    # ... add other cases as necesssary
+    # ... add other cases as necessary
 
     return y, x, wavelet_norm_factor
 

@@ -26,7 +26,7 @@ def test_tfa_by_name():
         assert new_process.process_name == process_name
 
 
-@pytest.mark.cached()
+@pytest.mark.cached
 def test_tfa_basic():
     """Test a basic application of the TFA toolbox to a Swarm data product.
 
