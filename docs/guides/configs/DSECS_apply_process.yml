@@ -1,0 +1,13 @@
+data_params:
+  - provider: file
+    filename: "temp/DSECS_processed.nc"
+    filetype: "netcdf"
+    dataset: "SW_OPER_MAGA_LR_1B"
+  - provider: file
+    filename: "temp/DSECS_processed.nc"
+    filetype: "netcdf"
+    dataset: "SW_OPER_MAGC_LR_1B"
+
+process_params:
+  - process_name: DSECS_Preprocess
+  - process_name: DSECS_Analysis

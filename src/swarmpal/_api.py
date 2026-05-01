@@ -149,6 +149,7 @@ def _fetch_dataset(provider="", config={}, options=None):
                 config["dataset"]: PalDataItem.from_file(
                     filename=config["filename"],
                     filetype=config["filetype"],
+                    group=config.get("dataset", None),
                 )
             }
         )
@@ -194,3 +195,63 @@ def fetch_data(configurations):
         for key, dt in item.children.items():
             data[key] = dt
     return data
+
+
+_TOOLBOX_QUICKLOOKS = {
+    "FAC": lambda data: data.swarmpal_fac.quicklook(),
+    "TFA": lambda data: __import__(
+        "swarmpal.toolboxes.tfa.plotting", fromlist=["quicklook"]
+    ).quicklook(data),
+    "DSECS": lambda data: __import__(
+        "swarmpal.experimental.dsecs_plotting",
+        fromlist=["plot_analysed_pass"],
+    ).plot_analysed_pass(data, pass_no=0),
+}
+
+
+def _detect_toolbox(data: DataTree) -> str:
+    """Inspect PAL_meta to determine which toolbox produced the output datasets."""
+    pal_meta = data.swarmpal.pal_meta
+    output_datasets = pal_meta.get(".", {}).get("output_datasets", [])
+    found = set()
+    for output_dataset in output_datasets:
+        for process_name in pal_meta.get(output_dataset, {}):
+            prefix = process_name.split("_", 1)[0]
+            if prefix in _TOOLBOX_QUICKLOOKS:
+                found.add(prefix)
+    if len(found) == 0:
+        raise RuntimeError(
+            "No quicklook available: no recognised toolbox processes found in PAL_meta"
+        )
+    if len(found) > 1:
+        raise RuntimeError(
+            f"Ambiguous quicklook: multiple toolboxes detected ({sorted(found)})"
+        )
+    return found.pop()
+
+
+def quicklook(data: DataTree, toolbox: str | None = None):
+    """Create a quicklook plot based on the toolbox processes recorded in PAL_meta.
+
+    Parameters
+    ----------
+    data: DataTree
+        Data that has been processed by SwarmPAL
+    toolbox: str, optional
+        Override toolbox selection (one of: 'FAC', 'TFA', 'DSECS'). Case-insensitive.
+        If omitted, the toolbox is auto-detected from PAL_meta.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    """
+    if toolbox is None:
+        toolbox = _detect_toolbox(data)
+    else:
+        toolbox = toolbox.upper()
+        if toolbox not in _TOOLBOX_QUICKLOOKS:
+            raise ValueError(
+                f"Unknown toolbox {toolbox!r}. Must be one of {sorted(_TOOLBOX_QUICKLOOKS)}"
+            )
+    result = _TOOLBOX_QUICKLOOKS[toolbox](data)
+    return result[0] if isinstance(result, tuple) else result

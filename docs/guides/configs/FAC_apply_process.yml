@@ -1,0 +1,11 @@
+data_params:
+  - provider: file
+    filename: "temp/FAC_inputs_B.nc"
+    filetype: "netcdf"
+    dataset: "SW_OPER_MAGA_LR_1B"
+
+process_params:
+  - process_name: FAC_single_sat
+    dataset: "SW_OPER_MAGA_LR_1B"
+    model_varname: "B_NEC_CHAOS"
+    measurement_varname: "B_NEC"

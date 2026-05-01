@@ -6,9 +6,10 @@ from swarmpal._api import (
     apply_processes,
     fetch_data,
     make_process,
+    quicklook,
 )
 
-__version__ = "0.2.0"
+__version__ = "0.3.0-alpha"
 
 __all__ = (
     "__version__",
@@ -20,4 +21,5 @@ __all__ = (
     "apply_process",
     "apply_processes",
     "fetch_data",
+    "quicklook",
 )

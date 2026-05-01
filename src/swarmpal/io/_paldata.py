@@ -339,6 +339,11 @@ class PalDataTreeAccessor:
     def apply(self, palprocess: PalProcess) -> DataTree:
         return palprocess(self._datatree)
 
+    def quicklook(self, toolbox: str | None = None):
+        from swarmpal._api import quicklook as _quicklook
+
+        return _quicklook(self._datatree, toolbox=toolbox)
+
     @property
     def pal_meta(self) -> dict:
         pal_metadata_set = {}
