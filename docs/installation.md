@@ -1,23 +1,60 @@
 # Installation
 
-## Swarm Virtual Research Environment
+:::{tip}
+Try the [SwarmPAL dashboards](https://dev.swarmdisc.org/swarmpal-processor/)
+:::
 
-The easiest way to use SwarmPAL is in the Swarm Virtual Research Environment (read more [here](https://notebooks.vires.services/)). To get started with the SwarmPAL demo tool (which includes the examples given on these pages, as interactive notebooks), follow this link: [![Swarm-VRE](https://img.shields.io/badge/%F0%9F%9A%80%20launch-Swarm--VRE-blue)](https://vre.vires.services/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2Fsmithara%2Fswarmpal-demo&urlpath=lab%2Ftree%2Fswarmpal-demo%2FREADME.ipynb&branch=main)
+:::{note}
+SwarmPAL is available in the Swarm Virtual Research Environment - [read more here](https://notebooks.vires.services/)
+:::
 
 ## Install latest release
 
 The package is available from PyPI:
 
-If you *do not need* the DSECS toolbox:
-```bash
-pip install swarmpal[experimental]
-```
+::::::{tab-set}
 
-If you *do need* the DSECS toolbox:
+:::::{tab-item} pip
+
+::::{tab-set}
+
+:::{tab-item} Full installation
 ```bash
 pip install swarmpal[dsecs,experimental]
 ```
-which includes [apexpy](https://github.com/aburrell/apexpy), which is needed for the DSECS toolbox. There can be some trouble installing this so you might need to manually install apexpy first.
+:::
+
+:::{tab-item} Minimal installation
+```bash
+pip install swarmpal
+```
+:::
+
+::::
+
+:::::
+
+:::::{tab-item} uv
+
+::::{tab-set}
+
+:::{tab-item} Full installation
+```bash
+uv add swarmpal[dsecs,experimental]
+```
+:::
+
+:::{tab-item} Minimal installation
+```bash
+uv add swarmpal
+```
+:::
+
+::::
+
+:::::
+
+::::::
 
 :::{admonition} New to Python?
 
@@ -27,17 +64,20 @@ To setup Python on your system, check guidance on the [viresclient installation 
 
 ## Install for development
 
-(using uv)
+(using [uv](https://docs.astral.sh/uv/))
 
-```
+```bash
 git clone git@github.com:Swarm-DISC/SwarmPAL.git
 cd SwarmPAL
 uv venv --python 3.11
 uv sync --frozen --all-groups --all-extras
 ```
 
+(You might need to omit ``--frozen`` or instead use ``--locked``)
+
 You can also use nox to run tests and build docs using ephemeral environments (they live in the `.nox` directory), e.g.:
-```
+
+```bash
 uvx nox -s tests
 uvx nox -s docs -- no-exec -- serve
 ```

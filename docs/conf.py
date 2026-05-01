@@ -33,9 +33,10 @@ if token:
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+fast_docs = bool(getenv("FAST_DOCS"))
 extensions = [
     "myst_nb",
-    "autoapi.extension",
+    *([] if fast_docs else ["autoapi.extension"]),
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "sphinx_copybutton",
@@ -71,6 +72,7 @@ nb_execution_timeout = 900
 nb_kernel_rgx_aliases = {".*": "python3"}
 # Temporarily disable notebook execution while working on docs (default is "auto")
 # nb_execution_mode = "off"
+nb_execution_mode = "cache"
 # Errors in notebooks will only trigger a warning
 # Use sphinx option "--fail-on-warning" to make the build report as failure
 # This allows readthedocs to report failure in CI, while still displaying the docs
