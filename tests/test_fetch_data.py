@@ -7,10 +7,10 @@ from xarray import DataTree
 from swarmpal import fetch_data
 from swarmpal.io import PalDataItem
 
-from .io.test_paldata import hapi_checks, vires_checks
+from .io.test_paldata import fetch_pal_meta_checks, hapi_checks, vires_checks
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_fetch_data_vires(tmp_path):
     data_spec = dict(
         data_params=[
@@ -36,8 +36,13 @@ def test_fetch_data_vires(tmp_path):
     # problems with writing CategoricalDType variables in the past
     palitem.xarray.to_netcdf(tmp_path / "test_fetch_data_vires.nc4")
 
+    # Check that the metadata is stored in the palitem
+    fetch_pal_meta_checks(
+        item.swarmpal.pal_meta["SW_OPER_MAGA_LR_1B"], data_spec["data_params"][0]
+    )
 
-@pytest.mark.remote()
+
+@pytest.mark.remote
 def test_fetch_data_hapi():
     data_spec = dict(
         data_params=[
@@ -57,9 +62,12 @@ def test_fetch_data_hapi():
     dataitem = PalDataItem.from_manual(item["/SW_OPER_MAGA_LR_1B"].to_dataset())
     dataitem.dataset_name = "SW_OPER_MAGA_LR_1B"
     hapi_checks(dataitem)
+    fetch_pal_meta_checks(
+        item.swarmpal.pal_meta["SW_OPER_MAGA_LR_1B"], data_spec["data_params"][0]
+    )
 
 
-@pytest.mark.remote()
+@pytest.mark.remote
 def test_pad_times():
     data_spec = dict(
         data_params=[
@@ -85,3 +93,7 @@ def test_pad_times():
     assert palitem.xarray["Timestamp"].to_numpy()[-1] <= np.datetime64(
         "2016-01-01T00:00:14"
     )
+    # FIXME: pad_times is applied before metadata is saved resulting an a discrepancy between
+    #   the input config and what is stored in the metadata. However, this does not result a
+    #   functional difference in the resulting data.
+    # fetch_pal_meta_checks(item.swarmpal.pal_meta['SW_OPER_MAGA_LR_1B'], data_spec['data_params'][0])

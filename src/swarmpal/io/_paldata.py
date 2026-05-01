@@ -1,6 +1,7 @@
 """
 PalData tools for containing data
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -119,11 +120,14 @@ class PalDataItem:
         def _format_handler(x):
             if isinstance(x, datetime | date):
                 return x.isoformat()
+            if isinstance(x, PathLike):
+                return str(x)
             raise TypeError("Unknown type")
 
         meta = {
             "analysis_window": self.analysis_window,
             "magnetic_models": self.magnetic_models,
+            "config": self._fetcher.config(),
         }
         return json.dumps(meta, default=_format_handler)
 
@@ -336,6 +340,11 @@ class PalDataTreeAccessor:
     def apply(self, palprocess: PalProcess) -> DataTree:
         return palprocess(self._datatree)
 
+    def quicklook(self, toolbox: str | None = None):
+        from swarmpal._api import quicklook as _quicklook
+
+        return _quicklook(self._datatree, toolbox=toolbox)
+
     @property
     def pal_meta(self) -> dict:
         pal_metadata_set = {}
@@ -478,7 +487,7 @@ class PalProcess(ABC):
         self, config: dict | None = None, active_tree: str = "/", inplace: bool = True
     ):
         self._active_tree = active_tree
-        config = config if config else {}
+        config = config or {}
         self.set_config(**config)
         if not inplace:
             raise NotImplementedError(
@@ -491,8 +500,17 @@ class PalProcess(ABC):
         return "PalProcess"
 
     @abstractmethod
-    def set_config(self, **kwargs) -> None:
-        self.config = dict(**kwargs)
+    def set_config(self, output_dataset: str = "", **kwargs):
+        if output_dataset == "":
+            raise RuntimeError(
+                "All instances of PalProcess must name an output_dataset"
+            )
+
+        self.config = dict(output_dataset=output_dataset, **kwargs)
+
+    @property
+    def output_dataset(self):
+        return self.config["output_dataset"]
 
     @property
     def active_tree(self) -> str:
@@ -519,19 +537,26 @@ class PalProcess(ABC):
             subtree = datatree
         # Check metadata to see if this has already been run
         procname = self.process_name
-        subtree_root_pal_meta = subtree.swarmpal.pal_meta["."]
-        if procname in subtree_root_pal_meta.keys():
-            logger.warn(f" Rerunning {procname}: May overwrite existing data")
+        output_dataset = self.output_dataset
         # Apply process to create updated datatree
         subtree = self._call(subtree)
         # Update metadata with details of the applied process
-        subtree_root_pal_meta[procname] = self.config
-        subtree.attrs["PAL_meta"] = PalMeta.serialise(subtree_root_pal_meta)
+        pal_meta = subtree.swarmpal.pal_meta.get(output_dataset, {})
+        if procname in pal_meta.keys():
+            logger.warn(f" Rerunning {procname}: May overwrite existing data")
+        pal_meta[procname] = self.config
+        subtree[output_dataset].attrs["PAL_meta"] = PalMeta.serialise(pal_meta)
+        # Updata metadata for the global datatree
+        root_pal_meta = PalMeta.deserialise(datatree.attrs.get("PAL_meta", "{}"))
+        output_datasets = root_pal_meta.get("output_datasets", [])
+        if output_dataset not in output_datasets:
+            output_datasets.append(output_dataset)
+        root_pal_meta["output_datasets"] = output_datasets
+        datatree.attrs["PAL_meta"] = PalMeta.serialise(root_pal_meta)
         # Update the full tree with the modified subtree
         if self.active_tree != "/":
             subtree.parent = datatree
         return datatree
 
     @abstractmethod
-    def _call(self, datatree) -> DataTree:
-        ...
+    def _call(self, datatree) -> DataTree: ...

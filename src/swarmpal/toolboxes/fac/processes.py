@@ -32,6 +32,7 @@ class FAC_single_sat(PalProcess):
         inclination_limit: float = 30,
         time_jump_limit: int = 1,
         include_auxiliaries: bool = True,
+        output_dataset: str = "PAL_FAC_single_sat",
     ) -> None:
         """Configures the process
 
@@ -49,14 +50,17 @@ class FAC_single_sat(PalProcess):
             Maximum allowable time step in data for FAC validity (in seconds), by default 1
         include_auxiliaries : bool, optional
             Whether to include e.g. Latitude, Longitude, Flags, etc, by default True
+        output_dataset : str
+            Sets the name of the dataset in the data tree that TFA processes will write results to, by default "PAL_FAC_singlesat"
         """
-        self.config = dict(
+        super().set_config(
             dataset=dataset,
             model_varname=model_varname,
             measurement_varname=measurement_varname,
             inclination_limit=inclination_limit,
             time_jump_limit=time_jump_limit,
             include_auxiliaries=include_auxiliaries,
+            output_dataset=output_dataset,
         )
 
     def _call(self, datatree):
@@ -84,11 +88,10 @@ class FAC_single_sat(PalProcess):
         ds_out["IRC"].attrs = {"units": "uA/m2"}
         if self.config.get("include_auxiliaries"):
             ds_out = self._append_aux(dataset_in, ds_out)
-        datatree["PAL_FAC_single_sat"] = DataTree(dataset=ds_out)
+        datatree[self.output_dataset] = DataTree(dataset=ds_out)
         return datatree
 
-    def _validate(self):
-        ...
+    def _validate(self): ...
 
     def _get_time(self, dataset):
         return dataset.get("Timestamp").data.astype("datetime64[ns]")
@@ -152,15 +155,20 @@ class PalFacDataTreeAccessor:
     def __init__(self, datatree) -> None:
         self._datatree = datatree
 
-    def quicklook(self, active_tree="."):
+    def quicklook(self):
         fig, axes = plt.subplots(nrows=2, sharex=True)
-        # TODO: refactor to be able to identify active tree
-        process_config = self._datatree.swarmpal.pal_meta[active_tree]["FAC_single_sat"]
-        dataset = process_config.get("dataset")
-        self._datatree[f"{active_tree}/PAL_FAC_single_sat"]["IRC"].plot.line(ax=axes[0])
-        self._datatree[f"{active_tree}/PAL_FAC_single_sat"]["FAC"].plot.line(ax=axes[1])
-        axes[0].set_xlabel("")
-        axes[0].grid()
-        axes[1].grid()
-        fig.suptitle(f"{dataset}")
-        return fig, axes
+        meta = self._datatree.swarmpal.pal_meta
+        output_datasets = meta["."]["output_datasets"]
+        for output_dataset in output_datasets:
+            process_config = meta[output_dataset]
+            if "FAC_single_sat" not in process_config:
+                continue
+            dataset_dir = f"./{output_dataset}"
+            self._datatree[dataset_dir]["IRC"].plot.line(ax=axes[0])
+            self._datatree[dataset_dir]["FAC"].plot.line(ax=axes[1])
+            axes[0].set_xlabel("")
+            axes[0].grid()
+            axes[1].grid()
+            input_dataset = process_config["FAC_single_sat"]["dataset"]
+            fig.suptitle(f"Input: {input_dataset}")
+            return fig, axes

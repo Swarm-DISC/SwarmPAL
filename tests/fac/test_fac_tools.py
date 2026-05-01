@@ -14,9 +14,10 @@ def test_by_name():
     """FAC_single_sat was added to the toolboxes lookup dictionary"""
     process = swarmpal.make_process("FAC_single_sat")
     assert isinstance(process, fac.processes.FAC_single_sat)
+    assert process.process_name == "FAC_single_sat"
 
 
-@pytest.mark.cached()
+@pytest.mark.cached
 def test_fac_singlesat_swarm():
     """Basic test that the FAC process is applied"""
     input_dataset = "SW_OPER_MAGA_LR_1B"

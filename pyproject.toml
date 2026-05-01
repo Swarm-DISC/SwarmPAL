@@ -29,6 +29,9 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Development Status :: 4 - Beta",
 ]
 
@@ -41,6 +44,8 @@ dependencies = [
     "numpy >= 1.26",
     "matplotlib >= 3.5",
     "pycdfpp >= 0.7",
+    "pyproj >= 3",
+    "pytz >= 2025.2",
     "pyyaml >= 6.0.0",
     "scipy >= 1.8",
     "viresclient >= 0.11",
@@ -49,38 +54,13 @@ dependencies = [
 
 [project.optional-dependencies]
 experimental = [
-    "ipywidgets",
-    "cartopy",
-    "chaosmagpy",
-    "pooch",
+    "ipywidgets>=8.0",
+    "cartopy>=0.25.0",
+    "chaosmagpy>=0.15",
+    "pooch>=1.8",
 ]
 dsecs = [
     "apexpy>=2.1.0",
-    "pyproj>=3",
-]
-test = [
-    "pytest >=6",
-    "pooch",
-]
-dev = [
-    "pytest >=6",
-    "nox >=2022",
-    "pre-commit",
-    "pooch",
-    "sphinx-autobuild",
-    "pytest-xdist",
-]
-docs = [
-    "Sphinx>=7.2",
-    "myst-nb>=1.0",
-    "sphinx-book-theme>=1.1",
-    "sphinx_click>=5.0",
-    "sphinx_copybutton>=0.5",
-    "sphinx-tabs>=3.4.7",
-    "sphinx_design>=0.6.1",
-    "sphinx-autoapi",
-    "matplotlib>=3.9",
-    "ipywidgets>=8.0",
 ]
 
 [project.urls]
@@ -115,26 +95,6 @@ markers = [
 [tool.pycln]
 all = true
 
-
-[tool.mypy]
-files = "src"
-python_version = "3.8"
-warn_unused_configs = true
-ignore_missing_imports = true
-
-check_untyped_defs = true
-# disallow_incomplete_defs = true
-# disallow_any_generics = true
-# disallow_subclassing_any = true
-# disallow_untyped_calls = true
-# disallow_untyped_defs = true
-# disallow_untyped_decorators = true
-# no_implicit_optional = true
-# warn_redundant_casts = true
-# warn_unused_ignores = true
-# warn_return_any = true
-# no_implicit_reexport = true
-# strict_equality = true
 
 [tool.isort]
 profile = "black"
@@ -173,6 +133,8 @@ ignore = [
   "PLR09",    # Too many <...>
   "PLR2004",  # Magic value used in comparison
   "ISC001",   # Conflicts with formatter
+  "PLC0415",  # `import` should be at the top-level of a file
+  "RUF059",   # Unpacked variable is never used
   # TODO: Check if we can re-enable these:
   "PLW0127",
   "PLR1714",
@@ -183,3 +145,48 @@ isort.required-imports = ["from __future__ import annotations"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]
 "noxfile.py" = ["T20"]
+"*.ipynb" = ["T201", "I001", "F401", "I002"]
+
+[dependency-groups]
+dev = [
+    "sphinx-autobuild >= 2024.10",
+    "pytest-xdist >= 1.0",
+]
+test = [
+    "pytest >=6",
+    "pooch >=1.8",
+]
+docs = [
+    "Sphinx>=7.2, <9.0",
+    "myst-nb>=1.0",
+    "sphinx-book-theme>=1.1",
+    "sphinx_click>=5.0",
+    "sphinx_copybutton>=0.5",
+    "sphinx-tabs>=3.4.7",
+    "sphinx_design>=0.6.1",
+    "sphinx-autoapi>=3.7.0",
+    "matplotlib>=3.9",
+    "ipywidgets>=8.0",
+]
+apexpy_wheels = [
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp310-cp310-macosx_15_0_arm64.whl ; python_version == '3.10' and sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp310-cp310-macosx_15_0_x86_64.whl ; python_version == '3.10' and sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.10' and sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp310-cp310-win_amd64.whl ; python_version == '3.10' and sys_platform == 'win32' and platform_machine == 'AMD64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp311-cp311-macosx_15_0_arm64.whl ; python_version == '3.11' and sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp311-cp311-macosx_15_0_x86_64.whl ; python_version == '3.11' and sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.11' and sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp311-cp311-win_amd64.whl ; python_version == '3.11' and sys_platform == 'win32' and platform_machine == 'AMD64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp312-cp312-macosx_15_0_arm64.whl ; python_version == '3.12' and sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp312-cp312-macosx_15_0_x86_64.whl ; python_version == '3.12' and sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.12' and sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp312-cp312-win_amd64.whl ; python_version == '3.12' and sys_platform == 'win32' and platform_machine == 'AMD64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp313-cp313-macosx_15_0_arm64.whl ; python_version == '3.13' and sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp313-cp313-macosx_15_0_x86_64.whl ; python_version == '3.13' and sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.13' and sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp313-cp313-win_amd64.whl ; python_version == '3.13' and sys_platform == 'win32' and platform_machine == 'AMD64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp314-cp314-macosx_15_0_arm64.whl ; python_version == '3.14' and sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp314-cp314-macosx_15_0_x86_64.whl ; python_version == '3.14' and sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; python_version == '3.14' and sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "apexpy @ https://github.com/smithara/apexpy/releases/download/v-2.1.0-binaries-v2/apexpy-2.1.0-cp314-cp314-win_amd64.whl ; python_version == '3.14' and sys_platform == 'win32' and platform_machine == 'AMD64'",
+]

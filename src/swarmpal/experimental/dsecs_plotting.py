@@ -21,6 +21,7 @@ __all__ = (
     "plot_analysed_pass",
     "quicklook",
     "quicklook_animated",
+    "quicklook_subtree",
 )
 
 
@@ -53,8 +54,8 @@ def _turn_off_interactive_mode(func):
     return wrapper
 
 
-def _get_dsecs_meta(datatree, check_analysis=False):
-    pal_processes_meta = datatree.swarmpal.pal_meta.get(".", {})
+def _get_dsecs_meta(datatree, output_dataset, check_analysis=False):
+    pal_processes_meta = datatree.swarmpal.pal_meta.get(output_dataset, {})
     if not pal_processes_meta.get("DSECS_Preprocess"):
         raise PalError("Must first run dsecs.processes.Preprocess")
     if check_analysis and pal_processes_meta.get("DSECS_Analysis") is None:
@@ -62,9 +63,9 @@ def _get_dsecs_meta(datatree, check_analysis=False):
     return pal_processes_meta
 
 
-def _get_dsecs_pass_time_interval(datatree, pass_no=0):
+def _get_dsecs_pass_time_interval(datatree, output_dataset, pass_no=0):
     """Extract time start and end of a given pass"""
-    s = datatree[f"DSECS_output/{pass_no}"]["currents"].attrs["Time interval"]
+    s = datatree[f"{output_dataset}/{pass_no}"]["currents"].attrs["Time interval"]
     t1, t2 = s.split(" - ")
     t1 = dt.datetime.fromisoformat(t1.split(".")[0])
     t2 = dt.datetime.fromisoformat(t2.split(".")[0])
@@ -72,13 +73,15 @@ def _get_dsecs_pass_time_interval(datatree, pass_no=0):
 
 
 @_turn_off_interactive_mode
-def plot_analysed_pass(datatree, pass_no=0, extent="global"):
+def plot_analysed_pass(datatree, output_dataset, pass_no=0, extent="global"):
     """Plot a figure showing currents from one orbital pass
 
     Parameters
     ----------
     datatree : DataTree
         A datatree processed with the DSECS toolbox
+    output_dataset: String
+        The subtree in datatree to plot; should be an output produced by the DSECS toolbox.
     pass_no : int
         A number between 0 and x, specifying the pass to plot
     extent : str | tuple, default "global"
@@ -90,12 +93,12 @@ def plot_analysed_pass(datatree, pass_no=0, extent="global"):
     """
 
     # Select the inputs we'll need for the figure
-    pal_processes_meta = _get_dsecs_meta(datatree, check_analysis=True)
+    pal_processes_meta = _get_dsecs_meta(datatree, output_dataset, check_analysis=True)
     dataset_name_alpha = pal_processes_meta["DSECS_Preprocess"]["dataset_alpha"]
     dataset_name_charlie = pal_processes_meta["DSECS_Preprocess"]["dataset_charlie"]
     data_a = datatree[dataset_name_alpha]
     data_c = datatree[dataset_name_charlie]
-    data_currents = datatree[f"DSECS_output/{pass_no}/currents"]
+    data_currents = datatree[f"{output_dataset}/{pass_no}/currents"]
 
     # Create a figure and axes with an orthographic projection
     # centred around the spacecraft longitude midpoint
@@ -194,23 +197,25 @@ def plot_analysed_pass(datatree, pass_no=0, extent="global"):
     # Add time start and end of pass, and dataset sources
     # TODO: Add product version numbers
     title_text = f"{dataset_name_alpha}\n{dataset_name_charlie}"
-    t1, t2 = _get_dsecs_pass_time_interval(datatree, pass_no=pass_no)
+    t1, t2 = _get_dsecs_pass_time_interval(datatree, output_dataset, pass_no=pass_no)
     title_text += f"\nStart: {t1.isoformat()}\nEnd: {t2.isoformat()}"
     fig.suptitle(title_text, x=0.9, ha="right", va="bottom")
 
-    plt.close()
+    # plt.close()
 
     return fig
 
 
 @_turn_off_interactive_mode
-def quicklook(datatree, frame_select="all"):
-    """Returns figures overviewing the outputs of the analysis
+def quicklook_subtree(datatree, output_dataset, frame_select="all"):
+    """Returns figures overviewing the outputs of the analysis for a specific subtree in a datatree.
 
     Parameters
     ----------
     datatree : DataTree
         A datatree from the DSECS toolbox
+    output_dataset: String
+        The subtree in datatree to plot; should be an output produced by the DSECS toolbox.
     frame_select : str, default "all"
         "all", "odd", "even" to limit the frame numbers displayed
 
@@ -220,12 +225,12 @@ def quicklook(datatree, frame_select="all"):
     """
 
     try:
-        _ = _get_dsecs_meta(datatree, check_analysis=True)
+        _ = _get_dsecs_meta(datatree, output_dataset, check_analysis=True)
     except PalError:
         raise PalError("No quicklook available before analysis has been run")
 
     # Identify number of analysed passes and generate a fig for each one
-    num_passes = len(datatree["DSECS_output"].children)
+    num_passes = len(datatree[output_dataset].children)
     # Config to select which frames to generate
     if frame_select == "all":
         frames = range(num_passes)
@@ -238,9 +243,17 @@ def quicklook(datatree, frame_select="all"):
 
     fig_collection = {}
     for i in frames:
-        fig_collection[i] = plot_analysed_pass(datatree, i)
+        fig_collection[i] = plot_analysed_pass(datatree, output_dataset, pass_no=i)
 
     return fig_collection
+
+
+@_turn_off_interactive_mode
+def quicklook(datatree, frame_select="all"):
+    for output_dataset in datatree.swarmpal.pal_meta["."]["output_datasets"]:
+        if "DSECS_Analysis" not in datatree.swarmpal.pal_meta[output_dataset]:
+            continue
+        return quicklook_subtree(datatree, output_dataset, frame_select=frame_select)
 
 
 @_turn_off_interactive_mode

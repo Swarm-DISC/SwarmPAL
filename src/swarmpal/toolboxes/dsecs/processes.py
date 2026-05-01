@@ -21,10 +21,12 @@ class Preprocess(PalProcess):
         self,
         dataset_alpha: str = "SW_OPER_MAGA_LR_1B",
         dataset_charlie: str = "SW_OPER_MAGC_LR_1B",
+        output_dataset: str = "DSECS_output",
     ):
-        self._config = dict(
+        super().set_config(
             dataset_alpha=dataset_alpha,
             dataset_charlie=dataset_charlie,
+            output_dataset=output_dataset,
         )
 
     def _call(self, datatree):
@@ -39,6 +41,7 @@ class Preprocess(PalProcess):
         # Update datatree with the updated datasets
         datatree[_alpha] = datatree[_alpha].assign(ds_alpha)
         datatree[_charlie] = datatree[_charlie].assign(ds_charlie)
+        datatree[self.output_dataset] = DataTree()
         return datatree
 
     @staticmethod
@@ -126,10 +129,10 @@ class Preprocess(PalProcess):
         return mlat, mlon
 
 
-def _get_dsecs_active_subtrees(datatree):
+def _get_dsecs_active_subtrees(datatree, output_dataset):
     """Returns the relevant subtrees (i.e. Alpha, Charlie)"""
     # Scan the tree based on previous preprocess application
-    pal_processes_meta = datatree.swarmpal.pal_meta.get(".", {})
+    pal_processes_meta = datatree.swarmpal.pal_meta.get(output_dataset, {})
     dsecs_preprocess_meta = pal_processes_meta.get("DSECS_Preprocess")
     if not dsecs_preprocess_meta:
         raise PalError("Must first run dsecs.processes.Preprocess")
@@ -145,12 +148,15 @@ class Analysis(PalProcess):
     def process_name(self):
         return "DSECS_Analysis"
 
-    def set_config(self):
-        self._config = dict()
+    def set_config(
+        self,
+        output_dataset: str = "DSECS_output",
+    ):
+        super().set_config(output_dataset=output_dataset)
 
     def _call(self, datatree):
         # Identify inputs for algorithm
-        dt_alpha, dt_charlie = _get_dsecs_active_subtrees(datatree)
+        dt_alpha, dt_charlie = _get_dsecs_active_subtrees(datatree, self.output_dataset)
         ds_alpha = dt_alpha.ds
         ds_charlie = dt_charlie.ds
         # Apply analysis
@@ -158,13 +164,13 @@ class Analysis(PalProcess):
         # Store outputs into the datatree
         for i, output in enumerate(dsecs_output):
             if output["current_densities"] is not None:
-                datatree[f"DSECS_output/{i}/currents"] = DataTree(
+                datatree[f"{self.output_dataset}/{i}/currents"] = DataTree(
                     dataset=output["current_densities"]
                 )
-                datatree[f"DSECS_output/{i}/Fit_Alpha"] = DataTree(
+                datatree[f"{self.output_dataset}/{i}/Fit_Alpha"] = DataTree(
                     dataset=output["magnetic_fit_Alpha"]
                 )
-                datatree[f"DSECS_output/{i}/Fit_Charlie"] = DataTree(
+                datatree[f"{self.output_dataset}/{i}/Fit_Charlie"] = DataTree(
                     dataset=output["magnetic_fit_Charlie"]
                 )
         return datatree

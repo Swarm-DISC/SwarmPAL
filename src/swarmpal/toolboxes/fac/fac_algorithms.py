@@ -7,7 +7,6 @@ For information about the algorithm, see https://doi.org/10.5047/eps.2013.09.006
 
 """
 
-
 from __future__ import annotations
 
 import logging

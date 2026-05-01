@@ -9,6 +9,7 @@
 installation
 quickstart
 guides/tutorial
+guides/cli-usage
 acknowledgements
 contributing
 changelog

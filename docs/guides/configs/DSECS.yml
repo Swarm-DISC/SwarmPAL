@@ -1,0 +1,33 @@
+data_params:
+  - provider: vires
+    collection: SW_OPER_MAGA_LR_1B
+    measurements:
+      - B_NEC
+    models:
+      - "Model = CHAOS"
+    auxiliaries:
+      - QDLat
+    start_time: "2016-03-18T11:00:00"
+    end_time: "2016-03-18T14:00:00"
+    server_url: https://vires.services/ows
+    options:
+      asynchronous: false
+      show_progress: false
+  - provider: vires
+    collection: SW_OPER_MAGC_LR_1B
+    measurements:
+      - B_NEC
+    models:
+      - "Model = CHAOS"
+    auxiliaries:
+      - QDLat
+    start_time: "2016-03-18T11:00:00"
+    end_time: "2016-03-18T14:00:00"
+    server_url: https://vires.services/ows
+    options:
+      asynchronous: false
+      show_progress: false
+
+process_params:
+  - process_name: DSECS_Preprocess
+  - process_name: DSECS_Analysis

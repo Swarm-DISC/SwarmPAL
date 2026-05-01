@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3 (2026-05-01)
+
+- Refreshed development process to use `uv`
+- Refactored `pal_meta` to contain enough information to reconstruct the data and be more flexible
+- Can be driven from CLI using YAML configuration files
+- Top level quicklook function that displays a quicklook plot defined by the applied toolbox - also provides an xarray accessor (so you can access like `data.swarmpal.quicklook()`)
+
 ## 0.2 (2025-06-21)
 
 - Requires Python ≥ 3.10

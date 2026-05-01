@@ -1,28 +1,60 @@
 # Installation
 
-## Swarm Virtual Research Environment
+:::{tip}
+Try the [SwarmPAL dashboards](https://dev.swarmdisc.org/swarmpal-processor/)
+:::
 
-The easiest way to use SwarmPAL is in the Swarm Virtual Research Environment (read more [here](https://notebooks.vires.services/)). To get started with the SwarmPAL demo tool (which includes the examples given on these pages, as interactive notebooks), follow this link: [![Swarm-VRE](https://img.shields.io/badge/%F0%9F%9A%80%20launch-Swarm--VRE-blue)](https://vre.vires.services/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2Fsmithara%2Fswarmpal-demo&urlpath=lab%2Ftree%2Fswarmpal-demo%2FREADME.ipynb&branch=main)
+:::{note}
+SwarmPAL is available in the Swarm Virtual Research Environment - [read more here](https://notebooks.vires.services/)
+:::
 
 ## Install latest release
 
 The package is available from PyPI:
 
-If you *do not need* the DSECS toolbox:
-```bash
-pip install swarmpal
-```
+::::::{tab-set}
 
-If you *do need* the DSECS toolbox:
-```bash
-pip install swarmpal[dsecs]
-```
-which includes [apexpy](https://github.com/aburrell/apexpy), which is needed for the DSECS toolbox. There can be some trouble installing this so you might need to manually install apexpy first.
+:::::{tab-item} pip
 
-To include extra experimental features:
+::::{tab-set}
+
+:::{tab-item} Full installation
 ```bash
 pip install swarmpal[dsecs,experimental]
 ```
+:::
+
+:::{tab-item} Minimal installation
+```bash
+pip install swarmpal
+```
+:::
+
+::::
+
+:::::
+
+:::::{tab-item} uv
+
+::::{tab-set}
+
+:::{tab-item} Full installation
+```bash
+uv add swarmpal[dsecs,experimental]
+```
+:::
+
+:::{tab-item} Minimal installation
+```bash
+uv add swarmpal
+```
+:::
+
+::::
+
+:::::
+
+::::::
 
 :::{admonition} New to Python?
 
@@ -30,48 +62,22 @@ To setup Python on your system, check guidance on the [viresclient installation 
 
 :::
 
-## Install latest development version
+## Install for development
 
-Assuming you have a compatible system with git, a fortran compiler, and a Python>=3.10 installation with a recent version of pip, you can install the latest development version from the `staging` branch with:
-
-```bash
-pip install git+https://github.com/Swarm-DISC/SwarmPAL@staging#egg=swarmpal[dsecs,experimental,test]
-```
-
-:::{admonition} Fortran compiler?
-
-If you are using conda, you can get one from:
-``` bash
-conda install conda-forge::fortran-compiler
-```
-
-:::
-
-The fortran compiler is required in order to install the dependency, apexpy. It may be better to try installing apexpy first and debugging that if you run into trouble.
-
-To bypass installation of apexpy (so disabling usage of the DSECS toolbox), you can use pip without the `[dsecs]` option:
+(using [uv](https://docs.astral.sh/uv/))
 
 ```bash
-pip install git+https://github.com/Swarm-DISC/SwarmPAL@staging#egg=swarmpal
+git clone git@github.com:Swarm-DISC/SwarmPAL.git
+cd SwarmPAL
+uv venv --python 3.11
+uv sync --frozen --all-groups --all-extras
 ```
 
-## Install for local development
+(You might need to omit ``--frozen`` or instead use ``--locked``)
 
-Clone the repository and install it in editable mode :
+You can also use nox to run tests and build docs using ephemeral environments (they live in the `.nox` directory), e.g.:
 
 ```bash
-git clone https://github.com/Swarm-DISC/SwarmPAL
-pip install -e SwarmPAL[dsecs,experimental,test,dev,docs]
-pytest SwarmPAL/
+uvx nox -s tests
+uvx nox -s docs -- no-exec -- serve
 ```
-
-````{tip}
-Instructions for using [uv](https://docs.astral.sh/uv/reference/cli/) will be provided soon. e.g.:
-```bash
-uv venv
-uv sync --all-extras
-uv run pytest
-```
-````
-
-For more information check the [development Guide on HackMD](https://hackmd.io/@swarm/dev/%2Ff6YIHfqxT9yL0giWJzhr_Q)

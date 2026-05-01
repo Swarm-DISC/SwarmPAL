@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-import shutil
-from pathlib import Path
-
 import nox
 
-DIR = Path(__file__).parent.resolve()
-
-nox.options.sessions = ["lint", "tests"]
+nox.options.default_venv_backend = "uv"
 
 
 @nox.session
@@ -19,42 +14,67 @@ def lint(session: nox.Session) -> None:
     session.run("pre-commit", "run", "--all-files", *session.posargs)
 
 
-@nox.session
+@nox.session(python=["3.10", "3.11", "3.12", "3.13", "3.14"])
 def tests(session: nox.Session) -> None:
     """
     Run the unit and regular tests.
     """
-    session.install(".[test]")
+    session.run(
+        "uv",
+        "sync",
+        "--active",
+        "--frozen",
+        "--group",
+        "test",
+        "--group",
+        "apexpy_wheels",
+        "--extra",
+        "experimental",
+    )
     session.run("pytest", *session.posargs)
 
 
-@nox.session
+@nox.session(python="3.11")
 def docs(session: nox.Session) -> None:
     """
-    Build the docs. Pass "serve" to serve.
+    Build the docs. Fast mode (default) skips notebook execution and autoapi.
+
+    Pass "--full" for a full build (notebook execution + autoapi).
+    Pass "serve" to serve the built docs.
+
+    e.g. uvx nox -s docs -- --full serve
     """
 
-    session.install(".[docs,dsecs,experimental]")
-    session.chdir("docs")
-    session.run("sphinx-build", "-M", "html", ".", "_build")
+    session.run(
+        "uv",
+        "sync",
+        "--active",
+        "--frozen",
+        "--group",
+        "docs",
+        "--group",
+        "apexpy_wheels",
+        "--extra",
+        "experimental",
+    )
 
-    if session.posargs:
-        if "serve" in session.posargs:
-            print("Launching docs at http://localhost:8000/ - use Ctrl-C to quit")
-            session.run("python", "-m", "http.server", "8000", "-d", "_build/html")
-        else:
-            session.warn("Unsupported argument to docs")
+    known_args = {"--full", "serve"}
+    unknown = [a for a in session.posargs if a not in known_args]
+    if unknown:
+        session.warn(f"Unsupported argument(s) to docs: {unknown}")
 
+    full = "--full" in session.posargs
 
-@nox.session
-def build(session: nox.Session) -> None:
-    """
-    Build an SDist and wheel.
-    """
+    sphinx_args = ["-b", "html"]
+    env = {}
+    if not full:
+        sphinx_args.extend(["-D", "nb_execution_mode=off"])
+        env["FAST_DOCS"] = "1"
 
-    build_p = DIR.joinpath("build")
-    if build_p.exists():
-        shutil.rmtree(build_p)
+    sphinx_args.extend(["docs", "docs/_build/html"])
 
-    session.install("build")
-    session.run("python", "-m", "build")
+    session.run("sphinx-build", *sphinx_args, env=env)
+
+    if "serve" in session.posargs:
+        print("Launching docs at http://localhost:8000/ - use Ctrl-C to quit")
+        session.run("python", "-m", "http.server", "8000", "-d", "docs/_build/html")
