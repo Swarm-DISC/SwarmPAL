@@ -18,7 +18,7 @@ from viresclient import set_token
 # -- Project information -----------------------------------------------------
 
 project = "SwarmPAL"
-copyright = "2026, The SwarmPAL developers"
+copyright = "2026, Swarm DISC"
 author = "The SwarmPAL developers"
 
 # The version is derived from git tags by hatch-vcs at install time. On Read the
