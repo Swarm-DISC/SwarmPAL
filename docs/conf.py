@@ -6,11 +6,11 @@
 
 from __future__ import annotations
 
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version as _get_version
 from os import getenv
 
 from viresclient import set_token
+
+import swarmpal
 
 # Warning: do not change the path here. To use autodoc, you need to install the
 # package first.
@@ -21,13 +21,14 @@ project = "SwarmPAL"
 copyright = "2026, Swarm DISC"
 author = "The SwarmPAL developers"
 
-# The version is derived from git tags by hatch-vcs at install time. On Read the
-# Docs this requires the full git history (see the post_checkout job in
-# .readthedocs.yaml) so that the nearest tag is reachable.
-try:
-    release = _get_version("swarmpal")
-except PackageNotFoundError:
-    release = "0.0.0"
+# The version is derived from git tags by hatch-vcs at install time and written
+# into swarmpal._version (see the vcs build hook in pyproject.toml). We read it
+# from the imported package rather than importlib.metadata: an editable install
+# can leave the .dist-info metadata pinned to a stale version while _version.py
+# is regenerated from the current git state, so metadata would show an older
+# release. On Read the Docs this requires the full git history (see the
+# post_checkout job in .readthedocs.yaml) so that the nearest tag is reachable.
+release = swarmpal.__version__
 # The short X.Y version
 version = ".".join(release.split(".")[:2])
 
