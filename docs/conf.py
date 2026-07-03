@@ -86,7 +86,14 @@ nb_execution_timeout = 900
 nb_kernel_rgx_aliases = {".*": "python3"}
 # Temporarily disable notebook execution while working on docs (default is "auto")
 # nb_execution_mode = "off"
-nb_execution_mode = "cache"
+# On Read the Docs, only execute notebooks for real branch/tag builds. Pull
+# request preview builds (VERSION_TYPE == "external") skip execution to stay
+# fast and just render the committed notebook outputs. Notebooks are executed
+# for real once a change is merged (e.g. to the staging branch).
+if getenv("READTHEDOCS_VERSION_TYPE") == "external":
+    nb_execution_mode = "off"
+else:
+    nb_execution_mode = "cache"
 # Errors in notebooks will only trigger a warning
 # Use sphinx option "--fail-on-warning" to make the build report as failure
 # This allows readthedocs to report failure in CI, while still displaying the docs
