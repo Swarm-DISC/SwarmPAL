@@ -9,7 +9,16 @@ from swarmpal._api import (
     quicklook,
 )
 
-__version__ = "0.3.0"
+try:
+    from swarmpal._version import __version__
+except ModuleNotFoundError:
+    # _version.py is generated at build time; fall back to installed metadata
+    from importlib.metadata import PackageNotFoundError, version
+
+    try:
+        __version__ = version("swarmpal")
+    except PackageNotFoundError:
+        __version__ = "unknown"
 
 __all__ = (
     "__version__",

@@ -10,7 +10,7 @@ type: software
 authors:
   - given-names: Ashley R. A.
     family-names: Smith
-    email: ashley.smith@ed.ac.uk
+    email: ashley@mag.earth
     orcid: 'https://orcid.org/0000-0001-5198-9574'
   - given-names: Sebastian
     family-names: Käki

@@ -10,14 +10,27 @@ from os import getenv
 
 from viresclient import set_token
 
+import swarmpal
+
 # Warning: do not change the path here. To use autodoc, you need to install the
 # package first.
 
 # -- Project information -----------------------------------------------------
 
 project = "SwarmPAL"
-copyright = "2023, The SwarmPAL developers"
+copyright = "2026, Swarm DISC"
 author = "The SwarmPAL developers"
+
+# The version is derived from git tags by hatch-vcs at install time and written
+# into swarmpal._version (see the vcs build hook in pyproject.toml). We read it
+# from the imported package rather than importlib.metadata: an editable install
+# can leave the .dist-info metadata pinned to a stale version while _version.py
+# is regenerated from the current git state, so metadata would show an older
+# release. On Read the Docs this requires the full git history (see the
+# post_checkout job in .readthedocs.yaml) so that the nearest tag is reachable.
+release = swarmpal.__version__
+# The short X.Y version
+version = ".".join(release.split(".")[:2])
 
 
 # -- VirES access config -----------------------------------------------------
@@ -61,6 +74,8 @@ exclude_patterns = ["_build", "**.ipynb_checkpoints", "Thumbs.db", ".DS_Store", 
 # -- Extra configurations ----------------------------------------------------
 
 autoapi_dirs = ["../src/swarmpal"]
+# Avoid documenting stray Jupyter checkpoint copies of modules
+autoapi_ignore = ["*/.ipynb_checkpoints/*"]
 
 # -- Notebook execution config -----------------------------------------------
 
@@ -72,7 +87,14 @@ nb_execution_timeout = 900
 nb_kernel_rgx_aliases = {".*": "python3"}
 # Temporarily disable notebook execution while working on docs (default is "auto")
 # nb_execution_mode = "off"
-nb_execution_mode = "cache"
+# On Read the Docs, only execute notebooks for real branch/tag builds. Pull
+# request preview builds (VERSION_TYPE == "external") skip execution to stay
+# fast and just render the committed notebook outputs. Notebooks are executed
+# for real once a change is merged (e.g. to the staging branch).
+if getenv("READTHEDOCS_VERSION_TYPE") == "external":
+    nb_execution_mode = "off"
+else:
+    nb_execution_mode = "cache"
 # Errors in notebooks will only trigger a warning
 # Use sphinx option "--fail-on-warning" to make the build report as failure
 # This allows readthedocs to report failure in CI, while still displaying the docs
@@ -89,7 +111,7 @@ nb_merge_streams = True
 #
 html_theme = "sphinx_book_theme"
 
-html_title = f"{project}"
+html_title = f"{project} {version}"
 
 html_baseurl = "https://swarmpal.readthedocs.io/en/latest/"
 
