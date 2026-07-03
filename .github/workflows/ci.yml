@@ -24,15 +24,17 @@ jobs:
 
     steps:
 
-    # When PRs come from a fork, skip tests requiring VirES token access (marked "remote")
-    - name: Set SKIP_REMOTE_MARK if PR is from fork
-      id: skip-remote
-      run: |
-        if [ "${{ github.event_name }}" = "pull_request" ] && \
-           [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
-          echo "SKIP_REMOTE_MARK=1" >> $GITHUB_ENV
-        fi
+    # Remote tests need the VirES token, which is only available to runs in the
+    # base repo. It is empty for PRs from forks and for Dependabot PRs, so detect
+    # that here and skip the token-dependent steps below.
+    - name: Skip remote tests when VirES token is unavailable
+      env:
+        VIRES_TOKEN: ${{ secrets.VIRES_TOKEN }}
       shell: bash
+      run: |
+        if [ -z "$VIRES_TOKEN" ]; then
+          echo "SKIP_REMOTE_MARK=1" >> "$GITHUB_ENV"
+        fi
 
     - uses: actions/checkout@v6
 
@@ -49,8 +51,11 @@ jobs:
 
     - name: Configure token access
       if: env.SKIP_REMOTE_MARK != '1'
+      env:
+        VIRES_TOKEN: ${{ secrets.VIRES_TOKEN }}
+      shell: bash
       run: |
-        uv run viresclient set_token "https://vires.services/ows" ${{ secrets.VIRES_TOKEN }}
+        uv run viresclient set_token "https://vires.services/ows" "$VIRES_TOKEN"
         uv run viresclient set_default_server https://vires.services/ows
 
     - name: Test package (Exclude remote)
