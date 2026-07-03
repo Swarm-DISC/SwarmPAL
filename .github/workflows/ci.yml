@@ -4,8 +4,6 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [ main, staging]
-  push:
-    branches: [ uv-rework ]
   schedule:
     # Weekly on Sunday
     - cron: "0 1 * * 0"

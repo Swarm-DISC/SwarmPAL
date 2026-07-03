@@ -137,7 +137,7 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# setuptools_scm
+# hatch-vcs (version file generated at build time)
 src/*/_version.py
 
 # VSCode
