@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _get_version
 from os import getenv
 
 from viresclient import set_token
@@ -16,8 +18,18 @@ from viresclient import set_token
 # -- Project information -----------------------------------------------------
 
 project = "SwarmPAL"
-copyright = "2023, The SwarmPAL developers"
+copyright = "2026, The SwarmPAL developers"
 author = "The SwarmPAL developers"
+
+# The version is derived from git tags by hatch-vcs at install time. On Read the
+# Docs this requires the full git history (see the post_checkout job in
+# .readthedocs.yaml) so that the nearest tag is reachable.
+try:
+    release = _get_version("swarmpal")
+except PackageNotFoundError:
+    release = "0.0.0"
+# The short X.Y version
+version = ".".join(release.split(".")[:2])
 
 
 # -- VirES access config -----------------------------------------------------
@@ -89,7 +101,7 @@ nb_merge_streams = True
 #
 html_theme = "sphinx_book_theme"
 
-html_title = f"{project}"
+html_title = f"{project} {version}"
 
 html_baseurl = "https://swarmpal.readthedocs.io/en/latest/"
 
