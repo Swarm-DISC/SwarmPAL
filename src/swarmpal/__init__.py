@@ -8,8 +8,7 @@ from swarmpal._api import (
     make_process,
     quicklook,
 )
-
-__version__ = "0.3.0"
+from swarmpal._version import __version__
 
 __all__ = (
     "__version__",

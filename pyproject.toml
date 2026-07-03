@@ -1,15 +1,20 @@
 [build-system]
-requires = ["flit_core >=3.4"]
-build-backend = "flit_core.buildapi"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/swarmpal/_version.py"
 
 [project]
 name = "swarmpal"
 authors = [
-    { name = "Ashley Smith", email = "ashley.smith@ed.ac.uk" },
+    { name = "The SwarmPAL developers" },
 ]
 maintainers = [
-    { name = "Ashley Smith", email = "ashley.smith@ed.ac.uk" },
+    { name = "Ashley Smith", email = "ashley@mag.earth" },
 ]
 license = { file = "LICENSE" }
 
