@@ -73,6 +73,8 @@ exclude_patterns = ["_build", "**.ipynb_checkpoints", "Thumbs.db", ".DS_Store", 
 # -- Extra configurations ----------------------------------------------------
 
 autoapi_dirs = ["../src/swarmpal"]
+# Avoid documenting stray Jupyter checkpoint copies of modules
+autoapi_ignore = ["*/.ipynb_checkpoints/*"]
 
 # -- Notebook execution config -----------------------------------------------
 
