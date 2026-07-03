@@ -1,97 +1,77 @@
-See the [SwarmPAL development guide on HackMD](https://hackmd.io/@swarm/dev/%2Ff6YIHfqxT9yL0giWJzhr_Q) for development of this package. The following is provided from the template provided by Scikit-HEP
+See the SwarmPAL [documentation](https://swarmpal.readthedocs.io/en/latest/contributing.html)  as well as the [development notes on HackMD](https://hackmd.io/@swarm/dev/%2Ff6YIHfqxT9yL0giWJzhr_Q) for development of this package.
+
+Useful references:
+- https://github.com/scientific-python/cookie
+- https://www.pyopensci.org/python-package-guide/
 
 ---
 
-See the [Scikit-HEP Developer introduction][skhep-dev-intro] for a
-detailed description of best practices for developing Scikit-HEP packages.
-
-[skhep-dev-intro]: https://scikit-hep.org/developer/intro
-
 # Quick development
 
-The fastest way to start with development is to use nox. If you don't have nox,
-you can use `pipx run nox` to run it without installing, or `pipx install nox`.
-If you don't have pipx (pip for applications), then you can install with with
-`pip install pipx` (the only case were installing an application with regular
-pip is reasonable). If you use macOS, then pipx and nox are both in brew, use
-`brew install pipx nox`.
-
-To use, run `nox`. This will lint and test using every installed version of
-Python on your system, skipping ones that are not installed. You can also run
-specific jobs:
+This project uses [uv](https://docs.astral.sh/uv/) for environment and dependency
+management and [nox](https://nox.thea.codes/) as a task runner. Install uv (see the uv
+docs), then let nox drive the common tasks — it builds isolated environments for you via
+uv, so you don't have to manage them by hand. If you don't have nox installed, `uvx nox`
+runs it without installing.
 
 ```console
-$ nox -s lint  # Lint only
-$ nox -s tests-3.9  # Python 3.9 tests only
-$ nox -s docs -- serve  # Build and serve the docs
-$ nox -s build  # Make an SDist and wheel
+$ uvx nox -s lint             # Run pre-commit (lint + format) on all files
+$ uvx nox -s tests            # Run the test suite on all installed Python versions
+$ uvx nox -s tests-3.10       # Run tests on a specific Python version
+$ uvx nox -s docs             # Build the docs (fast mode: skips notebook execution)
+$ uvx nox -s docs -- --full   # Full docs build (executes notebooks + autoapi)
+$ uvx nox -s docs -- serve    # Build and serve the docs locally
 ```
-
-Nox handles everything for you, including setting up an temporary virtual
-environment for each run.
-
 
 # Setting up a development environment manually
 
-You can set up a development environment by running:
+Create and sync an environment with uv (this reads `pyproject.toml` and `uv.lock` and
+installs SwarmPAL in editable mode):
 
 ```bash
-python3 -m venv .venv
-source ./.venv/bin/activate
-pip install -v -e .[dev]
+uv sync --group test --group apexpy_wheels --extra experimental
 ```
 
-If you have the [Python Launcher for Unix](https://github.com/brettcannon/python-launcher),
-you can instead do:
-
-```bash
-py -m venv .venv
-py -m install -v -e .[dev]
-```
-
-# Post setup
-
-You should prepare pre-commit, which will help you by checking that commits
-pass required checks:
-
-```bash
-pip install pre-commit # or brew install pre-commit on macOS
-pre-commit install # Will install a pre-commit hook into the git repo
-```
-
-You can also/alternatively run `pre-commit run` (changes only) or `pre-commit
-run --all-files` to check even without installing the hook.
+Dependency groups (`dev`, `test`, `docs`) and optional extras (`experimental`, `dsecs`)
+are defined in `pyproject.toml`. The `apexpy_wheels` group provides prebuilt `apexpy`
+wheels so you don't need a Fortran compiler locally. Run commands inside the environment
+with `uv run`, e.g. `uv run pytest`.
 
 # Testing
 
-Use pytest to run the unit checks:
+Run the unit checks with pytest:
 
 ```bash
-pytest
+uv run pytest
+```
+
+Tests that reach remote servers (VirES) are marked `remote`. To skip them:
+
+```bash
+uv run pytest -m "not remote"
 ```
 
 # Building docs
 
-You can build the docs using:
+Use nox (see above) — `uvx nox -s docs` for a fast build, or `-- serve` to preview:
 
 ```bash
-nox -s docs
-```
-
-You can see a preview with:
-
-```bash
-nox -s docs -- serve
+uvx nox -s docs -- serve
 ```
 
 # Pre-commit
 
-This project uses pre-commit for all style checking. While you can run it with
-nox, this is such an important tool that it deserves to be installed on its
-own. Install pre-commit and run:
+This project uses pre-commit for all style checking. While you can run it through nox
+(`uvx nox -s lint`), it's worth installing on its own and enabling the git hook so checks
+run automatically on each commit:
+
+```bash
+uv tool install pre-commit  # or: pipx install pre-commit / brew install pre-commit
+pre-commit install          # install the hook into this repo
+```
+
+You can also run it against all files at any time:
 
 ```bash
 pre-commit run -a
 ```
-
-to check all files.

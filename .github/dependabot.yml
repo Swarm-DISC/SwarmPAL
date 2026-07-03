@@ -3,4 +3,5 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "quarterly"
+    target-branch: "staging"
