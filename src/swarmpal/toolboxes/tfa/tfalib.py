@@ -318,6 +318,17 @@ def moving_q25_and_q75(x, window_size):
     moving_q25 = moving_window.quantile(0.25, interpolation="linear").to_numpy()
     moving_q75 = moving_window.quantile(0.75, interpolation="linear").to_numpy()
 
+    # KNOWN BUG: this trailing window is re-centered by shifting it with
+    # np.roll, which wraps circularly. That makes the last ~window_size/2
+    # points pick up quantiles computed from the *start* of the series
+    # (rather than being left as NaN, as the equivalent points at the start
+    # of the series correctly are) - see the discussion around this
+    # function's use in `outliers()`. A fix (swap to
+    # `D.rolling(..., center=True)`) was tried and reverted because it also
+    # changes `TFA_Clean`'s output broadly (not just at the edge, since many
+    # points sit close to the IQR threshold), which invalidates the frozen
+    # reference data in `test_tfa_basic.nc4`. Fixing this needs the
+    # SwarmPal-test-data reference to be regenerated in step with the change.
     moving_q25 = np.roll(moving_q25, -int(window_size / 2), axis=0)
     moving_q75 = np.roll(moving_q75, -int(window_size / 2), axis=0)
 
