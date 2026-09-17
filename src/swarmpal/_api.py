@@ -71,6 +71,21 @@ def make_process(process_name=None, config={}):
                 LocalForwardMagneticModel
             )
 
+        elif process_name == "FlagClean":
+            from swarmpal.experimental import FlagClean
+
+            processes_by_name["FlagClean"] = FlagClean
+
+        elif process_name == "Despike":
+            from swarmpal.experimental import Despike
+
+            processes_by_name["Despike"] = Despike
+
+        elif process_name == "InterpolateGaps":
+            from swarmpal.experimental import InterpolateGaps
+
+            processes_by_name["InterpolateGaps"] = InterpolateGaps
+
         else:
             raise ValueError(
                 f"Unknown process {process_name}. Must be one of ['FAC_single_sat', 'DSECS_Preprocess', 'DSECS_Analysis']"

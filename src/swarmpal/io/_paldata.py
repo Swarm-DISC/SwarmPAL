@@ -375,21 +375,36 @@ class PalDataTreeAccessor:
             raise PalError("More than one model available")
         return models[0]
 
-    def magnetic_residual(self, model: str = "") -> DataArray:
-        """Magnetic data-model residual in NEC frame"""
+    def magnetic_residual(self, model: str = "", scalar: bool = False) -> DataArray:
+        """Magnetic data-model residual
+
+        Parameters
+        ----------
+        model : str
+            Name of the model to use, e.g. "CHAOS". Defaults to the only model
+            identified in the dataset, if there is exactly one.
+        scalar : bool
+            If True, return the scalar residual of F (F - F_model) instead of
+            the vector residual in the NEC frame (B_NEC - B_NEC_model).
+        """
         if not self._datatree.is_leaf:
             raise PalError("This is not a leaf node")
         if not model:
             model = self.magnetic_model_name
+        variable = "F" if scalar else "B_NEC"
         try:
-            B_NEC = self._datatree["B_NEC"]
-            B_NEC_mod = self._datatree[f"B_NEC_{model}"]
+            measurement = self._datatree[variable]
+            measurement_mod = self._datatree[f"{variable}_{model}"]
         except KeyError:
-            raise PalError(f"One of B_NEC or B_NEC_{model} is not available")
-        residual = B_NEC - B_NEC_mod
+            raise PalError(f"One of {variable} or {variable}_{model} is not available")
+        residual = measurement - measurement_mod
         residual.attrs = {
             "units": "nT",
-            "description": "Magnetic field vector data-model residual, NEC frame",
+            "description": (
+                "Magnetic field scalar data-model residual"
+                if scalar
+                else "Magnetic field vector data-model residual, NEC frame"
+            ),
         }
         return residual
 
