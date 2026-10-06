@@ -13,9 +13,8 @@ def cdf_to_xarray_viresclient(
     cdf_file,
 ):
     """Using viresclient FileReader"""
-    with open(cdf_file, "rb") as f:
-        with FileReader(f) as fr:
-            return fr.as_xarray_dataset()
+    with open(cdf_file, "rb") as f, FileReader(f) as fr:
+        return fr.as_xarray_dataset()
 
 
 def cdf_to_xarray(cdf_file):
