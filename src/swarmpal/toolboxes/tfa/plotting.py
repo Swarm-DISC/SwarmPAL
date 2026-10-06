@@ -45,7 +45,7 @@ def _add_secondary_x_axes(
     # Restrict to those which are available in the data
     varnames_available = set(varnames).intersection(set(dataset.data_vars))
     for x in set(varnames).difference(varnames_available):
-        logger.warn(f" Skipping {x}: not available in data")
+        logger.warning(f" Skipping {x}: not available in data")
     varnames = [v for v in varnames if v in varnames_available]
     if len(varnames) == 0:
         return ax

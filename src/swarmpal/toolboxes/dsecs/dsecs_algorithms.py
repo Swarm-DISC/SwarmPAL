@@ -70,7 +70,7 @@ def _DSECS_steps(SwAin, SwCin):
             }
             out.append(loopres)
     except Exception as e:
-        logger.warn(e)
+        logger.warning(e)
 
     return out
 
@@ -1100,7 +1100,7 @@ class dsecsgrid:
         limitOutputLat = self.outputlimitlat
         ind = np.nonzero(abs(SwA["Latitude"].data) <= limitOutputLat)
         if len(ind[0]) == 0:
-            logger.warn("No data within analysis area.")
+            logger.warning("No data within analysis area.")
             self.flag = 1
             return
         lat1 = SwA["Latitude"].data[ind]
@@ -1151,7 +1151,7 @@ class dsecsgrid:
             or len(indsS["A"]) == 0
             or len(indsS["C"]) == 0
         ):
-            logger.warn("No data from both hemispheres.")
+            logger.warning("No data from both hemispheres.")
             self.flag = 1
             return
 
@@ -1605,7 +1605,7 @@ class dsecsdata:
         grid.create(SwA, SwC)
 
         if grid.flag != 0:
-            logger.warn("Could not create grid. No analysis performed.")
+            logger.warning("Could not create grid. No analysis performed.")
             self.flag = 1
             return
 
